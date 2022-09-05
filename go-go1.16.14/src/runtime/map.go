@@ -1146,7 +1146,7 @@ type evacDst struct {
 	e unsafe.Pointer // pointer to current elem storage
 }
 
-// t 对象记键值对和桶的大小等必要信息；；h map结构体；oldbucket旧桶序号
+// t 对象记键值对和桶的大小等必要信息；h map结构体；oldbucket旧桶序号
 func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 	// 旧桶序号对应的指针
 	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))

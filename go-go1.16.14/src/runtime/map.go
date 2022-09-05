@@ -205,6 +205,7 @@ func evacuated(b *bmap) bool {
 }
 
 func (b *bmap) overflow(t *maptype) *bmap {
+	// 获取当前桶最后一个指针类型的地址,即*bmap.overflow;转换成**bmap类型，然后通过*获取内容
 	return *(**bmap)(add(unsafe.Pointer(b), uintptr(t.bucketsize)-sys.PtrSize))
 }
 
@@ -1157,6 +1158,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 		// is no iterator using the old buckets.  (If !oldIterator.)
 
 		// xy contains the x and y (low and high) evacuation destinations.
+		// 要转移数据的结构（二倍扩容时需要两个元素，等量扩容时需要一个元素）(xy是新桶的指针；x是和旧桶相同的位置的数据,y是x+旧桶总数的位置)
 		var xy [2]evacDst
 		x := &xy[0]
 		// 新桶序号对应的指针(旧桶和新桶的桶序号不变)
@@ -1177,6 +1179,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 			y.e = add(y.k, bucketCnt*uintptr(t.keysize))
 		}
 
+		// 循环单向链表,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
 		for ; b != nil; b = b.overflow(t) {
 			k := add(unsafe.Pointer(b), dataOffset)
 			e := add(k, bucketCnt*uintptr(t.keysize))

@@ -610,6 +610,7 @@ again:
 		growWork(t, h, bucket)
 	}
 	b := (*bmap)(add(h.buckets, bucket*uintptr(t.bucketsize)))
+
 	top := tophash(hash)
 
 	var inserti *uint8
@@ -1159,6 +1160,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 
 		// xy contains the x and y (low and high) evacuation destinations.
 		// 要转移数据的结构（二倍扩容时需要两个元素，等量扩容时需要一个元素）(xy是新桶的指针；x是和旧桶相同的位置的数据,y是x+旧桶总数的位置)
+		// 把要修改的地方的地址放在这里，然后下面针对这个结构体类型的数组进行操作
 		var xy [2]evacDst
 		x := &xy[0]
 		// 新桶序号对应的指针(旧桶和新桶的桶序号不变)

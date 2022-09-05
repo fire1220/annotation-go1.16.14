@@ -1181,6 +1181,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 
 		// 循环单向链表,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
 		for ; b != nil; b = b.overflow(t) {
+			// dataOffset的值是8,值topbits的长度(编译时候赋值的)
 			k := add(unsafe.Pointer(b), dataOffset)
 			e := add(k, bucketCnt*uintptr(t.keysize))
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
@@ -1346,7 +1347,6 @@ func reflect_mapaccess(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	return elem
 }
 
-// 插入或修改map
 //go:linkname reflect_mapassign reflect.mapassign
 func reflect_mapassign(t *maptype, h *hmap, key unsafe.Pointer, elem unsafe.Pointer) {
 	p := mapassign(t, h, key)

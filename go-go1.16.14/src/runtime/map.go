@@ -1163,9 +1163,9 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 		x := &xy[0]
 		// 新桶序号对应的指针(旧桶和新桶的桶序号不变)
 		x.b = (*bmap)(add(h.buckets, oldbucket*uintptr(t.bucketsize)))
-		// key的指针地址
+		// key的指针地址;dataOffset的值是8,值topbits的长度(编译时候赋值的)
 		x.k = add(unsafe.Pointer(x.b), dataOffset)
-		// value的指针地址（key和val的内存分布是key/key/key/key/key/key/key/key/val/val/val/val/val/val）
+		// value的指针地址（key和val的内存分布是key1/key2/key3/key4/key5/key6/key7/key8/val1/val2/val3/val4/val5/val6/val7/val8）
 		x.e = add(x.k, bucketCnt*uintptr(t.keysize))
 
 		// 判断是否是非等量扩容

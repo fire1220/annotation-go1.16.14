@@ -122,11 +122,14 @@ func makeslice64(et *_type, len64, cap64 int64) unsafe.Pointer {
 // to calculate where to write new values during an append.
 // TODO: When the old backend is gone, reconsider this decision.
 // The SSA backend might prefer the new length or to return only ptr/cap and save stack space.
+// 注释：执行append函数时被调用
 func growslice(et *_type, old slice, cap int) slice {
+	// 注释：是否开启race数据竟成
 	if raceenabled {
 		callerpc := getcallerpc()
 		racereadrangepc(old.array, uintptr(old.len*int(et.size)), callerpc, funcPC(growslice))
 	}
+	// 注释：是否开启msan
 	if msanenabled {
 		msanread(old.array, uintptr(old.len*int(et.size)))
 	}
@@ -143,12 +146,15 @@ func growslice(et *_type, old slice, cap int) slice {
 
 	newcap := old.cap
 	doublecap := newcap + newcap
+	// 注释：如果新切片容量大于2倍旧容量时，用新切片容量
 	if cap > doublecap {
 		newcap = cap
 	} else {
+		// 注释：如果小于2倍，并且旧容量小于1024时，用2倍旧容量
 		if old.cap < 1024 {
 			newcap = doublecap
 		} else {
+			// 注释：如果小于2倍，并且旧容量大于或等于1024时，用1/4倍旧容量
 			// Check 0 < newcap to detect overflow
 			// and prevent an infinite loop.
 			for 0 < newcap && newcap < cap {
@@ -220,6 +226,7 @@ func growslice(et *_type, old slice, cap int) slice {
 	}
 
 	var p unsafe.Pointer
+	// 注释：申请空间
 	if et.ptrdata == 0 {
 		p = mallocgc(capmem, nil, false)
 		// The append() that calls growslice is going to overwrite from old.len to cap (which will be the new length).
@@ -234,9 +241,9 @@ func growslice(et *_type, old slice, cap int) slice {
 			bulkBarrierPreWriteSrcOnly(uintptr(p), uintptr(old.array), lenmem-et.size+et.ptrdata)
 		}
 	}
-	memmove(p, old.array, lenmem)
+	memmove(p, old.array, lenmem) // 注释：移动数据
 
-	return slice{p, old.len, newcap}
+	return slice{p, old.len, newcap} // 注释：组合slice结构体返回数据
 }
 
 func isPowerOfTwo(x uintptr) bool {

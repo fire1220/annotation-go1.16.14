@@ -125,10 +125,10 @@ redo:
 		s.number(false)
 
 	case '"':
-		s.stdString()
+		s.stdString() // 注释：用双引号"声明字符串
 
 	case '`':
-		s.rawString()
+		s.rawString() // 注释：用反引号`声明字符串
 
 	case '\'':
 		s.rune()
@@ -675,6 +675,7 @@ func (s *scanner) stdString() {
 			s.nextch()
 			break
 		}
+		// 注释：双引号声明字符串转义字符特殊处理
 		if s.ch == '\\' {
 			s.nextch()
 			if !s.escape('"') {
@@ -682,6 +683,7 @@ func (s *scanner) stdString() {
 			}
 			continue
 		}
+		// 注释：双引号声明字符串不能有换行符
 		if s.ch == '\n' {
 			s.errorf("newline in string")
 			ok = false

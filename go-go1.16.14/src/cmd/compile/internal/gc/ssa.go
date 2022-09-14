@@ -2819,10 +2819,12 @@ func (s *state) expr(n *Node) *ssa.Value {
 		return s.zeroVal(n.Type)
 
 	case ONEWOBJ:
+		// 注释：如果申请的空间为 0，就会返回一个表示空指针的 zerobase 变量
 		if n.Type.Elem().Size() == 0 {
 			return s.newValue1A(ssa.OpAddr, n.Type, zerobaseSym, s.sb)
 		}
 		typ := s.expr(n.Left)
+		// 注释：其他情况时会将关键字转换成 runtime.newobject 函数
 		vv := s.rtcall(newobject, true, []*types.Type{n.Type}, typ)
 		return vv[0]
 

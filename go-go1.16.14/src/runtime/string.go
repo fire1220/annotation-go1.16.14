@@ -165,6 +165,7 @@ func slicebytetostringtmp(ptr *byte, n int) (str string) {
 	return
 }
 
+// 注释：执行[]byte()把字符串转换成[]byte时执行
 func stringtoslicebyte(buf *tmpBuf, s string) []byte {
 	var b []byte
 	if buf != nil && len(s) <= len(buf) {

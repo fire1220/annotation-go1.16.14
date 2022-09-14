@@ -79,6 +79,7 @@ func concatstring5(buf *tmpBuf, a [5]string) string {
 // n is the length of the slice.
 // Buf is a fixed-size buffer for the result,
 // it is not nil if the result does not escape.
+// 注释：用string()的方式转换[]byte时执行
 func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 	if n == 0 {
 		// Turns out to be a relatively common case.
@@ -113,7 +114,7 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 	}
 	stringStructOf(&str).str = p
 	stringStructOf(&str).len = n
-	memmove(p, unsafe.Pointer(ptr), uintptr(n))
+	memmove(p, unsafe.Pointer(ptr), uintptr(n)) // 注释：移动数据
 	return
 }
 

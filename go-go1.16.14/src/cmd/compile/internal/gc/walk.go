@@ -1165,7 +1165,7 @@ opswitch:
 			r = typecheck(r, ctxExpr)
 			n = r
 		} else {
-			// 注释：使用new关键词时调用callnew函数,最终会将关键字转换成 ONEWOBJ 类型的节点,然后在cmd/compile/internal/gc/ssa.go中expr方法被执行（func (s *state) expr(n *Node) *ssa.Value）
+			// 注释：使用new关键词时调用callnew函数,最终会将关键字转换成 ONEWOBJ 类型的节点,然后在cmd/compile/internal/gc/ssa.go中expr方法里的case ONEWOBJ:执行（func (s *state) expr(n *Node) *ssa.Value）
 			n = callnew(n.Type.Elem())
 		}
 

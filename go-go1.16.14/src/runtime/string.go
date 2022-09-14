@@ -21,10 +21,11 @@ type tmpBuf [tmpStringBufSize]byte
 // If buf != nil, the compiler has determined that the result does not
 // escape the calling function, so the string data can be stored in buf
 // if small enough.
+// 注释：连接字符串
 func concatstrings(buf *tmpBuf, a []string) string {
 	idx := 0
-	l := 0
-	count := 0
+	l := 0 // 注释：有效的总字符串字节长度
+	count := 0 // 注释：有效的字符串个数
 	for i, x := range a {
 		n := len(x)
 		if n == 0 {
@@ -47,10 +48,11 @@ func concatstrings(buf *tmpBuf, a []string) string {
 	if count == 1 && (buf != nil || !stringDataOnStack(a[idx])) {
 		return a[idx]
 	}
+	// 注释：通过字节数创建空间，返回字符串和指向字符串地址的[]byte,这样在下面就可以直接复制到[]byte里（间接复制到字符串里），然返回字符串
 	s, b := rawstringtmp(buf, l)
 	for _, x := range a {
-		copy(b, x)
-		b = b[len(x):]
+		copy(b, x) // 注释：复制到[]byte里
+		b = b[len(x):] // 注释：把b指针向后移动，移动到一下个x位置
 	}
 	return s
 }

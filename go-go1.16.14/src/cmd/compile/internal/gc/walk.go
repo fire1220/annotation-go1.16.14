@@ -1169,7 +1169,7 @@ opswitch:
 			n = callnew(n.Type.Elem())
 		}
 
-	case OADDSTR:
+	case OADDSTR: // 注释：字符串用加号（+）拼接时类型的节点，是通过OADD节点转换过来的
 		n = addstr(n, init)
 
 	case OAPPEND:
@@ -2686,11 +2686,13 @@ func addstr(n *Node, init *Nodes) *Node {
 	}
 
 	var fn string
+	// 注释：当字符串小于等于5时，会调用concatstring1,concatstring2,concatstring3,concatstring4,concatstring5中的一个函数拼接
 	if c <= 5 {
 		// small numbers of strings use direct runtime helpers.
 		// note: order.expr knows this cutoff too.
 		fn = fmt.Sprintf("concatstring%d", c)
 	} else {
+		// 注释：当字符串大于5是用函数concatstrings拼接
 		// large numbers of strings are passed to the runtime as a slice.
 		fn = "concatstrings"
 

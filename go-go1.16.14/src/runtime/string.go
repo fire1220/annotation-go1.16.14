@@ -114,7 +114,7 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 	}
 	stringStructOf(&str).str = p
 	stringStructOf(&str).len = n
-	memmove(p, unsafe.Pointer(ptr), uintptr(n)) // 注释：移动数据
+	memmove(p, unsafe.Pointer(ptr), uintptr(n)) // 注释：复制数据
 	return
 }
 

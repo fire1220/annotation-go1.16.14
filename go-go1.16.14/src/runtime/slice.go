@@ -241,7 +241,7 @@ func growslice(et *_type, old slice, cap int) slice {
 			bulkBarrierPreWriteSrcOnly(uintptr(p), uintptr(old.array), lenmem-et.size+et.ptrdata)
 		}
 	}
-	memmove(p, old.array, lenmem) // 注释：移动数据
+	memmove(p, old.array, lenmem) // 注释：复制数据
 
 	return slice{p, old.len, newcap} // 注释：组合slice结构体返回数据
 }

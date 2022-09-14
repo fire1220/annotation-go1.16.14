@@ -1149,7 +1149,7 @@ opswitch:
 			n = reduceSlice(n)
 		}
 
-	case ONEW:
+	case ONEW: // 注释：使用new关键词时执行
 		if n.Type.Elem().NotInHeap() {
 			yyerror("%v can't be allocated in Go; it is incomplete (or unallocatable)", n.Type.Elem())
 		}
@@ -1165,6 +1165,7 @@ opswitch:
 			r = typecheck(r, ctxExpr)
 			n = r
 		} else {
+			// 注释：使用new关键词时调用callnew函数,最终会将关键字转换成 ONEWOBJ 类型的节点,然后在cmd/compile/internal/gc/ssa.go中expr方法被执行（func (s *state) expr(n *Node) *ssa.Value）
 			n = callnew(n.Type.Elem())
 		}
 
@@ -2041,6 +2042,7 @@ func walkprint(nn *Node, init *Nodes) *Node {
 
 func callnew(t *types.Type) *Node {
 	dowidth(t)
+	// 注释：转换成ONEWOBJ节点
 	n := nod(ONEWOBJ, typename(t), nil)
 	n.Type = types.NewPtr(t)
 	n.SetTypecheck(1)

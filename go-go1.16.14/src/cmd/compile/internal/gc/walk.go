@@ -1259,6 +1259,7 @@ opswitch:
 			}
 		}
 
+		// 注释：当元素是int或rune并且数量小于等于8时，调用makemap_small初始化
 		if Isconst(hint, CTINT) && hint.Val().U.(*Mpint).CmpInt64(BUCKETSIZE) <= 0 {
 			// Handling make(map[any]any) and
 			// make(map[any]any, hint) where hint <= BUCKETSIZE
@@ -1271,6 +1272,7 @@ opswitch:
 				// Only need to initialize h.hash0 since
 				// hmap h has been allocated on the stack already.
 				// h.hash0 = fastrand()
+				// 注释：随机函数是fastrand，创建随机数
 				rand := mkcall("fastrand", types.Types[TUINT32], init)
 				hashsym := hmapType.Field(4).Sym // hmap.hash0 see reflect.go:hmap
 				a := nod(OAS, nodSym(ODOT, h, hashsym), rand)
@@ -1296,6 +1298,7 @@ opswitch:
 
 			// When hint fits into int, use makemap instead of
 			// makemap64, which is faster and shorter on 32 bit platforms.
+			// 注释：元素非int或rune或者长度大于8时调用makemap64函数初始化map
 			fnname := "makemap64"
 			argtype := types.Types[TINT64]
 

@@ -568,45 +568,46 @@ func mapaccess2_fat(t *maptype, h *hmap, key, zero unsafe.Pointer) (unsafe.Point
 	return e, true
 }
 
+// 注释：创建或修改map函数
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
 func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	if h == nil {
 		panic(plainError("assignment to entry in nil map"))
 	}
-	// 数据竟成是否开启
+	// 注释：数据竟成是否开启
 	if raceenabled {
 		callerpc := getcallerpc()
 		pc := funcPC(mapassign)
 		racewritepc(unsafe.Pointer(h), callerpc, pc)
 		raceReadObjectPC(t.key, key, callerpc, pc)
 	}
-	// 内存msan是否开启
+	// 注释：内存msan是否开启
 	if msanenabled {
 		msanread(key, t.key.size)
 	}
-	// 如果标志位写位置如果开启说明正在有其他协成在写入，报错
+	// 注释：如果标志位写位置如果开启说明正在有其他协成在写入，报错
 	if h.flags&hashWriting != 0 {
 		throw("concurrent map writes")
 	}
-	// 通过key和随机种子获取hash值
+	// 注释：通过key和随机种子获取hash值
 	hash := t.hasher(key, uintptr(h.hash0))
 
-	// 写标志位加锁
+	// 注释：写标志位加锁
 	// Set hashWriting after calling t.hasher, since t.hasher may panic,
 	// in which case we have not actually done a write.
 	h.flags ^= hashWriting
 
-	// 判断是否有桶，如果没有就创建一个同
+	// 注释：判断是否有桶，如果没有就创建一个同
 	if h.buckets == nil {
 		h.buckets = newobject(t.bucket) // newarray(t.bucket, 1)
 	}
 
 again:
-	// 新桶序号：通过桶掩码获取key的目标桶号
+	// 注释：新桶序号：通过桶掩码获取key的目标桶号
 	bucket := hash & bucketMask(h.B)
-	// 判断数据是否需要迁移；判断是否正在扩容(旧桶有值就说明正在扩容)
+	// 注释：判断数据是否需要迁移；判断是否正在扩容(旧桶有值就说明正在扩容)
 	if h.growing() {
-		// 数据迁移
+		// 注释：数据迁移
 		growWork(t, h, bucket)
 	}
 	b := (*bmap)(add(h.buckets, bucket*uintptr(t.bucketsize)))
@@ -1124,12 +1125,12 @@ func (h *hmap) oldbucketmask() uintptr {
 func growWork(t *maptype, h *hmap, bucket uintptr) {
 	// make sure we evacuate the oldbucket corresponding
 	// to the bucket we're about to use
-	// 旧桶的序号:bucket&h.oldbucketmask()
-	// 将当前需要处理的桶搬迁
+	// 注释：旧桶的序号:bucket&h.oldbucketmask()
+	// 注释：将当前需要处理的桶搬迁
 	evacuate(t, h, bucket&h.oldbucketmask())
 
 	// evacuate one more oldbucket to make progress on growing
-	// 再多搬迁一个桶
+	// 注释：再多搬迁一个桶
 	if h.growing() {
 		evacuate(t, h, h.nevacuate)
 	}
@@ -1150,40 +1151,41 @@ type evacDst struct {
 
 // t 对象记键值对和桶的大小等必要信息；h map结构体；oldbucket旧桶序号
 func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
-	// 旧桶序号对应的指针
+	// 注释：旧桶序号对应的指针
 	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))
-	// 旧桶的总桶数量
+	// 注释：旧桶的总桶数量
 	newbit := h.noldbuckets()
 	if !evacuated(b) {
 		// TODO: reuse overflow buckets instead of using new ones, if there
 		// is no iterator using the old buckets.  (If !oldIterator.)
 
 		// xy contains the x and y (low and high) evacuation destinations.
-		// 要转移数据的结构（二倍扩容时需要两个元素，等量扩容时需要一个元素）(xy是新桶的指针；x是和旧桶相同的位置的数据,y是x+旧桶总数的位置)
-		// 把要修改的地方的地址放在这里，然后下面针对这个结构体类型的数组进行操作
+		// 注释：要转移数据的结构（二倍扩容时需要两个元素，等量扩容时需要一个元素）(xy是新桶的指针；x是和旧桶相同的位置的数据,y是x+旧桶总数的位置)
+		// 注释：把要修改的地方的地址放在这里，然后下面针对这个结构体类型的数组进行操作
 		var xy [2]evacDst
+		// 注释：x的结构数据是：tophash1/tophash2/tophash3/tophash4/tophash5/tophash6/tophash7/tophash8/key1/key2/key3/key4/key5/key6/key7/key8/val1/val2/val3/val4/val5/val6/val7/val8）
 		x := &xy[0]
-		// 新桶序号对应的指针(旧桶和新桶的桶序号不变)
+		// 注释：新桶序号对应的指针(旧桶和新桶的桶序号不变)
 		x.b = (*bmap)(add(h.buckets, oldbucket*uintptr(t.bucketsize)))
-		// key的指针地址;dataOffset的值是8,值topbits的长度(编译时候赋值的)
+		// 注释：key的指针地址;dataOffset的值是8,值topbits的长度(编译时候赋值的)
 		x.k = add(unsafe.Pointer(x.b), dataOffset)
-		// value的指针地址（key和val的内存分布是key1/key2/key3/key4/key5/key6/key7/key8/val1/val2/val3/val4/val5/val6/val7/val8）
+		// 注释：value的指针地址（key和val的内存分布是key1/key2/key3/key4/key5/key6/key7/key8/val1/val2/val3/val4/val5/val6/val7/val8）
 		x.e = add(x.k, bucketCnt*uintptr(t.keysize))
 
-		// 判断是否是非等量扩容
+		// 注释：判断是否是非等量扩容
 		if !h.sameSizeGrow() {
 			// Only calculate y pointers if we're growing bigger.
 			// Otherwise GC can see bad pointers.
 			y := &xy[1]
-			// 新桶序号对应的第二个地址指针：新桶首地址+(oldbucket旧桶序号+旧桶的总桶数量)*桶的尺寸
+			// 注释：新桶序号对应的第二个地址指针：新桶首地址+(oldbucket旧桶序号+旧桶的总桶数量)*桶的尺寸
 			y.b = (*bmap)(add(h.buckets, (oldbucket+newbit)*uintptr(t.bucketsize)))
 			y.k = add(unsafe.Pointer(y.b), dataOffset)
 			y.e = add(y.k, bucketCnt*uintptr(t.keysize))
 		}
 
-		// 循环单向链表,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
+		// 注释：循环单向链表,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
 		for ; b != nil; b = b.overflow(t) {
-			// dataOffset的值是8,值topbits的长度(编译时候赋值的)
+			// 注释：dataOffset的值是8,值topbits的长度(编译时候赋值的)
 			k := add(unsafe.Pointer(b), dataOffset)
 			e := add(k, bucketCnt*uintptr(t.keysize))
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
@@ -1232,6 +1234,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 				b.tophash[i] = evacuatedX + useY // evacuatedX + 1 == evacuatedY
 				dst := &xy[useY]                 // evacuation destination
 
+				// 注释：判断是否超出最后一个桶，如果超出的话，链接溢出桶
 				if dst.i == bucketCnt {
 					dst.b = h.newoverflow(t, dst.b)
 					dst.i = 0

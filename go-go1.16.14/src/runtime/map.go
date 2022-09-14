@@ -1121,7 +1121,7 @@ func (h *hmap) noldbuckets() uintptr {
 func (h *hmap) oldbucketmask() uintptr {
 	return h.noldbuckets() - 1
 }
-// t 对象记键值对和桶的大小等必要信息； h map结构体； bucket 新桶桶号（序号）；
+// 注释：t 对象记键值对和桶的大小等必要信息； h map结构体； bucket 新桶桶号（序号）；
 func growWork(t *maptype, h *hmap, bucket uintptr) {
 	// make sure we evacuate the oldbucket corresponding
 	// to the bucket we're about to use
@@ -1149,7 +1149,7 @@ type evacDst struct {
 	e unsafe.Pointer // pointer to current elem storage
 }
 
-// t 对象记键值对和桶的大小等必要信息；h map结构体；oldbucket旧桶序号
+// 注释：t 对象记键值对和桶的大小等必要信息；h map结构体；oldbucket旧桶序号
 func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 	// 注释：旧桶序号对应的指针
 	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))

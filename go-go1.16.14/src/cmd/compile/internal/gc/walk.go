@@ -1259,7 +1259,7 @@ opswitch:
 			}
 		}
 
-		// 注释：当元素是int或rune并且数量小于等于8时，调用makemap_small初始化
+		// 注释：当元素是int或rune并且数量小于等于8时，调用makemap_small初始化,函数位置runtime.makemap_small
 		if Isconst(hint, CTINT) && hint.Val().U.(*Mpint).CmpInt64(BUCKETSIZE) <= 0 {
 			// Handling make(map[any]any) and
 			// make(map[any]any, hint) where hint <= BUCKETSIZE
@@ -1298,7 +1298,7 @@ opswitch:
 
 			// When hint fits into int, use makemap instead of
 			// makemap64, which is faster and shorter on 32 bit platforms.
-			// 注释：元素非int或rune或者长度大于8时调用makemap64函数初始化map
+			// 注释：元素非int或rune或者长度大于8时调用makemap64函数初始化map,函数位置runtime.makemap64
 			fnname := "makemap64"
 			argtype := types.Types[TINT64]
 

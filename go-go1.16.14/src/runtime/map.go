@@ -400,13 +400,16 @@ func makeBucketArray(t *maptype, b uint8, dirtyalloc unsafe.Pointer) (buckets un
 // the key is not in the map.
 // NOTE: The returned pointer may keep the whole map live, so don't
 // hold onto it for very long.
+// 注释：使用 v := m["xx"] 的形式访问时执行的方法
 func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
+	// 注释：判断是否启用数据竞争检测
 	if raceenabled && h != nil {
 		callerpc := getcallerpc()
 		pc := funcPC(mapaccess1)
 		racereadpc(unsafe.Pointer(h), callerpc, pc)
 		raceReadObjectPC(t.key, key, callerpc, pc)
 	}
+	// 注释：判断是否启用支持与内存清理程序的交互操作
 	if msanenabled && h != nil {
 		msanread(key, t.key.size)
 	}
@@ -458,6 +461,7 @@ bucketloop:
 	return unsafe.Pointer(&zeroVal[0])
 }
 
+// 注释：使用 v,ok := m["xx"]的形式访问时执行的方法
 func mapaccess2(t *maptype, h *hmap, key unsafe.Pointer) (unsafe.Pointer, bool) {
 	if raceenabled && h != nil {
 		callerpc := getcallerpc()

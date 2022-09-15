@@ -381,7 +381,7 @@ func makeBucketArray(t *maptype, b uint8, dirtyalloc unsafe.Pointer) (buckets un
 		}
 	}
 
-	// base是正常桶数，nbuckets是正常桶加溢出桶的数量
+	// 注释：base是正常桶数，nbuckets是正常桶加溢出桶的数量
 	if base != nbuckets {
 		// We preallocated some overflow buckets.
 		// To keep the overhead of tracking these overflow buckets to a minimum,

@@ -425,17 +425,17 @@ func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 		throw("concurrent map read and map write")
 	}
 	hash := t.hasher(key, uintptr(h.hash0)) // 注释：根据key和随机种子计算hash值
-	m := bucketMask(h.B) // 注释：桶掩码(低h.B位)
+	m := bucketMask(h.B) // 注释：新桶掩码(低h.B位)
 	// 注释：桶首地址+（hash值对应低B位的位置*桶的尺寸）
 	b := (*bmap)(add(h.buckets, (hash&m)*uintptr(t.bucketsize))) // 注释：key对应的桶地址
 	// 注释：判断旧桶是否有值
 	if c := h.oldbuckets; c != nil {
-		if !h.sameSizeGrow() {
+		if !h.sameSizeGrow() { // 注释：是否处于扩容状态
 			// There used to be half as many buckets; mask down one more power of two.
-			m >>= 1
+			m >>= 1 // 注释：旧桶的掩码
 		}
-		oldb := (*bmap)(add(c, (hash&m)*uintptr(t.bucketsize)))
-		if !evacuated(oldb) {
+		oldb := (*bmap)(add(c, (hash&m)*uintptr(t.bucketsize))) // 注释：旧桶对应的key地址
+		if !evacuated(oldb) { // 注释：判断b.tophash高8位是否等于预留的值
 			b = oldb
 		}
 	}

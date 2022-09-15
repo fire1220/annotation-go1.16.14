@@ -420,11 +420,12 @@ func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 		}
 		return unsafe.Pointer(&zeroVal[0])
 	}
+	// 注释：判断是否处于写的状态
 	if h.flags&hashWriting != 0 {
 		throw("concurrent map read and map write")
 	}
-	hash := t.hasher(key, uintptr(h.hash0))
-	m := bucketMask(h.B)
+	hash := t.hasher(key, uintptr(h.hash0)) // 注释：根据key和随机种子计算hash值
+	m := bucketMask(h.B) // 注释：桶掩码
 	b := (*bmap)(add(h.buckets, (hash&m)*uintptr(t.bucketsize)))
 	if c := h.oldbuckets; c != nil {
 		if !h.sameSizeGrow() {

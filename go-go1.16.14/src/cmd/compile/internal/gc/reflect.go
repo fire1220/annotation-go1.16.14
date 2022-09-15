@@ -194,6 +194,7 @@ func hmap(t *types.Type) *types.Type {
 		return t.MapType().Hmap
 	}
 
+	// 构建桶结构，申请内存,都是指针类型和uint8类型，所以总长度是固定的
 	bmap := bmap(t)
 
 	// build a struct:

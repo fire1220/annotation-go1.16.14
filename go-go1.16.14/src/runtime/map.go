@@ -281,6 +281,7 @@ func (h *hmap) createOverflow() {
 }
 
 func makemap64(t *maptype, hint int64, h *hmap) *hmap {
+	// hint 是map的输入数量，这里保证map的数量不能超过系统的int值,如果超过了设置为0
 	if int64(int(hint)) != hint {
 		hint = 0
 	}

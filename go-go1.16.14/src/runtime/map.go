@@ -80,6 +80,7 @@ const (
 	// data offset should be the size of the bmap struct, but needs to be
 	// aligned correctly. For amd64p32 this means 64-bit alignment
 	// even though pointers are 32 bit.
+	// 注释：结构体头指针到属性v指针的大小，这里就是计算bmap的大小
 	dataOffset = unsafe.Offsetof(struct {
 		b bmap
 		v int64
@@ -89,8 +90,8 @@ const (
 	// Each bucket (including its overflow buckets, if any) will have either all or none of its
 	// entries in the evacuated* states (except during the evacuate() method, which only happens
 	// during map writes and thus no one else can observe the map during that time).
-	emptyRest      = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
-	emptyOne       = 1 // this cell is empty
+	emptyRest      = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows. // 注释：当前桶和链接的所有桶全部为空时
+	emptyOne       = 1 // this cell is empty // 注释：只有当前桶为空时
 	evacuatedX     = 2 // key/elem is valid.  Entry has been evacuated to first half of larger table.
 	evacuatedY     = 3 // same as above, but evacuated to second half of larger table.
 	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.
@@ -441,22 +442,26 @@ func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	}
 	top := tophash(hash) // 注释：计算hash的高8位
 bucketloop:
-	for ; b != nil; b = b.overflow(t) {
-		for i := uintptr(0); i < bucketCnt; i++ {
-			if b.tophash[i] != top {
-				if b.tophash[i] == emptyRest {
+	// 注释：遍历所有溢出桶；b = bmap.overflow是溢出桶地址,每个溢出桶都是通过overflow字段连接起来的单向链表
+	for ; b != nil; b = b.overflow(t) { // 注释：通过overflow字段遍历链表，拉链法解决哈希冲突
+		for i := uintptr(0); i < bucketCnt; i++ { // 注释：循环单个桶数据，每个桶有8个元素，开放寻址发中的线性探测策略解决哈希冲突
+			if b.tophash[i] != top {              // 注释：判断hash的高8位是否相等
+				if b.tophash[i] == emptyRest {    // 注释：判断当前桶和后面链接的桶是否全部都是空的
 					break bucketloop
 				}
 				continue
 			}
+			// 注释：通过地址偏移找到key的；当前桶地址+偏移量dataOffset+key的偏移量；dataOffset=8
 			k := add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize))
-			if t.indirectkey() {
-				k = *((*unsafe.Pointer)(k))
+			if t.indirectkey() { // 注释：(判断是否是指针)判断是否是间接指向key，如果是间接指向，说明key是指针，指向真正的key
+				k = *((*unsafe.Pointer)(k)) // 注释：获取key
 			}
-			if t.key.equal(key, k) {
-				e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize))
-				if t.indirectelem() {
-					e = *((*unsafe.Pointer)(e))
+			if t.key.equal(key, k) { // 注释：比较key是否相等
+				// 注释：桶头指针+hash高8位（dataOffset=tophash=8）+ 桶内最大元素数(bucketCnt)*key的容量+桶内编号*值的尺寸
+				// 注释：真实bmap的内存数据是:8位tophash+[8]key(单个key是指针大小)+[8]value(单个value是指针大小)+overflow指针大小
+				e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize)) // 注释：具体的value值
+				if t.indirectelem() { // 注释：（判断是否是指针）判断值是否是间接的,如果不是指针，则说明value就是自己
+					e = *((*unsafe.Pointer)(e)) // 注释：获取value
 				}
 				return e
 			}

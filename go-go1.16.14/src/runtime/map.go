@@ -326,9 +326,10 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 	// allocate initial hash table
 	// if B == 0, the buckets field is allocated lazily later (in mapassign)
 	// If hint is large zeroing this memory could take a while.
+	// 注释：如果make的时候指定了map的长度时执行下面分支
 	if h.B != 0 {
-		var nextOverflow *bmap
-		h.buckets, nextOverflow = makeBucketArray(t, h.B, nil)
+		var nextOverflow *bmap // 注释：下一个空闲溢出桶地址
+		h.buckets, nextOverflow = makeBucketArray(t, h.B, nil) // 注释：创建桶和溢出桶的数组,返回正常桶首地址和溢出桶首地址
 		if nextOverflow != nil {
 			h.extra = new(mapextra)
 			h.extra.nextOverflow = nextOverflow
@@ -345,10 +346,11 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 // If dirtyalloc is nil a new backing array will be alloced and
 // otherwise dirtyalloc will be cleared and reused as backing array.
 func makeBucketArray(t *maptype, b uint8, dirtyalloc unsafe.Pointer) (buckets unsafe.Pointer, nextOverflow *bmap) {
-	base := bucketShift(b)
+	base := bucketShift(b) // 注释：桶的数量:1<<b
 	nbuckets := base
 	// For small b, overflow buckets are unlikely.
 	// Avoid the overhead of the calculation.
+	// 注释：正常桶数量大于等于16时,创建溢出
 	if b >= 4 {
 		// Add on the estimated number of overflow buckets
 		// required to insert the median number of elements
@@ -376,13 +378,14 @@ func makeBucketArray(t *maptype, b uint8, dirtyalloc unsafe.Pointer) (buckets un
 		}
 	}
 
+	// base是正常桶数，nbuckets是正常桶加溢出桶的数量
 	if base != nbuckets {
 		// We preallocated some overflow buckets.
 		// To keep the overhead of tracking these overflow buckets to a minimum,
 		// we use the convention that if a preallocated overflow bucket's overflow
 		// pointer is nil, then there are more available by bumping the pointer.
 		// We need a safe non-nil pointer for the last overflow bucket; just use buckets.
-		nextOverflow = (*bmap)(add(buckets, base*uintptr(t.bucketsize)))
+		nextOverflow = (*bmap)(add(buckets, base*uintptr(t.bucketsize))) // 注释：溢出桶首地址
 		last := (*bmap)(add(buckets, (nbuckets-1)*uintptr(t.bucketsize)))
 		last.setoverflow(t, (*bmap)(buckets))
 	}

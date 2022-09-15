@@ -1205,7 +1205,7 @@ opswitch:
 
 	case OMAKEMAP:
 		t := n.Type
-		// 构建结构申请内存
+		// 注释：构建结构申请内存
 		hmapType := hmap(t)
 		hint := n.Left
 

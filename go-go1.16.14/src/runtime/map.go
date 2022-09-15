@@ -435,11 +435,11 @@ func mapaccess1(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 			m >>= 1 // 注释：旧桶的掩码
 		}
 		oldb := (*bmap)(add(c, (hash&m)*uintptr(t.bucketsize))) // 注释：旧桶对应的key地址
-		if !evacuated(oldb) { // 注释：判断b.tophash高8位是否等于预留的值
+		if !evacuated(oldb) { // 注释：判断b.tophash高8位是否等于预留的值，如果不是则使用旧桶地址
 			b = oldb
 		}
 	}
-	top := tophash(hash)
+	top := tophash(hash) // 注释：计算hash的高8位
 bucketloop:
 	for ; b != nil; b = b.overflow(t) {
 		for i := uintptr(0); i < bucketCnt; i++ {

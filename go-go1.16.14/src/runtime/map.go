@@ -239,6 +239,7 @@ func (h *hmap) incrnoverflow() {
 	mask := uint32(1)<<(h.B-15) - 1
 	// Example: if h.B == 18, then mask == 7,
 	// and fastrand & 7 == 0 with probability 1/8.
+	// 注释：数值越大概率越低,概率是1/(2^(h.B-15))
 	if fastrand()&mask == 0 {
 		h.noverflow++
 	}
@@ -254,21 +255,22 @@ func (h *hmap) newoverflow(t *maptype, b *bmap) *bmap {
 			// We're not at the end of the preallocated overflow buckets. Bump the pointer.
 			h.extra.nextOverflow = (*bmap)(add(unsafe.Pointer(ovf), uintptr(t.bucketsize))) // 注释：指向第三个预分配的溢出桶
 		} else {
+			// 注释：如果非空（初始化的时候赋的一个值,就是一个标识位）时，这个非空值已经无意义了，重新设置为空
 			// This is the last preallocated overflow bucket.
 			// Reset the overflow pointer on this bucket,
 			// which was set to a non-nil sentinel value.
-			ovf.setoverflow(t, nil)
+			ovf.setoverflow(t, nil)    // 注释：清空初始化的哪个标识位
 			h.extra.nextOverflow = nil // 注释：设置成nil说明已经用完了所有预分配的溢出桶
 		}
 	} else {
 		ovf = (*bmap)(newobject(t.bucket))
 	}
-	h.incrnoverflow()
+	h.incrnoverflow() // 注释：自增溢出桶数量，这个数量是大概的估算值(B < 16时是准确值，大于时是预估值)
 	if t.bucket.ptrdata == 0 {
-		h.createOverflow()
-		*h.extra.overflow = append(*h.extra.overflow, ovf)
+		h.createOverflow()                                 // 注释：创建已经使用的溢出桶数组
+		*h.extra.overflow = append(*h.extra.overflow, ovf) // 注释：追加使用的溢出桶
 	}
-	b.setoverflow(t, ovf)
+	b.setoverflow(t, ovf) // 注释：把新的空溢出桶地址加入链表尾部（溢出桶链表bmap.overflow）
 	return ovf
 }
 
@@ -389,9 +391,9 @@ func makeBucketArray(t *maptype, b uint8, dirtyalloc unsafe.Pointer) (buckets un
 		// we use the convention that if a preallocated overflow bucket's overflow
 		// pointer is nil, then there are more available by bumping the pointer.
 		// We need a safe non-nil pointer for the last overflow bucket; just use buckets.
-		nextOverflow = (*bmap)(add(buckets, base*uintptr(t.bucketsize))) // 注释：溢出桶首地址
-		last := (*bmap)(add(buckets, (nbuckets-1)*uintptr(t.bucketsize)))
-		last.setoverflow(t, (*bmap)(buckets))
+		nextOverflow = (*bmap)(add(buckets, base*uintptr(t.bucketsize)))  // 注释：溢出桶首地址
+		last := (*bmap)(add(buckets, (nbuckets-1)*uintptr(t.bucketsize))) // 注释：计算最后一个溢出桶地址
+		last.setoverflow(t, (*bmap)(buckets))                             // 注释：最后一个overflow赋了一个值(就是一个标识位)
 	}
 	return buckets, nextOverflow
 }
@@ -635,19 +637,19 @@ again:
 
 	top := tophash(hash) // 注释：hash高8位
 
-	var inserti *uint8 // 注释：hash高8位
+	var inserti *uint8 // 注释：bmap里的topbits（hash高8位）
 	var insertk unsafe.Pointer
 	var elem unsafe.Pointer
 bucketloop:
 	for {
 		for i := uintptr(0); i < bucketCnt; i++ { // 注释：遍历桶内数据，共8组数据
 			if b.tophash[i] != top {
-				if isEmpty(b.tophash[i]) && inserti == nil {
-					inserti = &b.tophash[i]
-					insertk = add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize))
-					elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize))
+				if isEmpty(b.tophash[i]) && inserti == nil { // 注释：如果bmap里的topbits为空时(包括当前桶里为空或后面链表桶的tophash全部为空)
+					inserti = &b.tophash[i] 				 // 注释：把空对应的指针赋值
+					insertk = add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize)) // 注释：映射key的指针，方便后面修改
+					elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize)) // 注释：映射val的指针
 				}
-				if b.tophash[i] == emptyRest {
+				if b.tophash[i] == emptyRest { // 注释：判断后面链表桶里全部为空
 					break bucketloop
 				}
 				continue

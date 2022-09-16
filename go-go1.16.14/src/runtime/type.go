@@ -369,6 +369,7 @@ type interfacetype struct {
 	mhdr    []imethod
 }
 
+// 注释：maptype对象记键值对和桶的大小等必要信息
 type maptype struct {
 	typ    _type
 	key    *_type

@@ -637,17 +637,17 @@ again:
 
 	top := tophash(hash) // 注释：hash高8位
 
-	var inserti *uint8 // 注释：bmap里的topbits（hash高8位）
-	var insertk unsafe.Pointer
-	var elem unsafe.Pointer
+	var inserti *uint8         // 注释：准备写入的topbits地址
+	var insertk unsafe.Pointer // 注释：准备写入的key地址
+	var elem unsafe.Pointer    // 注释：准备写入的value地址
 bucketloop:
 	for {
 		for i := uintptr(0); i < bucketCnt; i++ { // 注释：遍历桶内数据，共8组数据
 			if b.tophash[i] != top {
 				if isEmpty(b.tophash[i]) && inserti == nil { // 注释：如果bmap里的topbits为空时(包括当前桶里为空或后面链表桶的tophash全部为空)
-					inserti = &b.tophash[i] 				 // 注释：把空对应的指针赋值
+					inserti = &b.tophash[i] 				 // 注释：把空对应的指针赋值，等待后面插入，方便后面修改
 					insertk = add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize)) // 注释：映射key的指针，方便后面修改
-					elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize)) // 注释：映射val的指针
+					elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize)) // 注释：映射val的指针，方便后面修改
 				}
 				if b.tophash[i] == emptyRest { // 注释：判断后面链表桶里全部为空
 					break bucketloop

@@ -249,16 +249,16 @@ func (h *hmap) newoverflow(t *maptype, b *bmap) *bmap {
 	if h.extra != nil && h.extra.nextOverflow != nil {
 		// We have preallocated overflow buckets available.
 		// See makeBucketArray for more details.
-		ovf = h.extra.nextOverflow
-		if ovf.overflow(t) == nil {
+		ovf = h.extra.nextOverflow // 注释：指向下一个空的预分配的溢出桶指针
+		if ovf.overflow(t) == nil { // 注释：下一个溢出桶（预分配的溢出桶）中最后一个元素（值是溢出桶链表的指针）
 			// We're not at the end of the preallocated overflow buckets. Bump the pointer.
-			h.extra.nextOverflow = (*bmap)(add(unsafe.Pointer(ovf), uintptr(t.bucketsize)))
+			h.extra.nextOverflow = (*bmap)(add(unsafe.Pointer(ovf), uintptr(t.bucketsize))) // 注释：指向第三个预分配的溢出桶
 		} else {
 			// This is the last preallocated overflow bucket.
 			// Reset the overflow pointer on this bucket,
 			// which was set to a non-nil sentinel value.
 			ovf.setoverflow(t, nil)
-			h.extra.nextOverflow = nil
+			h.extra.nextOverflow = nil // 注释：设置成nil说明已经用完了所有预分配的溢出桶
 		}
 	} else {
 		ovf = (*bmap)(newobject(t.bucket))
@@ -589,7 +589,7 @@ func mapaccess2_fat(t *maptype, h *hmap, key, zero unsafe.Pointer) (unsafe.Point
 	return e, true
 }
 
-// 注释：创建或修改map函数
+// 注释：创建或修改map函数(map的分配)
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
 func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	if h == nil {
@@ -631,16 +631,16 @@ again:
 		// 注释：数据迁移
 		growWork(t, h, bucket)
 	}
-	b := (*bmap)(add(h.buckets, bucket*uintptr(t.bucketsize)))
+	b := (*bmap)(add(h.buckets, bucket*uintptr(t.bucketsize))) // 注释：桶号对应的桶地址
 
-	top := tophash(hash)
+	top := tophash(hash) // 注释：hash高8位
 
-	var inserti *uint8
+	var inserti *uint8 // 注释：hash高8位
 	var insertk unsafe.Pointer
 	var elem unsafe.Pointer
 bucketloop:
 	for {
-		for i := uintptr(0); i < bucketCnt; i++ {
+		for i := uintptr(0); i < bucketCnt; i++ { // 注释：遍历桶内数据，共8组数据
 			if b.tophash[i] != top {
 				if isEmpty(b.tophash[i]) && inserti == nil {
 					inserti = &b.tophash[i]

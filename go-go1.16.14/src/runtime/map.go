@@ -1201,11 +1201,12 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 		// is no iterator using the old buckets.  (If !oldIterator.)
 
 		// xy contains the x and y (low and high) evacuation destinations.
-		// 注释：要转移数据的结构（二倍扩容时需要两个元素，等量扩容时需要一个元素）(xy是新桶的指针；x是和旧桶相同的位置的数据,y是x+旧桶总数的位置)
+		// 注释：要转移数据的结构（二倍扩容时需要两个元素，等量扩容时需要一个元素）
+		// 注释：xy是新桶的指针；这里会根据旧桶大小把新桶分为两部分，(新桶对应1倍旧桶为x区域,新桶对应2倍旧桶为y区域),x=旧桶相同的位置的数据；y=x+旧桶总数的位置
 		// 注释：把要修改的地方的地址放在这里，然后下面针对这个结构体类型的数组进行操作
 		var xy [2]evacDst
 		// 注释：x的结构数据是：tophash1/tophash2/tophash3/tophash4/tophash5/tophash6/tophash7/tophash8/key1/key2/key3/key4/key5/key6/key7/key8/val1/val2/val3/val4/val5/val6/val7/val8）
-		x := &xy[0]
+		x := &xy[0] // 注释：新桶对应1倍旧桶为x区域
 		// 注释：新桶序号对应的指针(旧桶和新桶的桶序号不变)
 		x.b = (*bmap)(add(h.buckets, oldbucket*uintptr(t.bucketsize)))
 		// 注释：key的指针地址;dataOffset的值是8,值topbits的长度(编译时候赋值的)
@@ -1217,7 +1218,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 		if !h.sameSizeGrow() {
 			// Only calculate y pointers if we're growing bigger.
 			// Otherwise GC can see bad pointers.
-			y := &xy[1]
+			y := &xy[1] // 注释：新桶对应2倍旧桶为y区域
 			// 注释：新桶序号对应的第二个地址指针：新桶首地址+(oldbucket旧桶序号+旧桶的总桶数量)*桶的尺寸
 			y.b = (*bmap)(add(h.buckets, (oldbucket+newbit)*uintptr(t.bucketsize)))
 			y.k = add(unsafe.Pointer(y.b), dataOffset)

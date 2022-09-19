@@ -1225,16 +1225,16 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 			y.e = add(y.k, bucketCnt*uintptr(t.keysize))
 		}
 
-		// 注释：循环单向链表,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
+		// 注释：循环溢出桶（单向链表）,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
 		for ; b != nil; b = b.overflow(t) {
 			// 注释：dataOffset的值是8,是bmap结构体大小（目前里面只有一个属性topbits）值topbits的长度(编译时候赋值的)
 			k := add(unsafe.Pointer(b), dataOffset)   // 注释：溢出桶里key的首地址（一共8个）
 			e := add(k, bucketCnt*uintptr(t.keysize)) // 注释：溢出桶value的首地址（一共8个）
 			// 注释：遍历桶里的数据, i, k, e :对应下标，key和value
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
-				top := b.tophash[i] // 注释：hash高8位
-				if isEmpty(top) {   // 注释：判断该位置是否是空
-					b.tophash[i] = evacuatedEmpty
+				top := b.tophash[i]                // 注释：hash高8位或则自定义的站位标识
+				if isEmpty(top) {                  // 注释：(过滤空数据)判断该站位标识表示的数据是否是空
+					b.tophash[i] = evacuatedEmpty  // 注释：更改状态标识(这里会把emptyOne或emptyRest状态为更改为evacuatedEmpty）
 					continue
 				}
 				if top < minTopHash {
@@ -1244,11 +1244,12 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 				if t.indirectkey() { // 注释：判断是否是间接的key(如果int可以存下key的话，那么key就是其本身，如果int存不下，则是通过指针指向key)
 					k2 = *((*unsafe.Pointer)(k2))
 				}
-				var useY uint8
+				var useY uint8 // 注释：是否使用y
+				// 注释：判断是否是2倍扩容
 				if !h.sameSizeGrow() {
 					// Compute hash to make our evacuation decision (whether we need
 					// to send this key/elem to bucket x or bucket y).
-					hash := t.hasher(k2, uintptr(h.hash0))
+					hash := t.hasher(k2, uintptr(h.hash0)) // 注释：计算hash值；根据key和hash种子
 					if h.flags&iterator != 0 && !t.reflexivekey() && !t.key.equal(k2, k2) {
 						// If key != key (NaNs), then the hash could be (and probably
 						// will be) entirely different from the old hash. Moreover,
@@ -1261,8 +1262,8 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 						// We recompute a new random tophash for the next level so
 						// these keys will get evenly distributed across all buckets
 						// after multiple grows.
-						useY = top & 1
-						top = tophash(hash)
+						useY = top & 1      // 注释：通过桶里的top获取第一位数据,如果是1则说明该位置是空的
+						top = tophash(hash) // 注释：计算key的hash的高8位
 					} else {
 						if hash&newbit != 0 {
 							useY = 1

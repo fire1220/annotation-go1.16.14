@@ -393,7 +393,7 @@ func (mt *maptype) indirectelem() bool { // store ptr to elem instead of elem it
 	return mt.flags&2 != 0 // 注释：indirect value(间接的值)
 }
 func (mt *maptype) reflexivekey() bool { // true if k==k for all keys
-	return mt.flags&4 != 0 // 注释：reflexive key(发射的key)
+	return mt.flags&4 != 0 // 注释：reflexive key(反射的key)
 }
 func (mt *maptype) needkeyupdate() bool { // true if we need to update key on an overwrite
 	return mt.flags&8 != 0 // 注释：need key update(需要密钥更新)

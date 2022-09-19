@@ -91,10 +91,10 @@ const (
 	// entries in the evacuated* states (except during the evacuate() method, which only happens
 	// during map writes and thus no one else can observe the map during that time).
 	emptyRest      = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows. // 注释：当前桶和链接的所有桶全部为空时
-	emptyOne       = 1 // this cell is empty // 注释：只有当前桶为空时
+	emptyOne       = 1 // this cell is empty                                                                        // 注释：只有当前桶为空时
 	evacuatedX     = 2 // key/elem is valid.  Entry has been evacuated to first half of larger table.
 	evacuatedY     = 3 // same as above, but evacuated to second half of larger table.
-	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.
+	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.                                                       // 注释：旧桶的该位置已经被迁移了
 	minTopHash     = 5 // minimum tophash for a normal filled cell.
 
 	// flags
@@ -1147,15 +1147,17 @@ func (h *hmap) sameSizeGrow() bool {
 }
 
 // noldbuckets calculates the number of buckets prior to the current map growth.
+// 注释：旧桶的桶数
 func (h *hmap) noldbuckets() uintptr {
 	oldB := h.B
-	if !h.sameSizeGrow() {
+	if !h.sameSizeGrow() { // 注释：判断是否是2倍扩容
 		oldB--
 	}
 	return bucketShift(oldB)
 }
 
 // oldbucketmask provides a mask that can be applied to calculate n % noldbuckets().
+// 注释：旧桶的掩码
 func (h *hmap) oldbucketmask() uintptr {
 	return h.noldbuckets() - 1
 }
@@ -1163,8 +1165,7 @@ func (h *hmap) oldbucketmask() uintptr {
 func growWork(t *maptype, h *hmap, bucket uintptr) {
 	// make sure we evacuate the oldbucket corresponding
 	// to the bucket we're about to use
-	// 注释：旧桶的序号:bucket&h.oldbucketmask()
-	// 注释：将当前需要处理的桶搬迁
+	// 注释：执行数据迁移，将当前需要处理的桶搬迁，旧桶的序号:bucket&h.oldbucketmask()
 	evacuate(t, h, bucket&h.oldbucketmask())
 
 	// evacuate one more oldbucket to make progress on growing
@@ -1187,13 +1188,14 @@ type evacDst struct {
 	e unsafe.Pointer // pointer to current elem storage
 }
 
+// 注释：执行数据迁移
 // 注释：t 对象记键值对和桶的大小等必要信息；h map结构体；oldbucket旧桶序号
 func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 	// 注释：旧桶序号对应的指针
 	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))
 	// 注释：旧桶的总桶数量
 	newbit := h.noldbuckets()
-	// 注释：判断是否全部迁移到新的桶中
+	// 注释：判断是否未迁移
 	if !evacuated(b) {
 		// TODO: reuse overflow buckets instead of using new ones, if there
 		// is no iterator using the old buckets.  (If !oldIterator.)
@@ -1227,9 +1229,10 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 			// 注释：dataOffset的值是8,是bmap结构体大小（目前里面只有一个属性topbits）值topbits的长度(编译时候赋值的)
 			k := add(unsafe.Pointer(b), dataOffset)
 			e := add(k, bucketCnt*uintptr(t.keysize))
+			// 注释：遍历桶里的数据, i, k, e :对应下标，key和value
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
-				top := b.tophash[i]
-				if isEmpty(top) {
+				top := b.tophash[i] // 注释：hash高8位
+				if isEmpty(top) {   // 注释：判断该位置是否是空
 					b.tophash[i] = evacuatedEmpty
 					continue
 				}

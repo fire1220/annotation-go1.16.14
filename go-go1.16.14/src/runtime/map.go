@@ -1118,7 +1118,7 @@ func tooManyOverflowBuckets(noverflow uint16, B uint8) bool {
 		B = 15
 	}
 	// The compiler doesn't see here that B < 16; mask B to generate shorter shift code.
-	return noverflow >= uint16(1)<<(B&15)
+	return noverflow >= uint16(1)<<(B&15) // 注释：当B>15时，noverflow是随机增长（把大数缩写用随机填充），如果随机完全理想的话，无线接近:noverflow >= 2^B；当B<=15时：noverflow >= 2^B
 }
 
 // growing reports whether h is growing. The growth may be to the same size or bigger.

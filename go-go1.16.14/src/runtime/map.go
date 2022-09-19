@@ -682,6 +682,7 @@ bucketloop:
 	// 注释：判断是否需要扩容
 	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
 		hashGrow(t, h)
+		// 注释：修改hmap结构体完成后，重新执行并执行数据迁移
 		goto again // Growing the table invalidates everything, so try again
 	}
 

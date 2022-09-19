@@ -1059,6 +1059,7 @@ func mapclear(t *maptype, h *hmap) {
 	h.flags &^= hashWriting
 }
 
+// 注释：需要扩容时，修hmap结构体的部分数据,方便后期数据迁移
 func hashGrow(t *maptype, h *hmap) {
 	// If we've hit the load factor, get bigger.
 	// Otherwise, there are too many overflow buckets,
@@ -1087,12 +1088,14 @@ func hashGrow(t *maptype, h *hmap) {
 
 	if h.extra != nil && h.extra.overflow != nil {
 		// Promote current overflow buckets to the old generation.
+		// 注释：判断旧的溢出桶是否完全移动完成，如果未完成报错
 		if h.extra.oldoverflow != nil {
 			throw("oldoverflow is not nil")
 		}
-		h.extra.oldoverflow = h.extra.overflow
-		h.extra.overflow = nil
+		h.extra.oldoverflow = h.extra.overflow // 注释：设置旧的溢出桶
+		h.extra.overflow = nil                 // 注释：清空新溢出桶
 	}
+	// 注释：如果有空溢出桶地址时这里指定到扩展结构体里
 	if nextOverflow != nil {
 		if h.extra == nil {
 			h.extra = new(mapextra)

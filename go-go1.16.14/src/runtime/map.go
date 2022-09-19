@@ -679,6 +679,7 @@ bucketloop:
 
 	// If we hit the max load factor or we have too many overflow buckets,
 	// and we're not already in the middle of growing, start growing.
+	// 注释：判断是否需要扩容
 	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
 		hashGrow(t, h)
 		goto again // Growing the table invalidates everything, so try again
@@ -1102,13 +1103,17 @@ func hashGrow(t *maptype, h *hmap) {
 }
 
 // overLoadFactor reports whether count items placed in 1<<B buckets is over loadFactor.
+// 注释：判断负载因子是否大于6.5
 func overLoadFactor(count int, B uint8) bool {
+	// 注释：当map元素总数大于8个，并且负载因子大于6.5（负载因子=元素数/正常桶数量）
+	// 注释：uintptr(count) > loadFactorNum*(bucketShift(B)/loadFactorDen是为了防止浮点运算
 	return count > bucketCnt && uintptr(count) > loadFactorNum*(bucketShift(B)/loadFactorDen)
 }
 
 // tooManyOverflowBuckets reports whether noverflow buckets is too many for a map with 1<<B buckets.
 // Note that most of these overflow buckets must be in sparse use;
 // if use was dense, then we'd have already triggered regular map growth.
+// 注释： 判断溢出桶是否过多
 func tooManyOverflowBuckets(noverflow uint16, B uint8) bool {
 	// If the threshold is too low, we do extraneous work.
 	// If the threshold is too high, maps that grow and shrink can hold on to lots of unused memory.
@@ -1118,10 +1123,12 @@ func tooManyOverflowBuckets(noverflow uint16, B uint8) bool {
 		B = 15
 	}
 	// The compiler doesn't see here that B < 16; mask B to generate shorter shift code.
+	// 注释：其实最后实现的是：noverflow >= 2^B （当B>15时是个近似值）
 	return noverflow >= uint16(1)<<(B&15) // 注释：当B>15时，noverflow是随机增长（把大数缩写用随机填充），如果随机完全理想的话，无线接近:noverflow >= 2^B；当B<=15时：noverflow >= 2^B
 }
 
 // growing reports whether h is growing. The growth may be to the same size or bigger.
+// 注释：判断是否处于正在扩容
 func (h *hmap) growing() bool {
 	return h.oldbuckets != nil
 }

@@ -98,10 +98,10 @@ const (
 	minTopHash     = 5 // minimum tophash for a normal filled cell.
 
 	// flags
-	iterator     = 1 // there may be an iterator using buckets
-	oldIterator  = 2 // there may be an iterator using oldbuckets
-	hashWriting  = 4 // a goroutine is writing to the map
-	sameSizeGrow = 8 // the current map growth is to a new map of the same size
+	iterator     = 1 // there may be an iterator using buckets                  // 注释：新桶迭代中标识
+	oldIterator  = 2 // there may be an iterator using oldbuckets               // 注释：旧桶迭代中标识
+	hashWriting  = 4 // a goroutine is writing to the map                       // 注释：正在写入标识
+	sameSizeGrow = 8 // the current map growth is to a new map of the same size // 注释：等量扩容标识
 
 	// sentinel bucket ID for iterator checks
 	noCheck = 1<<(8*sys.PtrSize) - 1
@@ -1063,15 +1063,17 @@ func hashGrow(t *maptype, h *hmap) {
 	// If we've hit the load factor, get bigger.
 	// Otherwise, there are too many overflow buckets,
 	// so keep the same number of buckets and "grow" laterally.
-	bigger := uint8(1)
+	bigger := uint8(1) // 注释：扩容倍数（B的增长倍数），1二倍扩容，0等量扩容
+	// 注释：判断是否需要等量扩容
 	if !overLoadFactor(h.count+1, h.B) {
 		bigger = 0
-		h.flags |= sameSizeGrow
+		h.flags |= sameSizeGrow // 注释：添加等量扩容标识
 	}
-	oldbuckets := h.buckets
-	newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil)
+	oldbuckets := h.buckets // 注释：移动桶
+	newbuckets, nextOverflow := makeBucketArray(t, h.B+bigger, nil) // 注释：创建新桶，申请内存
 
-	flags := h.flags &^ (iterator | oldIterator)
+	flags := h.flags &^ (iterator | oldIterator) // 注释：创建新的map标识,清空迭代器标识
+	// 注释：判断旧值是否处于迭代中,如果处于迭代中时，把新的标识设置为旧桶迭代中
 	if h.flags&iterator != 0 {
 		flags |= oldIterator
 	}

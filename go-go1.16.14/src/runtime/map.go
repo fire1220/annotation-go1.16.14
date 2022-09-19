@@ -1195,7 +1195,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 	b := (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))
 	// 注释：旧桶的总桶数量
 	newbit := h.noldbuckets()
-	// 注释：判断是否未迁移
+	// 注释：判断是否未迁移 , evacuatedEmpty、evacuatedX、evacuatedY 这三个值之一，说明此bucket中的key全部被搬迁到了新bucket
 	if !evacuated(b) {
 		// TODO: reuse overflow buckets instead of using new ones, if there
 		// is no iterator using the old buckets.  (If !oldIterator.)
@@ -1228,8 +1228,8 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 		// 注释：循环单向链表,b.overflow中的b是旧桶序号对应的指针；返回溢出桶地址
 		for ; b != nil; b = b.overflow(t) {
 			// 注释：dataOffset的值是8,是bmap结构体大小（目前里面只有一个属性topbits）值topbits的长度(编译时候赋值的)
-			k := add(unsafe.Pointer(b), dataOffset)
-			e := add(k, bucketCnt*uintptr(t.keysize))
+			k := add(unsafe.Pointer(b), dataOffset)   // 注释：溢出桶里key的首地址（一共8个）
+			e := add(k, bucketCnt*uintptr(t.keysize)) // 注释：溢出桶value的首地址（一共8个）
 			// 注释：遍历桶里的数据, i, k, e :对应下标，key和value
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
 				top := b.tophash[i] // 注释：hash高8位
@@ -1241,7 +1241,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 					throw("bad map state")
 				}
 				k2 := k
-				if t.indirectkey() {
+				if t.indirectkey() { // 注释：判断是否是间接的key(如果int可以存下key的话，那么key就是其本身，如果int存不下，则是通过指针指向key)
 					k2 = *((*unsafe.Pointer)(k2))
 				}
 				var useY uint8

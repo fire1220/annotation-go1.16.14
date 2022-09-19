@@ -385,20 +385,21 @@ type maptype struct {
 
 // Note: flag values must match those used in the TMAP case
 // in ../cmd/compile/internal/gc/reflect.go:dtypesym.
+// 注释：判断是否是间接的key(如果int可以存下key的话，那么key就是其本身，如果int存不下，则是通过指针指向key)
 func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itself
-	return mt.flags&1 != 0
+	return mt.flags&1 != 0 // 注释：indirect key(间接的key)
 }
 func (mt *maptype) indirectelem() bool { // store ptr to elem instead of elem itself
-	return mt.flags&2 != 0
+	return mt.flags&2 != 0 // 注释：indirect value(间接的值)
 }
 func (mt *maptype) reflexivekey() bool { // true if k==k for all keys
-	return mt.flags&4 != 0
+	return mt.flags&4 != 0 // 注释：reflexive key(发射的key)
 }
 func (mt *maptype) needkeyupdate() bool { // true if we need to update key on an overwrite
-	return mt.flags&8 != 0
+	return mt.flags&8 != 0 // 注释：need key update(需要密钥更新)
 }
 func (mt *maptype) hashMightPanic() bool { // true if hash function might panic
-	return mt.flags&16 != 0
+	return mt.flags&16 != 0 // 注释：hash might panic(散列可能会死机)
 }
 
 type arraytype struct {

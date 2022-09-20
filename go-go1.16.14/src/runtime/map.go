@@ -1265,6 +1265,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 						useY = top & 1      // 注释：通过桶里的top获取第一位数据,如果是1则说明该位置是空的
 						top = tophash(hash) // 注释：计算key的hash的高8位
 					} else {
+						// 注释：通过和旧桶的桶数对应的哪一位来判断是否是把数据放在y里。
 						if hash&newbit != 0 {
 							useY = 1
 						}

@@ -251,21 +251,22 @@ func isPowerOfTwo(x uintptr) bool {
 }
 
 // slicecopy is used to copy from a string or slice of pointerless elements into a slice.
+// 注释：copy：toPtr目标地址，toLen目标切片的len，fromPtr源指针，fromLen源切片的len，width元素类型的宽度
 func slicecopy(toPtr unsafe.Pointer, toLen int, fromPtr unsafe.Pointer, fromLen int, width uintptr) int {
 	if fromLen == 0 || toLen == 0 {
 		return 0
 	}
 
-	n := fromLen
+	n := fromLen // 注释：fromLen源切片的len
 	if toLen < n {
-		n = toLen
+		n = toLen // 注释：取最小的len
 	}
 
 	if width == 0 {
 		return n
 	}
 
-	size := uintptr(n) * width
+	size := uintptr(n) * width // 注释：需要复制的数据长度
 	if raceenabled {
 		callerpc := getcallerpc()
 		pc := funcPC(slicecopy)
@@ -277,11 +278,12 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fromPtr unsafe.Pointer, fromLen 
 		msanwrite(toPtr, size)
 	}
 
+	// 注释：特殊处理（就拷贝一个字节时特殊处理）
 	if size == 1 { // common case worth about 2x to do here
 		// TODO: is this still worth it with new memmove impl?
 		*(*byte)(toPtr) = *(*byte)(fromPtr) // known to be a byte pointer
 	} else {
-		memmove(toPtr, fromPtr, size)
+		memmove(toPtr, fromPtr, size) // 注释：复制内存数据
 	}
-	return n
+	return n // 注释：返回复制的数量
 }

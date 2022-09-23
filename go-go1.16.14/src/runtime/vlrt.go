@@ -236,6 +236,7 @@ func dodiv(n, d uint64) (q, r uint64) {
 }
 
 //go:nosplit
+// 注释：除法（二进制相除）（这个慢的除法，快的话使用汇编处理的），两个无符号整数相除，返回商和余数
 func slowdodiv(n, d uint64) (q, r uint64) {
 	if d == 0 {
 		panicdivide()

@@ -23,6 +23,7 @@ the stack is allowed to protrude StackSmall bytes below the stack
 guard.  Functions with large frames don't bother with the check and
 always call morestack.  The sequences are (for amd64, others are
 similar):
+// 注释：函数生成汇编的模板，判断函数调用栈是否需要扩容，和小函数优化
 
 	guard = g->stackguard
 	frame = function's stack frame size

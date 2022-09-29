@@ -520,6 +520,7 @@ func freedeferfn() {
 //
 // The single argument isn't actually used - it just has its address
 // taken so it can be matched against pending defers.
+// 注释：执行defer时调用此函数
 //go:nosplit
 func deferreturn(arg0 uintptr) {
 	gp := getg()

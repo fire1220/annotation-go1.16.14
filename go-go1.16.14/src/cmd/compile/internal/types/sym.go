@@ -25,6 +25,7 @@ import (
 //
 // NOTE: In practice, things can be messier than the description above
 // for various reasons (historical, convenience).
+// 注释：含了函数名和包名的Sym类型
 type Sym struct {
 	Importdef *Pkg   // where imported definition was found
 	Linkname  string // link name

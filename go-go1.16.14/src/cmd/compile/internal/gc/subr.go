@@ -1656,7 +1656,8 @@ func ifacelookdot(s *types.Sym, t *types.Type, ignorecase bool) (m *types.Field,
 	return m, followptr
 }
 
-// 注释：在编译时，查找类型是否实现了接口的逻辑
+// 注释：在编译时，查找类型是否实现了接口的逻辑，编译时会将含了函数名和包名的Sym类型进行排序
+// 注释：因为Go语言根据函数名和包名可以唯一确定命名空间中的函数，所以排序后的结果是唯一的。
 // 注释：判断结构体是否实现接口
 func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
 	t0 := t

@@ -28,14 +28,16 @@ const (
 // ../cmd/compile/internal/gc/reflect.go:/^func.dcommontype and
 // ../reflect/type.go:/^type.rtype.
 // ../internal/reflectlite/type.go:/^type.rtype.
+// 注释：go语言的所有类型都是在这个类型的基础通过加上额为的字段来管理的
+// 注释：_type包含了类型的大小、哈希、标志、偏移量等元数据。
 type _type struct {
-	size       uintptr
+	size       uintptr // 注释：类型大小
 	ptrdata    uintptr // size of memory prefix holding all pointers
-	hash       uint32
-	tflag      tflag
+	hash       uint32  // 注释：哈希
+	tflag      tflag   // 注释：标识
 	align      uint8
 	fieldAlign uint8
-	kind       uint8
+	kind       uint8   // 注释：基础类型
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
 	equal func(unsafe.Pointer, unsafe.Pointer) bool
@@ -358,15 +360,17 @@ type uncommontype struct {
 	_       uint32 // unused
 }
 
+// 注释：接口中暴露的方法在最终可执行文件中的名字和类型的偏移量
 type imethod struct {
-	name nameOff
-	ityp typeOff
+	name nameOff  // 注释：名字
+	ityp typeOff  // 注释：偏移量
 }
 
+// 注释：接口本身的类型
 type interfacetype struct {
 	typ     _type
-	pkgpath name
-	mhdr    []imethod
+	pkgpath name // 注释：接口所在的包名
+	mhdr    []imethod  // 注释：接口中暴露的方法在最终可执行文件中的名字和类型的偏移量
 }
 
 // 注释：maptype对象记键值对和桶的大小等必要信息
@@ -415,9 +419,10 @@ type chantype struct {
 	dir  uintptr
 }
 
+// 注释：切片类型
 type slicetype struct {
-	typ  _type
-	elem *_type
+	typ  _type   // 注释：切片的基础类型
+	elem *_type  // 注释：切片元素的首指针
 }
 
 type functype struct {
@@ -441,10 +446,11 @@ func (f *structfield) offset() uintptr {
 	return f.offsetAnon >> 1
 }
 
+// 注释：结构体类型
 type structtype struct {
-	typ     _type
-	pkgPath name
-	fields  []structfield
+	typ     _type         // 注释：结构体数据的基础类型
+	pkgPath name          // 注释：结构体的包路径
+	fields  []structfield // 注释：结构体的字段
 }
 
 // name is an encoded type name with optional extra data.

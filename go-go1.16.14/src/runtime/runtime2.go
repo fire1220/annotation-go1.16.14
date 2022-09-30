@@ -202,7 +202,7 @@ type funcval struct {
 
 // 注释：带方法签名的接口在运行时的具体接头体
 type iface struct {
-	tab  *itab // 注释：存储了接口的类型、接口中的动态数据类型、动态数据类型的函数指针等
+	tab  *itab          // 注释：存储了接口的类型、接口中的动态数据类型、动态数据类型的函数指针等
 	data unsafe.Pointer // 注释：动态类型的函数指针
 }
 
@@ -852,12 +852,16 @@ type funcinl struct {
 // allocated in non-garbage-collected memory
 // Needs to be in sync with
 // ../cmd/compile/internal/gc/reflect.go:/^func.dumptabs.
+// 注释：接口的核心结构
 type itab struct {
 	inter *interfacetype // 注释：接口本身的类型
-	_type *_type // 注释：接口存储的动态类型
-	hash  uint32 // copy of _type.hash. Used for type switches.
-	_     [4]byte
-	fun   [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
+	_type *_type         // 注释：接口存储的动态类型（具体类型）
+	// 注释：哈希是动态类型的唯一标识,它是_type类型中hash的副本
+	// 注释：哈希在接口类型断言时，可以使用该字段快速判断接口动态类型与具体类型_type是否一致
+	hash uint32  // copy of _type.hash. Used for type switches.
+	_    [4]byte // 注释：4字节用来内存对齐
+	// 注释：接口动态类型中的函数指针列表
+	fun [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
 }
 
 // Lock-free stack node.

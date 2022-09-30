@@ -860,7 +860,8 @@ type itab struct {
 	// 注释：哈希在接口类型断言时，可以使用该字段快速判断接口动态类型与具体类型_type是否一致
 	hash uint32  // copy of _type.hash. Used for type switches.
 	_    [4]byte // 注释：4字节用来内存对齐
-	// 注释：接口动态类型中的函数指针列表
+	// 注释：接口动态类型中的函数指针列表，用户运行时接口调用动态函数，这里虽然在运行时只定义了大小为1的数组[1]uintptr，但是其存储的是函数首地址的指针。
+	// 注释：当有多个函数时，其指针会依次在下方进行存储。在运行时，可以通过首地址+偏移找到任意的函数指针。
 	fun [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
 }
 

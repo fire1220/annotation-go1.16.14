@@ -1656,6 +1656,7 @@ func ifacelookdot(s *types.Sym, t *types.Type, ignorecase bool) (m *types.Field,
 	return m, followptr
 }
 
+// 注释：在编译时，查找类型是否实现了接口的逻辑
 func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
 	t0 := t
 	if t == nil {

@@ -18,8 +18,10 @@ type Node struct{ _ int }
 //go:generate stringer -type EType -trimprefix T
 
 // EType describes a kind of type.
+// 注释：描述基础类型
 type EType uint8
 
+// 注释：基础类型的常量
 const (
 	Txxx EType = iota
 
@@ -153,7 +155,7 @@ type Type struct {
 	Sym    *Sym  // symbol containing name, for named types
 	Vargen int32 // unique name for OTYPE/ONAME
 
-	Etype EType // kind of type
+	Etype EType // kind of type // 注释：基础类型
 	Align uint8 // the required alignment of this type, in bytes (0 means Width and Align have not yet been computed)
 
 	flags bitset8

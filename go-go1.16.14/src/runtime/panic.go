@@ -508,7 +508,7 @@ func freedeferfn() {
 // Run a deferred function if there is one.
 // The compiler inserts a call to this at the end of any
 // function which calls defer.
-// If there is a deferred function, this will call runtime·jmpdefer,
+// If there is a deferred function, this will call runtime·jmpdefer, // 注释：如果存在延迟函数defer，则将调用汇编函数：TEXT runtime·jmpdefer(SB)
 // which will jump to the deferred function such that it appears
 // to have been called by the caller of deferreturn at the point
 // just before deferreturn was called. The effect is that deferreturn

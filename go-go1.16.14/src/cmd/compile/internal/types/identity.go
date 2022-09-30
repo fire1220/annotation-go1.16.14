@@ -6,6 +6,7 @@ package types
 
 // Identical reports whether t1 and t2 are identical types, following
 // the spec rules. Receiver parameter types are ignored.
+// 注释： Identical根据规范规则报告t1和t2是否为相同类型。接收器参数类型被忽略。
 func Identical(t1, t2 *Type) bool {
 	return identical(t1, t2, true, nil)
 }

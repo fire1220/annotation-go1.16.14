@@ -351,13 +351,14 @@ type Slice struct {
 
 // A Field represents a field in a struct or a method in an interface or
 // associated with a named type.
+// 注释：Field表示结构中的字段或接口中的方法或与命名类型关联的字段。
 type Field struct {
 	flags bitset8
 
 	Embedded uint8 // embedded field
 
 	Pos  src.XPos
-	Sym  *Sym
+	Sym  *Sym // 注释：包含命名空间和名称等信息
 	Type *Type  // field type
 	Note string // literal string annotation
 

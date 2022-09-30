@@ -1656,22 +1656,25 @@ func ifacelookdot(s *types.Sym, t *types.Type, ignorecase bool) (m *types.Field,
 	return m, followptr
 }
 
-// 注释：在编译时，查找类型是否实现了接口的逻辑
+// 注释：在编译时，查找类型是否实现了接口的逻辑,如果没有实现接口，则报错
 func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
 	t0 := t
 	if t == nil {
 		return false
 	}
 
+	// 注释：判断是否是接口类型
 	if t.IsInterface() {
-		i := 0
+		i := 0                    // 注释：结构体对象方法的下标
 		tms := t.Fields().Slice() // 注释：结构体绑定的方法列表（编译时已经排序了）
-		// 注释：遍历接口里的方法名称列表（默认是排好序的，在编译器时做的排序）
+		// 注释：遍历接口里的所有方法属性列表（默认是排好序的，在编译器时做的排序）
 		for _, im := range iface.Fields().Slice() {
-			// 注释：循环结构体方法列表，判断方法名称是否相等，如果不等，位置偏移
+			// 注释：如果接头体下标小于接头体对象方法的总数并且对应i的方法命名（命名空间+方法名称）不等于接口对应的方法名称时小标自增
 			for i < len(tms) && tms[i].Sym != im.Sym {
 				i++
 			}
+			// 注释：当i等于结构体对象的方法总数时，说明已经把结构体里的方法全部遍历完成了，并且不在接口里
+			// 注释：没有在接口里找到对应的方法
 			if i == len(tms) {
 				*m = im
 				*samename = nil
@@ -1679,6 +1682,7 @@ func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool 
 				return false
 			}
 			tm := tms[i]
+			// 注释：判断结构体方法和接口里的方法的类型是否相等,如果不等则返回false
 			if !types.Identical(tm.Type, im.Type) {
 				*m = im
 				*samename = tm

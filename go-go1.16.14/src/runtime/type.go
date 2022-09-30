@@ -37,7 +37,7 @@ type _type struct {
 	tflag      tflag   // 注释：标识
 	align      uint8
 	fieldAlign uint8
-	kind       uint8   // 注释：基础类型
+	kind       uint8 // 注释：基础类型
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
 	equal func(unsafe.Pointer, unsafe.Pointer) bool
@@ -184,6 +184,7 @@ func reflectOffsUnlock() {
 	unlock(&reflectOffs.lock)
 }
 
+// 注释：通过imethod.ityp偏移量快速查找方法名称
 func resolveNameOff(ptrInModule unsafe.Pointer, off nameOff) name {
 	if off == 0 {
 		return name{}
@@ -218,6 +219,7 @@ func (t *_type) nameOff(off nameOff) name {
 	return resolveNameOff(unsafe.Pointer(t), off)
 }
 
+// 注释：通过imethod.ityp偏移量快速查找方法类型
 func resolveTypeOff(ptrInModule unsafe.Pointer, off typeOff) *_type {
 	if off == 0 || off == -1 {
 		// -1 is the sentinel value for unreachable code.
@@ -362,15 +364,15 @@ type uncommontype struct {
 
 // 注释：接口中暴露的方法在最终可执行文件中的名字和类型的偏移量
 type imethod struct {
-	name nameOff  // 注释：名字
-	ityp typeOff  // 注释：偏移量
+	name nameOff // 注释：名字
+	ityp typeOff // 注释：类型的偏移量
 }
 
 // 注释：接口本身的类型
 type interfacetype struct {
 	typ     _type
-	pkgpath name // 注释：接口所在的包名
-	mhdr    []imethod  // 注释：接口中暴露的方法在最终可执行文件中的名字和类型的偏移量
+	pkgpath name      // 注释：接口所在的包名
+	mhdr    []imethod // 注释：接口中暴露的方法在最终可执行文件中的名字和类型的偏移量
 }
 
 // 注释：maptype对象记键值对和桶的大小等必要信息
@@ -421,8 +423,8 @@ type chantype struct {
 
 // 注释：切片类型
 type slicetype struct {
-	typ  _type   // 注释：切片的基础类型
-	elem *_type  // 注释：切片元素的首指针
+	typ  _type  // 注释：切片的基础类型
+	elem *_type // 注释：切片元素的首指针
 }
 
 type functype struct {

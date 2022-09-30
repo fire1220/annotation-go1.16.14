@@ -1665,8 +1665,10 @@ func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool 
 
 	if t.IsInterface() {
 		i := 0
-		tms := t.Fields().Slice()
+		tms := t.Fields().Slice() // 注释：结构体绑定的方法列表（编译时已经排序了）
+		// 注释：遍历接口里的方法名称列表（默认是排好序的，在编译器时做的排序）
 		for _, im := range iface.Fields().Slice() {
+			// 注释：循环结构体方法列表，判断方法名称是否相等，如果不等，位置偏移
 			for i < len(tms) && tms[i].Sym != im.Sym {
 				i++
 			}

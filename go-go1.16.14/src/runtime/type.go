@@ -34,7 +34,7 @@ type _type struct {
 	size       uintptr // 注释：类型大小
 	ptrdata    uintptr // size of memory prefix holding all pointers
 	hash       uint32  // 注释：哈希是动态类型的唯一标识
-	tflag      tflag   // 注释：标识
+	tflag      tflag   // 注释：标志
 	align      uint8
 	fieldAlign uint8
 	kind       uint8 // 注释：基础类型

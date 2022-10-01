@@ -184,7 +184,7 @@ func reflectOffsUnlock() {
 	unlock(&reflectOffs.lock)
 }
 
-// 注释：通过imethod.ityp偏移量快速查找方法名称
+// 注释：通过imethod.ityp和偏移量快速查找方法名称
 func resolveNameOff(ptrInModule unsafe.Pointer, off nameOff) name {
 	if off == 0 {
 		return name{}

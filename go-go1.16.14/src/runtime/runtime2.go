@@ -206,6 +206,7 @@ type iface struct {
 	data unsafe.Pointer // 注释：动态类型的函数指针
 }
 
+// 注释：空接口的接头体(empyt interface)
 type eface struct {
 	_type *_type
 	data  unsafe.Pointer

@@ -1247,6 +1247,7 @@ func mstart() {
 	_g_ := getg()
 
 	osStack := _g_.stack.lo == 0
+	// 注释：判断栈低地址是否有值
 	if osStack {
 		// Initialize stack bounds from system stack.
 		// Cgo may have left stack size in stack.hi.

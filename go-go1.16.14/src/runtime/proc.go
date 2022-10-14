@@ -5752,6 +5752,7 @@ func pidleput(_p_ *p) {
 // sched.lock must be held.
 //
 // May run during STW, so write barriers are not allowed.
+// 注释：从空闲p里获取p
 //go:nowritebarrierrec
 func pidleget() *p {
 	assertLockHeld(&sched.lock)
@@ -5759,10 +5760,10 @@ func pidleget() *p {
 	_p_ := sched.pidle.ptr() // 注释：从调度器里的空p链表里获取一个p
 	if _p_ != nil {
 		// Timer may get added at any time now.
-		timerpMask.set(_p_.id)
-		idlepMask.clear(_p_.id)
+		timerpMask.set(_p_.id)         // 注释：相当于索引，启用的标记。设置启用的p的自增ID
+		idlepMask.clear(_p_.id)        // 注释：相当于索引，空闲的标记。设置移除启用的p的自增ID
 		sched.pidle = _p_.link         // 注释：链表移除一个，设置链表的头
-		atomic.Xadd(&sched.npidle, -1) // TODO: fast atomic
+		atomic.Xadd(&sched.npidle, -1) // TODO: fast atomic // 注释：原子操作，加法（空闲p减1）
 	}
 	return _p_
 }

@@ -495,8 +495,9 @@ type g struct {
 	gcAssistBytes int64 // 注释：与GC相关
 }
 
+// 注释：m结构体用来代表工作线程，它保存了m自身使用的栈信息，当前正在运行的goroutine以及与m绑定的p等信息
 type m struct {
-	g0      *g     // goroutine with scheduling stack
+	g0      *g     // goroutine with scheduling stack // 注释：g0主要用来记录工作线程m使用的栈信息，在执行调度代码时需要使用这个栈，执行用户g代码时，使用用户g自己的栈，调度时会发生栈的切换
 	morebuf gobuf  // gobuf arg to morestack
 	divmod  uint32 // div/mod denominator for arm - known to liblink
 
@@ -505,11 +506,11 @@ type m struct {
 	gsignal       *g           // signal-handling g
 	goSigStack    gsignalStack // Go-allocated signal handling stack
 	sigmask       sigset       // storage for saved signal mask
-	tls           [6]uintptr   // thread-local storage (for x86 extern register)
+	tls           [6]uintptr   // thread-local storage (for x86 extern register) // 注释：通过TLS实现m结构体对象与工作线程之间的绑定
 	mstartfn      func()
-	curg          *g       // current running goroutine
+	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的goroutine的g结构体对象
 	caughtsig     guintptr // goroutine running during fatal signal
-	p             puintptr // attached p for executing go code (nil if not executing go code)
+	p             puintptr // attached p for executing go code (nil if not executing go code) // 注释：记录与当前工作线程绑定的p结构体对象
 	nextp         puintptr
 	oldp          puintptr // the p that was attached before executing a syscall
 	id            int64
@@ -519,7 +520,7 @@ type m struct {
 	locks         int32
 	dying         int32
 	profilehz     int32
-	spinning      bool // m is out of work and is actively looking for work
+	spinning      bool // m is out of work and is actively looking for work // 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g
 	blocked       bool // m is blocked on a note
 	newSigstack   bool // minit on C thread called sigaltstack
 	printlock     int8
@@ -533,9 +534,9 @@ type m struct {
 	cgoCallersUse uint32      // if non-zero, cgoCallers in use temporarily
 	cgoCallers    *cgoCallers // cgo traceback if crashing in cgo call
 	doesPark      bool        // non-P running threads: sysmon and newmHandoff never use .park
-	park          note
-	alllink       *m // on allm
-	schedlink     muintptr
+	park          note        // 注释：没有g需要运行时，工作线程睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
+	alllink       *m          // on allm // 注释：记录所有工作线程m的一个链表
+	schedlink     muintptr    // 注释：空闲的m链表（由midle指向）
 	lockedg       guintptr
 	createstack   [32]uintptr // stack that created this thread.
 	lockedExt     uint32      // tracking for external LockOSThread
@@ -588,6 +589,7 @@ type m struct {
 	locksHeld    [10]heldLockInfo
 }
 
+// 注释：p结构体用于保存工作线程m执行go代码时所必需的资源，比如goroutine的运行队列，内存分配用到的缓存等等
 type p struct {
 	id          int32
 	status      uint32 // one of pidle/prunning/...
@@ -608,9 +610,10 @@ type p struct {
 	goidcacheend uint64
 
 	// Queue of runnable goroutines. Accessed without lock.
-	runqhead uint32
-	runqtail uint32
-	runq     [256]guintptr
+	// 注释：本地goroutine运行队列
+	runqhead uint32        // 注释：队列头
+	runqtail uint32        // 注释：队列尾
+	runq     [256]guintptr // 注释：使用数组实现的循环队列
 	// runnext, if non-nil, is a runnable G that was ready'd by
 	// the current G and should be run next instead of what's in
 	// runq if there's time remaining in the running G's time
@@ -725,6 +728,7 @@ type p struct {
 	pad cpu.CacheLinePad
 }
 
+// 注释：schedt结构体用来保存调度器的状态信息和goroutine的全局运行队列：
 type schedt struct {
 	// accessed atomically. keep at top to ensure alignment on 32-bit systems.
 	goidgen   uint64
@@ -736,22 +740,22 @@ type schedt struct {
 	// When increasing nmidle, nmidlelocked, nmsys, or nmfreed, be
 	// sure to call checkdead().
 
-	midle        muintptr // idle m's waiting for work
-	nmidle       int32    // number of idle m's waiting for work
+	midle        muintptr // idle m's waiting for work // 注释：由空闲的工作线程m组成链表midle->m.schedlink
+	nmidle       int32    // number of idle m's waiting for work // 注释：空闲的工作线程m的数量
 	nmidlelocked int32    // number of locked m's waiting for work
 	mnext        int64    // number of m's that have been created and next M ID
-	maxmcount    int32    // maximum number of m's allowed (or die)
+	maxmcount    int32    // maximum number of m's allowed (or die) // 注释：最多只能创建maxmcount个工作线程m
 	nmsys        int32    // number of system m's not counted for deadlock
 	nmfreed      int64    // cumulative number of freed m's
 
 	ngsys uint32 // number of system goroutines; updated atomically
 
-	pidle      puintptr // idle p's
-	npidle     uint32
-	nmspinning uint32 // See "Worker thread parking/unparking" comment in proc.go.
+	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表
+	npidle     uint32   // 注释：空闲的p结构体对象的数量
+	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go.
 
 	// Global runnable queue.
-	runq     gQueue
+	runq     gQueue // 注释：g全局运行队列
 	runqsize int32
 
 	// disable controls selective disabling of the scheduler.
@@ -767,6 +771,7 @@ type schedt struct {
 	}
 
 	// Global cache of dead G's.
+	// 注释：gFree是所有已经退出的goroutine对应的g结构体对象组成的链表，用于缓存g结构体对象，避免每次创建goroutine时都重新分配内存
 	gFree struct {
 		lock    mutex
 		stack   gList // Gs with stacks

@@ -2465,8 +2465,8 @@ func handoffp(_p_ *p) {
 	}
 }
 
-// Tries to add one more P to execute G's.
-// Called when a G is made runnable (newproc, ready).
+// Tries to add one more P to execute G's.            // 注释：尝试再添加一个P以执行G。
+// Called when a G is made runnable (newproc, ready). // 注释：当G可以运行时调用（newproc，ready）。
 func wakep() {
 	if atomic.Load(&sched.npidle) == 0 {
 		return

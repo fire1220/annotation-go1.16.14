@@ -312,7 +312,7 @@ func setMNoWB(mp **m, new *m) {
 	(*muintptr)(unsafe.Pointer(mp)).set(new)
 }
 
-// 注释：协成执行现场存储在g.gobuf结构体（协成切换时保存寄存器数据）
+// 注释：协成执行现场存储在g.gobuf结构体（协成切换时保存寄存器数据）(保存g的调度信息)
 type gobuf struct {
 	// The offsets of sp, pc, and g are known to (hard-coded in) libmach.
 	// 注释：寄存器 sp, pc 和 g 的偏移量，硬编码在 libmach
@@ -328,13 +328,13 @@ type gobuf struct {
 	// write barriers.
 	// 注释：调度器在将G由一种状态变更为另一种状态时，需要将上下文信息保存到这个gobuf结构体，当再次运行G的时候，再从这个结构体中读取出来，它主要用来暂存上下文信息。
 	// 注释：其中的栈指针 sp 和程序计数器 pc 会用来存储或者恢复寄存器中的值，设置即将执行的代码
-	sp   uintptr        // 注释：sp 栈指针位置
-	pc   uintptr        // 注释：pc 程序计数器，运行到的程序位置（指向下一个需要执行的地址）
-	g    guintptr       // 注释：当前gobuf的G
+	sp   uintptr        // 注释：sp栈指针位置(保存CPU的rsp寄存器的值)
+	pc   uintptr        // 注释：pc程序计数器，运行到的程序位置（指向下一个需要执行的地址）(保存CPU的rip寄存器的值)
+	g    guintptr       // 注释：当前gobuf的g(记录当前这个gobuf对象属于哪个g)
 	ctxt unsafe.Pointer // 注释：ctxt不常见，可能是一个分配在heap的函数变量，因此GC需要追踪它，不过它有可能需要设置并进行清除，在有写屏障的时候有些困难
-	ret  sys.Uintreg    // 注释：系统调用的结果
+	ret  sys.Uintreg    // 注释：系统调用的结果(保存系统调用的返回值，因为从系统调用返回之后如果p被其它工作线程抢占，则这个g会被放入全局运行队列被其它工作线程调度，其它线程需要知道系统调用的返回值)
 	lr   uintptr
-	bp   uintptr // for framepointer-enabled architectures
+	bp   uintptr // for framepointer-enabled architectures // 注释：(保存CPU的rip寄存器的值)
 }
 
 // sudog represents a g in a wait list, such as for sending/receiving
@@ -407,6 +407,7 @@ type heldLockInfo struct {
 	rank     lockRank
 }
 
+// g结构体用于代表一个goroutine，该结构体保存了goroutine的所有信息，包括栈，gobuf结构体和其它的一些状态信息
 type g struct {
 	// Stack parameters.
 	// stack describes the actual stack memory: [stack.lo, stack.hi).
@@ -415,18 +416,19 @@ type g struct {
 	// stackguard1 is the stack pointer compared in the C stack growth prologue.
 	// It is stack.lo+StackGuard on g0 and gsignal stacks.
 	// It is ~0 on other goroutine stacks, to trigger a call to morestackc (and crash).
-	stack stack // offset known to runtime/cgo // 注释：G的函数调用栈的边界
+	stack stack // offset known to runtime/cgo // 注释：G的函数调用栈的边界(记录该g使用的栈)
 	// 注释：在g结构体中的stackguard0 字段是出现爆栈前的警戒线，通常值是stack.lo+StackGuard也可以存StackPreempt触发抢占。
 	// 注释：stackguard0 的偏移量是16个字节，与当前的真实SP(stack pointer)和爆栈警戒线（stack.lo+StackGuard）比较，如果超出警戒线则表示需要进行栈扩容。
 	// 注释：先调用runtime·morestack_noctxt()进行栈扩容，然后又跳回到函数的开始位置，此时函数的栈已经调整了。
 	// 注释：然后再进行一次栈大小的检测，如果依然不足则继续扩容，直到栈足够大为止。
+	// 注释：下面两个成员用于栈溢出检查，实现栈的自动伸缩，抢占调度也会用到stackguard0
 	stackguard0 uintptr // offset known to liblink // 注释：Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求
 	stackguard1 uintptr // offset known to liblink // 注释：C 代码检查栈空间低于这个值会扩张。
 
 	_panic       *_panic        // innermost panic - offset known to liblink // 注释：当前G的panic的数据指针
 	_defer       *_defer        // innermost defer                           // 注释：当前G的延迟调用的数据指针
-	m            *m             // current m; offset known to arm liblink    // 注释：当前G绑定的M指针(每个G都可以最多绑定一个M，如果可能未绑定，则值为nil)
-	sched        gobuf          // 注释：协成执行现场数据，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据，存储当前G调度相关的数据
+	m            *m             // current m; offset known to arm liblink    // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行）
+	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据，存储当前G调度相关的数据
 	syscallsp    uintptr        // if status==Gsyscall, syscallsp = sched.sp to use during gc // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间
 	syscallpc    uintptr        // if status==Gsyscall, syscallpc = sched.pc to use during gc // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间
 	stktopsp     uintptr        // expected sp at top of stack, to check in traceback         // 注释：用于回源跟踪
@@ -434,9 +436,9 @@ type g struct {
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
 	stackLock    uint32         // sigprof/scang lock; TODO: fold in to atomicstatus          // 注释：栈锁
 	goid         int64          // 注释：当前G的唯一标识，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
-	schedlink    guintptr
-	waitsince    int64      // approx time when the g become blocked // 注释：G阻塞时长
-	waitreason   waitReason // if status==Gwaiting                   // 注释：阻塞原因
+	schedlink    guintptr       // 注释：指向全局运行队列中的下一个g（所有位于全局运行队列中的g形成一个链表）
+	waitsince    int64          // approx time when the g become blocked // 注释：G阻塞时长
+	waitreason   waitReason     // if status==Gwaiting                   // 注释：阻塞原因
 	// 注释：每个G都有三个与抢占有关的字段，分别为preempt、preemptStop和premptShrink
 	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt // 注释：抢占标记，其值为 true 执行 stackguard0 = stackpreempt。
 	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule // 注释：将抢占标记修改为_Gpreedmpted，如果修改失败则取消

@@ -436,7 +436,7 @@ type g struct {
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
 	stackLock    uint32         // sigprof/scang lock; TODO: fold in to atomicstatus          // 注释：栈锁
 	goid         int64          // 注释：当前G的唯一标识，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
-	schedlink    guintptr       // 注释：指向全局运行队列中的下一个g（所有位于全局运行队列中的g形成一个链表）
+	schedlink    guintptr       // 注释：指向全局运行队列中的下一个g（全局行队列中的g是个链表）
 	waitsince    int64          // approx time when the g become blocked // 注释：G阻塞时长
 	waitreason   waitReason     // if status==Gwaiting                   // 注释：阻塞原因
 	// 注释：每个G都有三个与抢占有关的字段，分别为preempt、preemptStop和premptShrink

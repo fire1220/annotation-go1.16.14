@@ -728,7 +728,8 @@ type p struct {
 	pad cpu.CacheLinePad
 }
 
-// 注释：schedt结构体用来保存调度器的状态信息和goroutine的全局运行队列：
+// 注释：调度器结构体对象，记录了调度器的工作状态
+// 注释：记录调度器的状态和g的全局运行队列：
 type schedt struct {
 	// accessed atomically. keep at top to ensure alignment on 32-bit systems.
 	goidgen   uint64
@@ -740,11 +741,11 @@ type schedt struct {
 	// When increasing nmidle, nmidlelocked, nmsys, or nmfreed, be
 	// sure to call checkdead().
 
-	midle        muintptr // idle m's waiting for work // 注释：由空闲的工作线程m组成链表midle->m.schedlink
-	nmidle       int32    // number of idle m's waiting for work // 注释：空闲的工作线程m的数量
+	midle        muintptr // idle m's waiting for work               // 注释：由空闲的工作线程m组成链表midle->m.schedlink
+	nmidle       int32    // number of idle m's waiting for work     // 注释：空闲的工作线程m的数量
 	nmidlelocked int32    // number of locked m's waiting for work
 	mnext        int64    // number of m's that have been created and next M ID
-	maxmcount    int32    // maximum number of m's allowed (or die) // 注释：最多只能创建maxmcount个工作线程m
+	maxmcount    int32    // maximum number of m's allowed (or die)  // 注释：最多只能创建maxmcount个工作线程m
 	nmsys        int32    // number of system m's not counted for deadlock
 	nmfreed      int64    // cumulative number of freed m's
 

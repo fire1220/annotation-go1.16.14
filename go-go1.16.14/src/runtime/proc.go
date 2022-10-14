@@ -2344,10 +2344,11 @@ func startm(_p_ *p, spinning bool) {
 	// startm. Callers passing a nil P may be preemptible, so we must
 	// disable preemption before acquiring a P from pidleget below.
 	// 注释：传递非nil P的调用方必须已经在非抢占上下文中，否则这种抢占可能发生在startm的函数入口。传递nil P的调用方可能是可抢占的，因此我们必须在从下面的pidleget获取P之前禁用抢占
-	mp := acquirem() // 注释：获取当前g
-	lock(&sched.lock)
+	mp := acquirem()  // 注释：获取当前g
+	lock(&sched.lock) // 注释：调度器加锁
+	// 注释：如果没有找到当前工作的g
 	if _p_ == nil {
-		_p_ = pidleget()
+		_p_ = pidleget() // 注释：到空闲p里获取一个p
 		if _p_ == nil {
 			unlock(&sched.lock)
 			if spinning {

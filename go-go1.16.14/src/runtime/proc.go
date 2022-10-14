@@ -5669,18 +5669,20 @@ func (p pMask) read(id uint32) bool {
 	return (atomic.Load(&p[word]) & mask) != 0
 }
 
+// 注释：p[]里有32个标识位(每32为一段，分组g的自增ID)
 // set sets P id's bit.
 func (p pMask) set(id int32) {
-	word := id / 32
-	mask := uint32(1) << (id % 32)
-	atomic.Or(&p[word], mask)
+	word := id / 32                // 注释：高位
+	mask := uint32(1) << (id % 32) // 注释：低位
+	atomic.Or(&p[word], mask)      // 注释：原子操作：按位或运算
 }
 
+// 注释：p[]里有32个标识位(每32为一段，分组g的自增ID)
 // clear clears P id's bit.
 func (p pMask) clear(id int32) {
-	word := id / 32
-	mask := uint32(1) << (id % 32)
-	atomic.And(&p[word], ^mask)
+	word := id / 32                // 注释：高位
+	mask := uint32(1) << (id % 32) // 注释：低位
+	atomic.And(&p[word], ^mask)    // 注释：原子操作，清空位运算
 }
 
 // updateTimerPMask clears pp's timer mask if it has no timers on its heap.
@@ -5759,7 +5761,7 @@ func pidleget() *p {
 		// Timer may get added at any time now.
 		timerpMask.set(_p_.id)
 		idlepMask.clear(_p_.id)
-		sched.pidle = _p_.link
+		sched.pidle = _p_.link         // 注释：链表移除一个，设置链表的头
 		atomic.Xadd(&sched.npidle, -1) // TODO: fast atomic
 	}
 	return _p_

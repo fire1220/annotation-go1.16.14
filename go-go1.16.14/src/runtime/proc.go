@@ -2310,15 +2310,20 @@ func mspinning() {
 }
 
 // Schedules some M to run the p (creates an M if necessary).
+// 注释：安排一些M来运行p（如果需要，创建一个M）。
 // If p==nil, tries to get an idle P, if no idle P's does nothing.
+// 注释：如果p==nil，则尝试获取空闲p，如果没有空闲p则什么也不做。
 // May run with m.p==nil, so write barriers are not allowed.
+// 注释：可能以m.p==nil运行，因此不允许写入障碍。
 // If spinning is set, the caller has incremented nmspinning and startm will
 // either decrement nmspinning or set m.spinning in the newly started M.
-//
+// 注释：如果设置了spinning，调用者将增加nmspinning，startm将减少nmspinning或在新启动的m中设置m.spinning。
 // Callers passing a non-nil P must call from a non-preemptible context. See
+// 注释：传递非nil P的调用方必须从非抢占上下文调用。看见
 // comment on acquirem below.
-//
+// 注释：下面是对收购的评论。
 // Must not have write barriers because this may be called without a P.
+// 注释：不能有写障碍，因为这可能在没有P的情况下调用。
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	// Disable preemption.

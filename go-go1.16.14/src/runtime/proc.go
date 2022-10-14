@@ -497,7 +497,7 @@ var (
 	// Readers that cannot take the lock may (carefully!) use the atomic
 	// variables below.
 	allglock mutex
-	allgs    []*g
+	allgs    []*g // 注释：保存所有的g
 
 	// allglen and allgptr are atomic variables that contain len(allg) and
 	// &allg[0] respectively. Proper ordering depends on totally-ordered
@@ -2344,7 +2344,7 @@ func startm(_p_ *p, spinning bool) {
 	// startm. Callers passing a nil P may be preemptible, so we must
 	// disable preemption before acquiring a P from pidleget below.
 	// 注释：传递非nil P的调用方必须已经在非抢占上下文中，否则这种抢占可能发生在startm的函数入口。传递nil P的调用方可能是可抢占的，因此我们必须在从下面的pidleget获取P之前禁用抢占
-	mp := acquirem()
+	mp := acquirem() // 注释：获取当前g
 	lock(&sched.lock)
 	if _p_ == nil {
 		_p_ = pidleget()

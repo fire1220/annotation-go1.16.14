@@ -517,7 +517,7 @@ type m struct {
 	mallocing     int32
 	throwing      int32
 	preemptoff    string // if != "", keep curg running on this m
-	locks         int32
+	locks         int32  // 注释：大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
 	spinning      bool // m is out of work and is actively looking for work // 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g
@@ -1071,11 +1071,12 @@ func (w waitReason) String() string {
 }
 
 var (
-	allm       *m
-	gomaxprocs int32
-	ncpu       int32
+	// 注释：全局变量
+	allm       *m    // 注释：所有的m构成的一个链表，包括下面的m0
+	gomaxprocs int32 // 注释：p的最大值，默认等于ncpu，但可以通过GOMAXPROCS修改
+	ncpu       int32 // 注释：系统中cpu核的数量，程序启动时由runtime代码初始化
 	forcegc    forcegcstate
-	sched      schedt
+	sched      schedt // 注释：调度器结构体对象，记录了调度器的工作状态
 	newprocs   int32
 
 	// allpLock protects P-less reads and size changes of allp, idlepMask,
@@ -1083,7 +1084,7 @@ var (
 	allpLock mutex
 	// len(allp) == gomaxprocs; may change at safe points, otherwise
 	// immutable.
-	allp []*p
+	allp []*p // 注释：保存所有的p，len(allp) == gomaxprocs
 	// Bitmask of Ps in _Pidle list, one bit per P. Reads and writes must
 	// be atomic. Length may change at safe points.
 	//

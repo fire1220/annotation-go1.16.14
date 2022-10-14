@@ -5754,7 +5754,7 @@ func pidleput(_p_ *p) {
 func pidleget() *p {
 	assertLockHeld(&sched.lock)
 
-	_p_ := sched.pidle.ptr()
+	_p_ := sched.pidle.ptr() // 注释：从调度器里的空p链表里获取一个p
 	if _p_ != nil {
 		// Timer may get added at any time now.
 		timerpMask.set(_p_.id)

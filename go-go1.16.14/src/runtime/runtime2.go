@@ -312,7 +312,7 @@ func setMNoWB(mp **m, new *m) {
 	(*muintptr)(unsafe.Pointer(mp)).set(new)
 }
 
-// 注释：协成执行现场存储在g.gobuf结构体（协成切换时保存寄存器数据）(保存g的调度信息)
+// 注释：协程执行现场存储在g.gobuf结构体（协成切换时保存寄存器数据）(保存g的调度信息)
 type gobuf struct {
 	// The offsets of sp, pc, and g are known to (hard-coded in) libmach.
 	// 注释：寄存器 sp, pc 和 g 的偏移量，硬编码在 libmach
@@ -496,6 +496,7 @@ type g struct {
 }
 
 // 注释：m结构体用来代表工作线程，它保存了m自身使用的栈信息，当前正在运行的goroutine以及与m绑定的p等信息
+// 注释：m有3个链表分别是alllink,schedlink,freelink
 type m struct {
 	g0      *g     // goroutine with scheduling stack // 注释：g0主要用来记录工作线程m使用的栈信息，在执行调度代码时需要使用这个栈，执行用户g代码时，使用用户g自己的栈，调度时会发生栈的切换
 	morebuf gobuf  // gobuf arg to morestack
@@ -548,7 +549,7 @@ type m struct {
 	waittraceskip int
 	startingtrace bool
 	syscalltick   uint32
-	freelink      *m // on sched.freem
+	freelink      *m // on sched.freem // 注释：对应freem的链表(freelink->sched.freem)
 
 	// mFixup is used to synchronize OS related m state
 	// (credentials etc) use mutex to access. To avoid deadlocks
@@ -592,8 +593,8 @@ type m struct {
 // 注释：p结构体用于保存工作线程m执行go代码时所必需的资源，比如goroutine的运行队列，内存分配用到的缓存等等
 type p struct {
 	id          int32
-	status      uint32 // one of pidle/prunning/...
-	link        puintptr
+	status      uint32     // one of pidle/prunning/...
+	link        puintptr   // 注释：空闲p链表的下一个p指针
 	schedtick   uint32     // incremented on every scheduler call
 	syscalltick uint32     // incremented on every system call
 	sysmontick  sysmontick // last tick observed by sysmon

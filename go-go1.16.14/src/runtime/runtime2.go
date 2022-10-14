@@ -395,10 +395,10 @@ type libcall struct {
 // Stack describes a Go execution stack.
 // The bounds of the stack are exactly [lo, hi),
 // with no implicit data structures on either side.
-// 注释：g的函数调用栈边界结构体
+// 注释：g使用栈的起始和结束位置,g的函数调用栈边界结构体
 type stack struct {
-	lo uintptr // 注释：栈的低地址
-	hi uintptr // 注释：栈的高地址
+	lo uintptr // 注释：栈顶，指向内存低地址
+	hi uintptr // 注释：栈底，指向内存高地址
 }
 
 // heldLockInfo gives info on a held lock and the rank of that lock

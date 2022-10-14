@@ -3093,6 +3093,9 @@ func injectglist(glist *gList) {
 
 // One round of scheduler: find a runnable goroutine and execute it.
 // Never returns.
+// 注释：一轮调度程序：找到一个可运行的goroutine并执行它
+// 注释：永不返回
+// 注释：每一轮调度的开始方法
 func schedule() {
 	_g_ := getg()
 

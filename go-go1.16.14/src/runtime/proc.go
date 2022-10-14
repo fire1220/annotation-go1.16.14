@@ -2319,29 +2319,31 @@ func mspinning() {
 // either decrement nmspinning or set m.spinning in the newly started M.
 // 注释：如果设置了spinning，调用者将增加nmspinning，startm将减少nmspinning或在新启动的m中设置m.spinning。
 // Callers passing a non-nil P must call from a non-preemptible context. See
-// 注释：传递非nil P的调用方必须从非抢占上下文调用。看见
 // comment on acquirem below.
-// 注释：下面是对收购的评论。
+// 注释：传递非nil P的调用方必须从非抢占上下文调用。看见下面是对收购的评论。
 // Must not have write barriers because this may be called without a P.
 // 注释：不能有写障碍，因为这可能在没有P的情况下调用。
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	// Disable preemption.
-	//
+	// 注释：禁用抢占。
 	// Every owned P must have an owner that will eventually stop it in the
 	// event of a GC stop request. startm takes transient ownership of a P
 	// (either from argument or pidleget below) and transfers ownership to
 	// a started M, which will be responsible for performing the stop.
+	// 注释：每个拥有的P必须有一个所有者，在GC停止请求的情况下，该所有者最终会停止它。startm获取P的暂时所有权（来自参数或下面的pidleget），并将所有权转移到启动的M，后者将负责执行停止。
 	//
 	// Preemption must be disabled during this transient ownership,
 	// otherwise the P this is running on may enter GC stop while still
 	// holding the transient P, leaving that P in limbo and deadlocking the
 	// STW.
+	// 注释：在这个瞬态所有权期间，必须禁用抢占，否则正在运行的P可能会在保持瞬态P的同时进入GC停止，从而使该P处于不确定状态并死锁STW(stop the world)
 	//
 	// Callers passing a non-nil P must already be in non-preemptible
 	// context, otherwise such preemption could occur on function entry to
 	// startm. Callers passing a nil P may be preemptible, so we must
 	// disable preemption before acquiring a P from pidleget below.
+	// 注释：传递非nil P的调用方必须已经在非抢占上下文中，否则这种抢占可能发生在startm的函数入口。传递nil P的调用方可能是可抢占的，因此我们必须在从下面的pidleget获取P之前禁用抢占
 	mp := acquirem()
 	lock(&sched.lock)
 	if _p_ == nil {

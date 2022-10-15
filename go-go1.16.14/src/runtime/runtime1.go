@@ -463,20 +463,23 @@ func timediv(v int64, div int32, rem *int32) int32 {
 
 // Helpers for Go. Must be NOSPLIT, must only call NOSPLIT functions, and must not block.
 
+// 注释：获取当前运行的g
 //go:nosplit
 func acquirem() *m {
 	_g_ := getg() // 注释：获取当前运行的g
-	_g_.m.locks++ // 注释：加锁，说明这个g有被使用
+	_g_.m.locks++ // 注释：加锁（线程使用数加一），说明这个g有被使用
 	return _g_.m
 }
 
+// 注释：释放线程m
 //go:nosplit
 func releasem(mp *m) {
-	_g_ := getg()
-	mp.locks--
+	_g_ := getg() // 注释：获取当前运行的g
+	mp.locks--    // 注释：线程使用数减一
+	// 注释：如果当前线程已经被标记为使用，并且当前G发出了抢占请求时，标记抢占标记
 	if mp.locks == 0 && _g_.preempt {
 		// restore the preemption request in case we've cleared it in newstack
-		_g_.stackguard0 = stackPreempt
+		_g_.stackguard0 = stackPreempt // 注释：标记抢占标记
 	}
 }
 

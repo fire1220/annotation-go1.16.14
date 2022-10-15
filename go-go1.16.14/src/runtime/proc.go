@@ -2352,18 +2352,20 @@ func startm(_p_ *p, spinning bool) {
 		// 注释：如果没有找到p
 		if _p_ == nil {
 			unlock(&sched.lock) // 注释：解锁调度器
+			// 注释：如果线程m自旋中（线程m正在工作）
 			if spinning {
 				// The caller incremented nmspinning, but there are no idle Ps,
 				// so it's okay to just undo the increment and give up.
+				// 注释：自旋数减一
 				if int32(atomic.Xadd(&sched.nmspinning, -1)) < 0 {
 					throw("startm: negative nmspinning")
 				}
 			}
-			releasem(mp)
+			releasem(mp) // 注释：释放线程m
 			return
 		}
 	}
-	nmp := mget()
+	nmp := mget() // 注释：获取空闲的m
 	if nmp == nil {
 		// No M is available, we must drop sched.lock and call newm.
 		// However, we already own a P to assign to the M.
@@ -5584,14 +5586,15 @@ func mput(mp *m) {
 // Try to get an m from midle list.
 // sched.lock must be held.
 // May run during STW, so write barriers are not allowed.
+// 注释：获取空闲的m
 //go:nowritebarrierrec
 func mget() *m {
 	assertLockHeld(&sched.lock)
 
-	mp := sched.midle.ptr()
-	if mp != nil {
-		sched.midle = mp.schedlink
-		sched.nmidle--
+	mp := sched.midle.ptr() // 注释：到调度器中的空闲m链表中获取一个m
+	if mp != nil {          // 注释：如果拿到空闲的m
+		sched.midle = mp.schedlink // 注释：重置链表头，链表头向后移动（拿出链表的头）
+		sched.nmidle--             // 注释：空闲的m个数减一
 	}
 	return mp
 }

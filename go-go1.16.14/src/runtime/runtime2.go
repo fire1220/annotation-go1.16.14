@@ -754,7 +754,7 @@ type schedt struct {
 
 	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表
 	npidle     uint32   // 注释：空闲的p结构体对象的数量
-	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go.
+	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）
 
 	// Global runnable queue.
 	runq     gQueue // 注释：g全局运行队列

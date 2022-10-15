@@ -2348,9 +2348,10 @@ func startm(_p_ *p, spinning bool) {
 	lock(&sched.lock) // 注释：调度器加锁
 	// 注释：如果没有找到当前工作的g
 	if _p_ == nil {
-		_p_ = pidleget() // 注释：到空闲p里获取一个p
+		_p_ = pidleget() // 注释：到空闲p链表里获取一个p
+		// 注释：如果没有找到p
 		if _p_ == nil {
-			unlock(&sched.lock)
+			unlock(&sched.lock) // 注释：解锁调度器
 			if spinning {
 				// The caller incremented nmspinning, but there are no idle Ps,
 				// so it's okay to just undo the increment and give up.

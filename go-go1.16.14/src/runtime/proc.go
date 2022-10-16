@@ -2399,7 +2399,7 @@ func startm(_p_ *p, spinning bool) {
 		releasem(mp) // 注释：释放线程m
 		return
 	}
-	unlock(&sched.lock)
+	unlock(&sched.lock) // 注释：解锁调度器
 	if nmp.spinning {
 		throw("startm: m is spinning")
 	}
@@ -2415,7 +2415,7 @@ func startm(_p_ *p, spinning bool) {
 	notewakeup(&nmp.park)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
 	// safe.
-	releasem(mp)
+	releasem(mp) // 注释：释放线程m
 }
 
 // Hands off P from syscall or locked M.

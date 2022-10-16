@@ -2391,7 +2391,7 @@ func startm(_p_ *p, spinning bool) {
 			// The caller incremented nmspinning, so set m.spinning in the new M.
 			fn = mspinning // 注释：把试图发生抢占的标记函数绑定到m结构体的mstartfn上
 		}
-		newm(fn, _p_, id)
+		newm(fn, _p_, id) // 注释：新建m
 		// Ownership transfer of _p_ committed by start in newm.
 		// 注释：由newm中的start提交的_p_所有权转让。
 		// Preemption is now safe.

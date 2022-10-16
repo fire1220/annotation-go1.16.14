@@ -706,9 +706,11 @@ func checkmcount() {
 // considered 'running' by checkdead.
 //
 // sched.lock must be held.
+// 注释：获取新建m的主键ID
 func mReserveID() int64 {
 	assertLockHeld(&sched.lock)
 
+	// 注释：判断是否溢出
 	if sched.mnext+1 < sched.mnext {
 		throw("runtime: thread ID overflow")
 	}
@@ -2366,6 +2368,7 @@ func startm(_p_ *p, spinning bool) {
 		}
 	}
 	nmp := mget() // 注释：获取空闲的m
+	// 注释：如果没有找到空闲的m则需要创建一个新m
 	if nmp == nil {
 		// No M is available, we must drop sched.lock and call newm.
 		// However, we already own a P to assign to the M.
@@ -2379,18 +2382,21 @@ func startm(_p_ *p, spinning bool) {
 		// thus marking it as 'running' before we drop sched.lock. This
 		// new M will eventually run the scheduler to execute any
 		// queued G's.
-		id := mReserveID()
-		unlock(&sched.lock)
+		id := mReserveID()  // 注释：获取新建m的主键ID
+		unlock(&sched.lock) // 注释：解锁调度器
 
 		var fn func()
+		// 注释：判断是否试图抢占
 		if spinning {
 			// The caller incremented nmspinning, so set m.spinning in the new M.
-			fn = mspinning
+			fn = mspinning // 注释：把试图发生抢占的标记函数绑定到m结构体的mstartfn上
 		}
 		newm(fn, _p_, id)
 		// Ownership transfer of _p_ committed by start in newm.
+		// 注释：由newm中的start提交的_p_所有权转让。
 		// Preemption is now safe.
-		releasem(mp)
+		// 注释：抢占现在是安全的。
+		releasem(mp) // 注释：释放线程m
 		return
 	}
 	unlock(&sched.lock)

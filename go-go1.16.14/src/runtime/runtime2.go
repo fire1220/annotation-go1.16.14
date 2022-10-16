@@ -745,7 +745,7 @@ type schedt struct {
 	midle        muintptr // idle m's waiting for work               // 注释：由空闲的工作线程m组成链表midle->m.schedlink
 	nmidle       int32    // number of idle m's waiting for work     // 注释：空闲的工作线程m的数量
 	nmidlelocked int32    // number of locked m's waiting for work
-	mnext        int64    // number of m's that have been created and next M ID
+	mnext        int64    // number of m's that have been created and next M ID // 注释：下一个新m的主键ID值(用来创建新m时使用)
 	maxmcount    int32    // maximum number of m's allowed (or die)  // 注释：最多只能创建maxmcount个工作线程m
 	nmsys        int32    // number of system m's not counted for deadlock
 	nmfreed      int64    // cumulative number of freed m's

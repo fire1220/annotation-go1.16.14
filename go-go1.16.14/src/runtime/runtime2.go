@@ -512,7 +512,7 @@ type m struct {
 	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的goroutine的g结构体对象
 	caughtsig     guintptr // goroutine running during fatal signal
 	p             puintptr // attached p for executing go code (nil if not executing go code) // 注释：记录与当前工作线程绑定的p结构体对象
-	nextp         puintptr
+	nextp         puintptr // 注释：下一个要执行的p
 	oldp          puintptr // the p that was attached before executing a syscall
 	id            int64
 	mallocing     int32

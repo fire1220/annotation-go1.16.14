@@ -2410,9 +2410,9 @@ func startm(_p_ *p, spinning bool) {
 		throw("startm: p has runnable gs")
 	}
 	// The caller incremented nmspinning, so set m.spinning in the new M.
-	nmp.spinning = spinning
-	nmp.nextp.set(_p_)
-	notewakeup(&nmp.park)
+	nmp.spinning = spinning // 注释；新线程m设置可以试图抢占
+	nmp.nextp.set(_p_)      // 注释：新线程m下一个要执行的p
+	notewakeup(&nmp.park)   // 注释：向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
 	// safe.
 	releasem(mp) // 注释：释放线程m

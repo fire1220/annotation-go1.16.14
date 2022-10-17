@@ -4985,7 +4985,7 @@ func procresize(nprocs int32) *p {
 //go:yeswritebarrierrec
 func acquirep(_p_ *p) {
 	// Do the part that isn't allowed to have write barriers.
-	wirep(_p_)
+	wirep(_p_) // 注释：当前线程m和p相互绑定，并且把p的状态从_Pidle设置成_Prunning
 
 	// Have p; write barriers now allowed.
 
@@ -5002,7 +5002,7 @@ func acquirep(_p_ *p) {
 // current M to _p_. This is broken out so we can disallow write
 // barriers for this part, since we don't yet have a P.
 //
-// 注释：g和m相互绑定，并且把p的状态从_Pidle设置成_Prunning
+// 注释：当前线程m和p相互绑定，并且把p的状态从_Pidle设置成_Prunning
 //go:nowritebarrierrec
 //go:nosplit
 func wirep(_p_ *p) {

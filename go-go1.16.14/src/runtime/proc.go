@@ -3189,7 +3189,7 @@ top:
 		// if checkTimers added a local goroutine via goready.
 	}
 	if gp == nil {
-		// 注释：想尽办法找到可运行的G，找不到就不用返回了
+		// 注释：想尽办法找到可运行的G，找不到就不用返回了(调用 findrunnable找g，找不到的话就将m休眠，等待唤醒)
 		gp, inheritTime = findrunnable() // blocks until work is available
 	}
 

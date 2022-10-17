@@ -3175,6 +3175,7 @@ top:
 		// Check the global runnable queue once in a while to ensure fairness.
 		// Otherwise two goroutines can completely occupy the local runqueue
 		// by constantly respawning each other.
+		// 注释：每隔61次调度，尝试从全局队列种获取G，避免全局队列中的g被饿死
 		if _g_.m.p.ptr().schedtick%61 == 0 && sched.runqsize > 0 {
 			lock(&sched.lock)
 			gp = globrunqget(_g_.m.p.ptr(), 1)
@@ -3182,11 +3183,13 @@ top:
 		}
 	}
 	if gp == nil {
+		// 注释：从p的本地队列中获取g(从p.runnext获取g)
 		gp, inheritTime = runqget(_g_.m.p.ptr())
 		// We can see gp != nil here even if the M is spinning,
 		// if checkTimers added a local goroutine via goready.
 	}
 	if gp == nil {
+		// 注释：想尽办法找到可运行的G，找不到就不用返回了
 		gp, inheritTime = findrunnable() // blocks until work is available
 	}
 
@@ -3226,6 +3229,7 @@ top:
 		goto top
 	}
 
+	// 注释：找到了g，那就执行g上的任务函数
 	execute(gp, inheritTime)
 }
 

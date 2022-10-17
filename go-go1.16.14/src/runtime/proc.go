@@ -2411,7 +2411,7 @@ func startm(_p_ *p, spinning bool) {
 	}
 	// The caller incremented nmspinning, so set m.spinning in the new M.
 	nmp.spinning = spinning // 注释；新线程m设置可以试图抢占
-	nmp.nextp.set(_p_)      // 注释：新线程m下一个要执行的p
+	nmp.nextp.set(_p_)      // 注释：新线程m下一个要执行的p（起始任务函数）
 	notewakeup(&nmp.park)   // 注释：向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
 	// safe.

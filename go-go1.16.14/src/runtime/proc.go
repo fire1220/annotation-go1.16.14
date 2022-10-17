@@ -4982,6 +4982,7 @@ func procresize(nprocs int32) *p {
 // This function is allowed to have write barriers even if the caller
 // isn't because it immediately acquires _p_.
 //
+// 注释：当前线程m和p相互绑定，并且把p的状态从_Pidle设置成_Prunning
 //go:yeswritebarrierrec
 func acquirep(_p_ *p) {
 	// Do the part that isn't allowed to have write barriers.

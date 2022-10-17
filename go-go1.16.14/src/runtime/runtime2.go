@@ -534,7 +534,7 @@ type m struct {
 	ncgo          int32       // number of cgo calls currently in progress
 	cgoCallersUse uint32      // if non-zero, cgoCallers in use temporarily
 	cgoCallers    *cgoCallers // cgo traceback if crashing in cgo call
-	doesPark      bool        // non-P running threads: sysmon and newmHandoff never use .park
+	doesPark      bool        // non-P running threads: sysmon and newmHandoff never use .park // 注释：是否使用park
 	park          note        // 注释：没有g需要运行时，工作线程睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
 	alllink       *m          // on allm // 注释：记录所有工作线程m的一个链表
 	schedlink     muintptr    // 注释：空闲的m链表（由midle指向）

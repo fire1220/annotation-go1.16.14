@@ -1741,10 +1741,10 @@ type cgothreadstart struct {
 //
 //go:yeswritebarrierrec
 func allocm(_p_ *p, fn func(), id int64) *m {
-	_g_ := getg()
-	acquirem() // disable GC because it can be called from sysmon
-	if _g_.m.p == 0 {
-		acquirep(_p_) // temporarily borrow p for mallocs in this function
+	_g_ := getg()     // 注释：获取当前的G
+	acquirem()        // disable GC because it can be called from sysmon // 注释：获取g对应的m（禁用GC）
+	if _g_.m.p == 0 { // 注释：如果m没有绑定p
+		acquirep(_p_) // temporarily borrow p for mallocs in this function // 注释：获取p
 	}
 
 	// Release the free M list. We need to do this somewhere and
@@ -2095,9 +2095,9 @@ var newmHandoff struct {
 //go:nowritebarrierrec
 func newm(fn func(), _p_ *p, id int64) {
 	mp := allocm(_p_, fn, id)
-	mp.doesPark = (_p_ != nil)
-	mp.nextp.set(_p_)
-	mp.sigmask = initSigmask
+	mp.doesPark = (_p_ != nil) // 注释：如果p有数据时使用mp.park
+	mp.nextp.set(_p_)          // 注释：设置m启动时执行的p
+	mp.sigmask = initSigmask   // 注释：初始化信号掩码
 	if gp := getg(); gp != nil && gp.m != nil && (gp.m.lockedExt != 0 || gp.m.incgo) && GOOS != "plan9" {
 		// We're on a locked M or a thread that may have been
 		// started by C. The kernel state of this thread may
@@ -5002,25 +5002,29 @@ func acquirep(_p_ *p) {
 // current M to _p_. This is broken out so we can disallow write
 // barriers for this part, since we don't yet have a P.
 //
+// 注释：g和m相互绑定，并且把p的状态从_Pidle设置成_Prunning
 //go:nowritebarrierrec
 //go:nosplit
 func wirep(_p_ *p) {
 	_g_ := getg()
 
+	// 注释：如果当前p对应的m已经有绑定其他的p时报错
 	if _g_.m.p != 0 {
 		throw("wirep: already in go")
 	}
+	// 注释：如果p绑定了其他的m，或者p的状态不是_Pidle(空闲)
 	if _p_.m != 0 || _p_.status != _Pidle {
 		id := int64(0)
+		// 注释：如果p绑定了其他的m
 		if _p_.m != 0 {
-			id = _p_.m.ptr().id
+			id = _p_.m.ptr().id // 注释：获取m的id
 		}
 		print("wirep: p->m=", _p_.m, "(", id, ") p->status=", _p_.status, "\n")
 		throw("wirep: invalid p state")
 	}
-	_g_.m.p.set(_p_)
-	_p_.m.set(_g_.m)
-	_p_.status = _Prunning
+	_g_.m.p.set(_p_)       // 注释：m绑定p
+	_p_.m.set(_g_.m)       // 注释：p绑定m
+	_p_.status = _Prunning // 注释：修改p的状态为运行中
 }
 
 // Disassociate p and the current m.

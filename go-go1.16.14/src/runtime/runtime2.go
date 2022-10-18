@@ -407,7 +407,8 @@ type heldLockInfo struct {
 	rank     lockRank
 }
 
-// g结构体用于代表一个goroutine，该结构体保存了goroutine的所有信息，包括栈，gobuf结构体和其它的一些状态信息
+// 注释：一个G一但被创建，那就不会消失，因为runtime有个allgs保存着所有的g指针，但不要担心，g对象引用的其他对象是会释放的，所以也占不了啥内存。
+// 注释：g结构体用于代表一个goroutine，该结构体保存了goroutine的所有信息，包括栈，gobuf结构体和其它的一些状态信息
 type g struct {
 	// Stack parameters.
 	// stack describes the actual stack memory: [stack.lo, stack.hi).
@@ -432,15 +433,15 @@ type g struct {
 	syscallsp    uintptr        // if status==Gsyscall, syscallsp = sched.sp to use during gc // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间
 	syscallpc    uintptr        // if status==Gsyscall, syscallpc = sched.pc to use during gc // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间
 	stktopsp     uintptr        // expected sp at top of stack, to check in traceback         // 注释：用于回源跟踪
-	param        unsafe.Pointer // passed parameter on wakeup                                 // 注释：唤醒G时传入的参数，例如调用ready()
+	param        unsafe.Pointer // passed parameter on wakeup                                 // 注释：传递参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready()
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
 	stackLock    uint32         // sigprof/scang lock; TODO: fold in to atomicstatus          // 注释：栈锁
 	goid         int64          // 注释：当前G的唯一标识，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
 	schedlink    guintptr       // 注释：指向全局运行队列中的下一个g（全局行队列中的g是个链表）
-	waitsince    int64          // approx time when the g become blocked // 注释：G阻塞时长
-	waitreason   waitReason     // if status==Gwaiting                   // 注释：阻塞原因
+	waitsince    int64          // approx time when the g become blocked // 注释：g被阻塞的时间
+	waitreason   waitReason     // if status==Gwaiting                   // 注释：g被阻塞的原因
 	// 注释：每个G都有三个与抢占有关的字段，分别为preempt、preemptStop和premptShrink
-	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt // 注释：抢占标记，其值为 true 执行 stackguard0 = stackpreempt。
+	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt // 注释：标记是否可抢占，其值为 true 执行 stackguard0 = stackpreempt。
 	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule // 注释：将抢占标记修改为_Gpreedmpted，如果修改失败则取消
 	preemptShrink bool // shrink stack at synchronous safe point                              // 注释：在同步安全点收缩栈
 
@@ -467,15 +468,15 @@ type g struct {
 	sysexitticks   int64    // cputicks when syscall has returned (for tracing)
 	traceseq       uint64   // trace event sequencer
 	tracelastp     puintptr // last P emitted an event for this goroutine
-	lockedm        muintptr
+	lockedm        muintptr // 注释：g被锁定,只在这个m上运行
 	sig            uint32
 	writebuf       []byte
 	sigcode0       uintptr
 	sigcode1       uintptr
 	sigpc          uintptr
-	gopc           uintptr         // pc of go statement that created this goroutine // 注释：创建当前G的pc
+	gopc           uintptr         // pc of go statement that created this goroutine // 注释：创建当前G的PC(调用者的PC(rip))
 	ancestors      *[]ancestorInfo // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
-	startpc        uintptr         // pc of goroutine function                       // 注释：go函数的pc
+	startpc        uintptr         // pc of goroutine function                       // 注释：任务函数(go函数对应的pc值)
 	racectx        uintptr
 	waiting        *sudog         // sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt        []uintptr      // cgo traceback context

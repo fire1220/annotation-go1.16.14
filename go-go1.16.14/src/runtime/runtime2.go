@@ -613,10 +613,10 @@ type p struct {
 	goidcacheend uint64
 
 	// Queue of runnable goroutines. Accessed without lock.
-	// 注释：本地goroutine运行队列
-	runqhead uint32        // 注释：队列头
-	runqtail uint32        // 注释：队列尾
-	runq     [256]guintptr // 注释：使用数组实现的循环队列
+	// 注释：本地g运行队列
+	runqhead uint32        // 注释：g队列头(g的指针队列)
+	runqtail uint32        // 注释：g队列尾(g的指针队列)
+	runq     [256]guintptr // 注释：g的指针队列，使用数组实现的循环队列
 	// runnext, if non-nil, is a runnable G that was ready'd by
 	// the current G and should be run next instead of what's in
 	// runq if there's time remaining in the running G's time

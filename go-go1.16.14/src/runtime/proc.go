@@ -497,7 +497,7 @@ var (
 	// Readers that cannot take the lock may (carefully!) use the atomic
 	// variables below.
 	allglock mutex
-	allgs    []*g // 注释：保存所有的g
+	allgs    []*g // 注释：保存所有的g的数组
 
 	// allglen and allgptr are atomic variables that contain len(allg) and
 	// &allg[0] respectively. Proper ordering depends on totally-ordered

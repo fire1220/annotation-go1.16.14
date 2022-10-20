@@ -4038,17 +4038,18 @@ func malg(stacksize int32) *g {
 // This must be nosplit because this stack layout means there are
 // untyped arguments in newproc's argument frame. Stack copies won't
 // be able to adjust them and stack splits won't be able to copy them.
-//
+// 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
-	argp := add(unsafe.Pointer(&fn), sys.PtrSize)
-	gp := getg()
-	pc := getcallerpc()
-	systemstack(func() {
-		newg := newproc1(fn, argp, siz, gp, pc)
+	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：用fn + PtrSize 获取第一个参数的地址，也就是argp
+	gp := getg()                                  // 注释：获取当前运行的g
+	pc := getcallerpc()                           // 注释：用siz - 8 获取pc地址
+	// 注释：用g0的栈创建G对象
+	systemstack(func() { // 注释：切换到系统堆栈（系统堆栈指的就是g0）
+		newg := newproc1(fn, argp, siz, gp, pc) // 注释：用g0的栈创建G对象
 
-		_p_ := getg().m.p.ptr()
-		runqput(_p_, newg, true)
+		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址
+		runqput(_p_, newg, true) // 注释：把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
 
 		if mainStarted {
 			wakep()
@@ -5816,10 +5817,15 @@ func runqempty(_p_ *p) bool {
 const randomizeScheduler = raceenabled
 
 // runqput tries to put g on the local runnable queue.
+// 注释：runqput尝试将g放入本地可运行队列
 // If next is false, runqput adds g to the tail of the runnable queue.
+// 注释：如果next为false，则runqput将g添加到可运行队列的尾部
 // If next is true, runqput puts g in the _p_.runnext slot.
+// 注释：如果next为true，runqput将g放入_p_中。运行下一个插槽
 // If the run queue is full, runnext puts g on the global queue.
+// 注释：如果运行队列已满，runnext会将g放入全局队列
 // Executed only by the owner P.
+// 注释：仅提供P的所有者执行
 func runqput(_p_ *p, gp *g, next bool) {
 	if randomizeScheduler && next && fastrand()%2 == 0 {
 		next = false

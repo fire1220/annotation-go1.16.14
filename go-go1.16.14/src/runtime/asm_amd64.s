@@ -340,52 +340,52 @@ TEXT runtime·systemstack_switch(SB), NOSPLIT, $0-0
 
 // func systemstack(fn func())
 TEXT runtime·systemstack(SB), NOSPLIT, $0-8
-	MOVQ	fn+0(FP), DI	// DI = fn
-	get_tls(CX)
-	MOVQ	g(CX), AX	// AX = g
-	MOVQ	g_m(AX), BX	// BX = m
+	MOVQ	fn+0(FP), DI	// DI = fn  // 注释：获取一个入参（闭包函数）
+	get_tls(CX) // 注释：获取m的tls数据（线程的本地私有数据）(第一个元素就是g)(程序当前运行的g)
+	MOVQ	g(CX), AX	// AX = g // 注释：获取g
+	MOVQ	g_m(AX), BX	// BX = m // 注释：获取g里的m
 
-	CMPQ	AX, m_gsignal(BX)
+	CMPQ	AX, m_gsignal(BX) // 注释：比较g和m.gsignal,如果相等不切换
 	JEQ	noswitch
 
 	MOVQ	m_g0(BX), DX	// DX = g0
-	CMPQ	AX, DX
+	CMPQ	AX, DX // 注释：比较g和m.g0，如果相等不切换
 	JEQ	noswitch
 
-	CMPQ	AX, m_curg(BX)
+	CMPQ	AX, m_curg(BX) // 注释：(g是非g0的情况下)比较g和m.curg(当前的g)，不相等时异常
 	JNE	bad
 
 	// switch stacks
 	// save our state in g->sched. Pretend to
 	// be systemstack_switch if the G stack is scanned.
-	MOVQ	$runtime·systemstack_switch(SB), SI
-	MOVQ	SI, (g_sched+gobuf_pc)(AX)
-	MOVQ	SP, (g_sched+gobuf_sp)(AX)
-	MOVQ	AX, (g_sched+gobuf_g)(AX)
-	MOVQ	BP, (g_sched+gobuf_bp)(AX)
+	MOVQ	$runtime·systemstack_switch(SB), SI // 注释：栈切换
+	MOVQ	SI, (g_sched+gobuf_pc)(AX) // 注释：栈切换,备份数据到g.sched.pc(gobuf里的pc)
+	MOVQ	SP, (g_sched+gobuf_sp)(AX) // 注释：栈切换,备份数据到g.sched.sp(gobuf里的sp)
+	MOVQ	AX, (g_sched+gobuf_g)(AX)  // 注释：栈切换,备份数据到g.sched.g(gobuf里的g)(当前运行的g地址)
+	MOVQ	BP, (g_sched+gobuf_bp)(AX) // 注释：栈切换,备份数据到g.sched.bp(gobuf里的bp)
 
 	// switch to g0
-	MOVQ	DX, g(CX)
+	MOVQ	DX, g(CX) // 注释：把g0切换到当前g上
 	MOVQ	(g_sched+gobuf_sp)(DX), BX
-	// make it look like mstart called systemstack on g0, to stop traceback
-	SUBQ	$8, BX
-	MOVQ	$runtime·mstart(SB), DX
-	MOVQ	DX, 0(BX)
-	MOVQ	BX, SP
+	// make it look like mstart called systemstack on g0, to stop traceback // 注释：用汇编模拟函数调用
+	SUBQ	$8, BX                  // 注释：g0预扩容(扩容还没有被执行)
+	MOVQ	$runtime·mstart(SB), DX // 注释：把运行的mstart指针赋值给寄存器DX
+	MOVQ	DX, 0(BX)               // 注释：把mstart变成栈顶
+	MOVQ	BX, SP                  // 注释：赋给栈上
 
 	// call target function
-	MOVQ	DI, DX
-	MOVQ	0(DI), DI
-	CALL	DI
+	MOVQ	DI, DX    // 注释：DI是闭包函数赋值给寄存器DX
+	MOVQ	0(DI), DI // 注释：0(DI)是寄存器PC的指令
+	CALL	DI        // 注释：调用PC指令(相当于调用闭包里的函数)
 
 	// switch back to g
 	get_tls(CX)
-	MOVQ	g(CX), AX
-	MOVQ	g_m(AX), BX
-	MOVQ	m_curg(BX), AX
-	MOVQ	AX, g(CX)
-	MOVQ	(g_sched+gobuf_sp)(AX), SP
-	MOVQ	$0, (g_sched+gobuf_sp)(AX)
+	MOVQ	g(CX), AX                  // 注释：获取当前g（是g0）
+	MOVQ	g_m(AX), BX                // 注释：取g0.m
+	MOVQ	m_curg(BX), AX             // 注释：取m.curg(这里是业务的g)
+	MOVQ	AX, g(CX)                  // 注释：切换到业务的g
+	MOVQ	(g_sched+gobuf_sp)(AX), SP // 注释：回复SP （把业务的sp放回来）
+	MOVQ	$0, (g_sched+gobuf_sp)(AX) // 注释：清除业务g备份的sp
 	RET
 
 noswitch:

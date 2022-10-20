@@ -330,7 +330,7 @@ type gobuf struct {
 	// 注释：其中的栈指针 sp 和程序计数器 pc 会用来存储或者恢复寄存器中的值，设置即将执行的代码
 	sp   uintptr        // 注释：sp栈指针位置(保存CPU的rsp寄存器的值)
 	pc   uintptr        // 注释：pc程序计数器，运行到的程序位置（指向下一个需要执行的地址）(保存CPU的rip寄存器的值)
-	g    guintptr       // 注释：当前gobuf的g(记录当前这个gobuf对象属于哪个g)
+	g    guintptr       // 注释：当前gobuf的g(记录当前这个gobuf对象属于哪个g)(当前运行的g地址)
 	ctxt unsafe.Pointer // 注释：ctxt不常见，可能是一个分配在heap的函数变量，因此GC需要追踪它，不过它有可能需要设置并进行清除，在有写屏障的时候有些困难
 	ret  sys.Uintreg    // 注释：系统调用的结果(保存系统调用的返回值，因为从系统调用返回之后如果p被其它工作线程抢占，则这个g会被放入全局运行队列被其它工作线程调度，其它线程需要知道系统调用的返回值)
 	lr   uintptr
@@ -505,10 +505,10 @@ type m struct {
 
 	// Fields not known to debuggers.
 	procid     uint64       // for debuggers, but offset not hard-coded
-	gsignal    *g           // signal-handling g
+	gsignal    *g           // signal-handling g // 注释：运行中的g
 	goSigStack gsignalStack // Go-allocated signal handling stack
 	sigmask    sigset       // storage for saved signal mask
-	tls        [6]uintptr   // thread-local storage (for x86 extern register) // 注释：通过TLS实现m结构体对象与工作线程之间的绑定
+	tls        [6]uintptr   // thread-local storage (for x86 extern register) // 注释：通过TLS实现m结构体对象与工作线程之间的绑定,第一个元素是g(程序当前运行的g)
 	mstartfn   func()
 	// 注释：要确定g是在用户堆栈还是系统堆栈上运行，可以使用getg() == getg().m.curg，相等表示在用户态堆栈，不相等表示在系统堆栈
 	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的goroutine的g结构体对象

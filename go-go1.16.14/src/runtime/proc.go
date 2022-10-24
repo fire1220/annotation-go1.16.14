@@ -656,6 +656,8 @@ func schedinit() {
 	if n, ok := atoi32(gogetenv("GOMAXPROCS")); ok && n > 0 {
 		procs = n
 	}
+	// 注释：调整P的个数，这里是新分配procs个P
+	// 注释：函数procresize很重要，所有的P都是从这里分配的，以后也不用担心没有P了
 	if procresize(procs) != nil {
 		throw("unknown runnable goroutine during bootstrap")
 	}

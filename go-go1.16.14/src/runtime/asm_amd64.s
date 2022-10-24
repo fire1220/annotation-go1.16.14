@@ -222,21 +222,20 @@ ok:
 	MOVQ	24(SP), AX		// copy argv
 	MOVQ	AX, 8(SP)
 	CALL	runtime·args(SB)      // 注释：处理args
-	CALL	runtime·osinit(SB)    // 注释：os初始化， os_linux.go
-	CALL	runtime·schedinit(SB) // 注释：调度系统初始化, proc.go
+	CALL	runtime·osinit(SB)    // 注释：os初始化(os_linux.go)
+	CALL	runtime·schedinit(SB) // 注释：调度系统初始化(proc.go)(会进行p的初始化，也会把m0和某个p绑定)
 
     // 注释：创建一个goroutine，然后开启执行程序
 	// create a new goroutine to start program
 	MOVQ	$runtime·mainPC(SB), AX		// entry
 	PUSHQ	AX
 	PUSHQ	$0			// arg size
-	CALL	runtime·newproc(SB)
+	CALL	runtime·newproc(SB) // 注释：新建一个g，也叫main goroutine，它的任务函数是runtime.main函数，建好后插入m0绑定的p的本地队列
 	POPQ	AX
 	POPQ	AX
 
 	// start this M
-	// 注释：启动线程，并且启动调度系统
-	CALL	runtime·mstart(SB)
+	CALL	runtime·mstart(SB) // 注释：启动线程m，进入启动调度系统
 
 	CALL	runtime·abort(SB)	// mstart should never return
 	RET

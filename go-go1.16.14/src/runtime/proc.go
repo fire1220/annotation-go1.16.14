@@ -597,6 +597,7 @@ func cpuinit() {
 //	call runtime·mstart
 //
 // The new G calls runtime·main.
+// 注释：调度系统的初始化
 func schedinit() {
 	lockInit(&sched.lock, lockRankSched)
 	lockInit(&sched.sysmonlock, lockRankSysmon)
@@ -651,7 +652,7 @@ func schedinit() {
 
 	lock(&sched.lock)
 	sched.lastpoll = uint64(nanotime())
-	procs := ncpu
+	procs := ncpu // 注释：确认P的个数,默认等于cpu个数，可以通过GOMAXPROCS环境变量更改
 	if n, ok := atoi32(gogetenv("GOMAXPROCS")); ok && n > 0 {
 		procs = n
 	}
@@ -1243,6 +1244,7 @@ func mStackIsSystemAllocated() bool {
 // May run during STW (because it doesn't have a P yet), so write
 // barriers are not allowed.
 //
+// 注释：启动线程，并且启动调度系统
 //go:nosplit
 //go:nowritebarrierrec
 func mstart() {

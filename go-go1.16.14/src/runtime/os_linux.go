@@ -299,7 +299,7 @@ func getHugePageSize() uintptr {
 }
 
 func osinit() {
-	ncpu = getproccount()
+	ncpu = getproccount() // 注释：获取cpu的数量
 	physHugePageSize = getHugePageSize()
 	if iscgo {
 		// #42494 glibc and musl reserve some signals for

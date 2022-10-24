@@ -1250,7 +1250,7 @@ func mStackIsSystemAllocated() bool {
 //go:nosplit
 //go:nowritebarrierrec
 func mstart() {
-	_g_ := getg()
+	_g_ := getg() // 注释：这里获取的g是g0，在系统堆栈
 
 	osStack := _g_.stack.lo == 0
 	// 注释：判断栈低地址是否有值
@@ -1291,6 +1291,7 @@ func mstart() {
 func mstart1() {
 	_g_ := getg()
 
+	// 注释：确保g是系统栈上的g0，调度器只在g0上执行
 	if _g_ != _g_.m.g0 {
 		throw("bad runtime·mstart")
 	}

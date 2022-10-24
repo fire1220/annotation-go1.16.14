@@ -86,6 +86,7 @@ GLOBL _rt0_amd64_lib_argv<>(SB),NOPTR, $8
 
 // Defined as ABIInternal since it does not use the stack-based Go ABI (and
 // in addition there are no calls to this entry point from Go code).
+// 注释：程序入口函数
 TEXT runtime·rt0_go<ABIInternal>(SB),NOSPLIT,$0
 	// copy arguments forward on an even stack
 	MOVQ	DI, AX		// argc
@@ -197,12 +198,17 @@ needtls:
 	JEQ 2(PC)
 	CALL	runtime·abort(SB)
 ok:
+    // 注释：程序刚启动的时候必定有一个线程启动（主线程）
+    // 注释：将当前的栈和资源保存在g0
+    // 注释：将该线程保存在m0
+    // 注释：tls: Thread Local Storage
 	// set the per-goroutine and per-mach "registers"
 	get_tls(BX)
 	LEAQ	runtime·g0(SB), CX
 	MOVQ	CX, g(BX)
 	LEAQ	runtime·m0(SB), AX
 
+    // 注释：m0和g0互相绑定
 	// save m->g0 = g0
 	MOVQ	CX, m_g0(AX)
 	// save m0 to g0->m
@@ -215,10 +221,11 @@ ok:
 	MOVL	AX, 0(SP)
 	MOVQ	24(SP), AX		// copy argv
 	MOVQ	AX, 8(SP)
-	CALL	runtime·args(SB)
-	CALL	runtime·osinit(SB)
-	CALL	runtime·schedinit(SB)
+	CALL	runtime·args(SB)      // 注释：处理args
+	CALL	runtime·osinit(SB)    // 注释：os初始化， os_linux.go
+	CALL	runtime·schedinit(SB) // 注释：调度系统初始化, proc.go
 
+    // 注释：创建一个goroutine，然后开启执行程序
 	// create a new goroutine to start program
 	MOVQ	$runtime·mainPC(SB), AX		// entry
 	PUSHQ	AX
@@ -228,6 +235,7 @@ ok:
 	POPQ	AX
 
 	// start this M
+	// 注释：启动线程，并且启动调度系统
 	CALL	runtime·mstart(SB)
 
 	CALL	runtime·abort(SB)	// mstart should never return

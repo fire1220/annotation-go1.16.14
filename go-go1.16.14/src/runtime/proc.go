@@ -4036,7 +4036,7 @@ func malg(stacksize int32) *g {
 // because their types differ between call sites).
 //
 // This must be nosplit because this stack layout means there are
-// untyped arguments in newproc's argument frame. Stack copies won't
+// untypedasm_amd64.s arguments in newproc's argument frame. Stack copies won't
 // be able to adjust them and stack splits won't be able to copy them.
 // 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
 //go:nosplit

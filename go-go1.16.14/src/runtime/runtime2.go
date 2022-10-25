@@ -540,7 +540,7 @@ type m struct {
 	park          note        // 注释：没有g需要运行时，工作线程睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
 	alllink       *m          // on allm // 注释：记录所有工作线程m的一个链表
 	schedlink     muintptr    // 注释：空闲的m链表（由midle指向）
-	lockedg       guintptr
+	lockedg       guintptr    // 注释：已锁定的g的指针
 	createstack   [32]uintptr // stack that created this thread.
 	lockedExt     uint32      // tracking for external LockOSThread
 	lockedInt     uint32      // tracking for internal lockOSThread

@@ -2506,11 +2506,12 @@ func wakep() {
 func stoplockedm() {
 	_g_ := getg()
 
+	// 注释：当前g锁定的m(当前g只能在这个m上运行)不等于g绑定的m时报错
 	if _g_.m.lockedg == 0 || _g_.m.lockedg.ptr().lockedm.ptr() != _g_.m {
 		throw("stoplockedm: inconsistent locking")
 	}
 	if _g_.m.p != 0 {
-		// Schedule another M to run this p.
+		// Schedule another M to run this p. // 注释：调度另一个m运行这个p
 		_p_ := releasep()
 		handoffp(_p_)
 	}
@@ -3126,6 +3127,7 @@ func schedule() {
 		throw("schedule: holding locks")
 	}
 
+	// 注释：判断当前g绑定的m里已锁定的g是否有值
 	if _g_.m.lockedg != 0 {
 		stoplockedm()
 		execute(_g_.m.lockedg.ptr(), false) // Never returns.
@@ -5040,13 +5042,15 @@ func wirep(_p_ *p) {
 }
 
 // Disassociate p and the current m.
+// 注释：解除p(当前g对应的p)和当前m的关联
 func releasep() *p {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前g
 
+	// 注释：如果当前g对应p为0是报错(当前g只能通过m来获取p)
 	if _g_.m.p == 0 {
 		throw("releasep: invalid arg")
 	}
-	_p_ := _g_.m.p.ptr()
+	_p_ := _g_.m.p.ptr() // 注释：获取当前g对应的m绑定的p的指针
 	if _p_.m.ptr() != _g_.m || _p_.status != _Prunning {
 		print("releasep: m=", _g_.m, " m->p=", _g_.m.p.ptr(), " p->m=", hex(_p_.m), " p->status=", _p_.status, "\n")
 		throw("releasep: invalid p state")

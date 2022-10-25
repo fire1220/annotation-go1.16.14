@@ -1302,7 +1302,7 @@ func mstart1() {
 	// so other calls can reuse the current frame.
 	save(getcallerpc(), getcallersp())
 	asminit()
-	minit()
+	minit() // 注释：初始化m，主要是设置线程的备用信号堆栈和信号掩码
 
 	// Install signal handlers; after minit so that minit can
 	// prepare the thread to be able to handle the signals.

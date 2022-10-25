@@ -360,13 +360,14 @@ func gettid() uint32
 
 // Called to initialize a new m (including the bootstrap m).
 // Called on the new thread, cannot allocate memory.
+// 注释：初始化m，主要是设置线程的备用信号堆栈和信号掩码
 func minit() {
 	minitSignals()
 
 	// Cgo-created threads and the bootstrap m are missing a
 	// procid. We need this for asynchronous preemption and it's
 	// useful in debuggers.
-	getg().m.procid = uint64(gettid())
+	getg().m.procid = uint64(gettid()) // 注释：获取进程的父ID赋值
 }
 
 // Called from dropm to undo the effect of an minit.

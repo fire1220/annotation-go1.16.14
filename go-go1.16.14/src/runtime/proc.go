@@ -1311,12 +1311,12 @@ func mstart1() {
 	}
 
 	if fn := _g_.m.mstartfn; fn != nil {
-		fn()
+		fn() // 注释：执行m里的函数
 	}
 
 	if _g_.m != &m0 {
-		acquirep(_g_.m.nextp.ptr())
-		_g_.m.nextp = 0
+		acquirep(_g_.m.nextp.ptr()) // 注释：把m里的nextp的p和m相互绑定(nextp是其他m给付的值，当m启动的时候会第一时间执行nextp)
+		_g_.m.nextp = 0             // 注释：清空m里的nextp
 	}
 	schedule()
 }
@@ -2330,6 +2330,7 @@ func mspinning() {
 // 注释：传递非nil P的调用方必须从非抢占上下文调用。看见下面是对收购的评论。
 // Must not have write barriers because this may be called without a P.
 // 注释：不能有写障碍，因为这可能在没有P的情况下调用。
+// 注释：通过p去跑m
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	// Disable preemption.

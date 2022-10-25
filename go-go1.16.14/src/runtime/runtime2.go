@@ -758,7 +758,7 @@ type schedt struct {
 	npidle     uint32   // 注释：空闲的p结构体对象的数量
 	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）
 
-	// Global runnable queue.
+	// Global runnable queue. // 注释：全局可运行队列
 	runq     gQueue // 注释：g全局运行队列
 	runqsize int32
 

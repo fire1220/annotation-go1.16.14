@@ -2512,7 +2512,7 @@ func stoplockedm() {
 	}
 	if _g_.m.p != 0 {
 		// Schedule another M to run this p. // 注释：调度另一个m运行这个p
-		_p_ := releasep()
+		_p_ := releasep() // 注释：解除p(当前g对应的p)和当前m的绑定,并返回p
 		handoffp(_p_)
 	}
 	incidlelocked(1)
@@ -5042,7 +5042,7 @@ func wirep(_p_ *p) {
 }
 
 // Disassociate p and the current m.
-// 注释：解除p(当前g对应的p)和当前m的关联,并返回p
+// 注释：解除p(当前g对应的p)和当前m的绑定,并返回p
 func releasep() *p {
 	_g_ := getg() // 注释：获取当前g
 

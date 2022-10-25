@@ -1289,7 +1289,7 @@ func mstart() {
 }
 
 func mstart1() {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前g,目前当前g是g0
 
 	// 注释：确保g是系统栈上的g0，调度器只在g0上执行
 	if _g_ != _g_.m.g0 {

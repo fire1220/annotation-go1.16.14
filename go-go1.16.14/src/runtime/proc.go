@@ -1318,7 +1318,7 @@ func mstart1() {
 		acquirep(_g_.m.nextp.ptr()) // 注释：把m里的nextp的p和m相互绑定(nextp是其他m给付的值，当m启动的时候会第一时间执行nextp)
 		_g_.m.nextp = 0             // 注释：清空m里的nextp
 	}
-	schedule()
+	schedule() // 注释：执行调度程序
 }
 
 // mstartm0 implements part of mstart1 that only runs on the m0.

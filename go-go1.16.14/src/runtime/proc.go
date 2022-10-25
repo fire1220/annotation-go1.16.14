@@ -1306,7 +1306,7 @@ func mstart1() {
 
 	// Install signal handlers; after minit so that minit can
 	// prepare the thread to be able to handle the signals.
-	if _g_.m == &m0 {
+	if _g_.m == &m0 { // 注释：判断是否是第一个m（m0）,如果是则走特殊流程,m0也是正常的m，只是创建流程不一样
 		mstartm0()
 	}
 

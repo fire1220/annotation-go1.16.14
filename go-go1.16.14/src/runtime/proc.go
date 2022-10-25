@@ -5042,7 +5042,7 @@ func wirep(_p_ *p) {
 }
 
 // Disassociate p and the current m.
-// 注释：解除p(当前g对应的p)和当前m的关联
+// 注释：解除p(当前g对应的p)和当前m的关联,并返回p
 func releasep() *p {
 	_g_ := getg() // 注释：获取当前g
 
@@ -5051,17 +5051,20 @@ func releasep() *p {
 		throw("releasep: invalid arg")
 	}
 	_p_ := _g_.m.p.ptr() // 注释：获取当前g对应的m绑定的p的指针
+	// 注释：如果p和m没有相互绑定或者p的状态不是_Prunning时报错
 	if _p_.m.ptr() != _g_.m || _p_.status != _Prunning {
 		print("releasep: m=", _g_.m, " m->p=", _g_.m.p.ptr(), " p->m=", hex(_p_.m), " p->status=", _p_.status, "\n")
 		throw("releasep: invalid p state")
 	}
+	// 注释：判断是否开启追踪
 	if trace.enabled {
 		traceProcStop(_g_.m.p.ptr())
 	}
-	_g_.m.p = 0
-	_p_.m = 0
-	_p_.status = _Pidle
-	return _p_
+	// 注释：g和m相互解除绑定
+	_g_.m.p = 0         // 注释：解除m和p的绑定
+	_p_.m = 0           // 注释：解除p和m的绑定
+	_p_.status = _Pidle // 注释：把当前p的状态更改为空闲_Pidle
+	return _p_          // 注释：返回解除绑定后的p
 }
 
 func incidlelocked(v int32) {

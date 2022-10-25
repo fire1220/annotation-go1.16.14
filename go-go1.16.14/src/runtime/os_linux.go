@@ -362,7 +362,7 @@ func gettid() uint32
 // Called on the new thread, cannot allocate memory.
 // 注释：初始化m，主要是设置线程的备用信号堆栈和信号掩码
 func minit() {
-	minitSignals()
+	minitSignals() // 注释：初始化线程m的备用信号堆栈和信号掩码
 
 	// Cgo-created threads and the bootstrap m are missing a
 	// procid. We need this for asynchronous preemption and it's

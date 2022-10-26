@@ -3128,7 +3128,7 @@ func schedule() {
 		throw("schedule: holding locks")
 	}
 
-	// 注释：判断当前g绑定的m里已锁定的g是否有值
+	// 注释：(判断当前m是否有绑定g)判断当前g绑定的m里已锁定的g是否有值
 	if _g_.m.lockedg != 0 {
 		stoplockedm()
 		execute(_g_.m.lockedg.ptr(), false) // Never returns.

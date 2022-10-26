@@ -2503,10 +2503,11 @@ func wakep() {
 
 // Stops execution of the current m that is locked to a g until the g is runnable again.
 // Returns with acquired P.
+// 注释：解除和m的绑定
 func stoplockedm() {
 	_g_ := getg()
 
-	// 注释：当前g锁定的m(当前g只能在这个m上运行)不等于g绑定的m时报错
+	// 注释：当前g锁定(绑定)的m(当前g只能在这个m上运行)不等于g绑定的m时报错
 	if _g_.m.lockedg == 0 || _g_.m.lockedg.ptr().lockedm.ptr() != _g_.m {
 		throw("stoplockedm: inconsistent locking")
 	}

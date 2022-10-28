@@ -626,7 +626,7 @@ type p struct {
 	// unit and eliminates the (potentially large) scheduling
 	// latency that otherwise arises from adding the ready'd
 	// goroutines to the end of the run queue.
-	runnext guintptr
+	runnext guintptr // 注释：g队列里的下一个指针
 
 	// Available G's (status == Gdead)
 	gFree struct {

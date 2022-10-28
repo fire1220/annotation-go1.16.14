@@ -2424,27 +2424,30 @@ func startm(_p_ *p, spinning bool) {
 	releasem(mp) // 注释：释放线程m
 }
 
-// Hands off P from syscall or locked M.
+// Hands off P from syscall or locked M. // 注释：切换(移交、让渡)p从系统调用或者锁定的m
 // Always runs without a P, so write barriers are not allowed.
+// 注释：让渡p,调度另一个或新的m运行这个p
 //go:nowritebarrierrec
 func handoffp(_p_ *p) {
 	// handoffp must start an M in any situation where
 	// findrunnable would return a G to run on _p_.
 
 	// if it has local work, start it straight away
+	// 注释：如果是本地g运行队列有值或全局运行队列有值就直接启动
 	if !runqempty(_p_) || sched.runqsize != 0 {
-		startm(_p_, false)
+		startm(_p_, false) // 注释：用另一个m跑这个p
 		return
 	}
-	// if it has GC work, start it straight away
+	// if it has GC work, start it straight away // 注释：如果是GC则直接启动
 	if gcBlackenEnabled != 0 && gcMarkWorkAvailable(_p_) {
-		startm(_p_, false)
+		startm(_p_, false) // 注释：用另一个m跑这个p
 		return
 	}
 	// no local work, check that there are no spinning/idle M's,
 	// otherwise our help is not required
+	// 注释：如果没有自旋的m并且没有空闲的p时，执行&sched.nmspinning=1并且执行startm
 	if atomic.Load(&sched.nmspinning)+atomic.Load(&sched.npidle) == 0 && atomic.Cas(&sched.nmspinning, 0, 1) { // TODO: fast atomic
-		startm(_p_, true)
+		startm(_p_, true) // 注释：用另一个m跑这个p
 		return
 	}
 	lock(&sched.lock)
@@ -2503,7 +2506,7 @@ func wakep() {
 
 // Stops execution of the current m that is locked to a g until the g is runnable again.
 // Returns with acquired P.
-// 注释：解除和m的绑定
+// 注释：解除和m的锁定，并且把m.nextp上的p和m相互绑定
 func stoplockedm() {
 	_g_ := getg()
 
@@ -2525,8 +2528,8 @@ func stoplockedm() {
 		dumpgstatus(_g_.m.lockedg.ptr())
 		throw("stoplockedm: not runnable")
 	}
-	acquirep(_g_.m.nextp.ptr())
-	_g_.m.nextp = 0
+	acquirep(_g_.m.nextp.ptr()) // 注释：把m.nextp上的p和m相互绑定
+	_g_.m.nextp = 0             // 注释：情况m.nextp上的p指针
 }
 
 // Schedules the locked m to run the locked gp.
@@ -3128,10 +3131,10 @@ func schedule() {
 		throw("schedule: holding locks")
 	}
 
-	// 注释：(判断当前m是否有绑定g)判断当前g绑定的m里已锁定的g是否有值
+	// 注释：g.m.lockedg有值说明m绑定的p别的m抢走了，如果lockedg有值就要执行这里的g
 	if _g_.m.lockedg != 0 {
-		stoplockedm()
-		execute(_g_.m.lockedg.ptr(), false) // Never returns.
+		stoplockedm()                       // 注释：m和p解除绑定,m重新绑定m.nextp
+		execute(_g_.m.lockedg.ptr(), false) // Never returns. // 注释：并且执行锁定的g
 	}
 
 	// We should not schedule away from a g that is executing a cgo call,
@@ -5804,6 +5807,7 @@ func pidleget() *p {
 
 // runqempty reports whether _p_ has no Gs on its local run queue.
 // It never returns true spuriously.
+// 注释：本地的g运行队列为空时返回true，否则返回false
 func runqempty(_p_ *p) bool {
 	// Defend against a race where 1) _p_ has G1 in runqnext but runqhead == runqtail,
 	// 2) runqput on _p_ kicks G1 to the runq, 3) runqget on _p_ empties runqnext.

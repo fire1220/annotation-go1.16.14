@@ -432,8 +432,8 @@ type g struct {
 	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据，存储当前G调度相关的数据
 	syscallsp    uintptr        // if status==Gsyscall, syscallsp = sched.sp to use during gc // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间
 	syscallpc    uintptr        // if status==Gsyscall, syscallpc = sched.pc to use during gc // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间
-	stktopsp     uintptr        // expected sp at top of stack, to check in traceback         // 注释：用于回源跟踪
-	param        unsafe.Pointer // passed parameter on wakeup                                 // 注释：传递参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready()
+	stktopsp     uintptr        // expected sp at top of stack, to check in traceback         // 注释：期望sp位于栈顶，用于回源跟踪
+	param        unsafe.Pointer // passed parameter on wakeup                                 // 注释：wakeup唤醒时候传递的参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready()
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
 	stackLock    uint32         // sigprof/scang lock; TODO: fold in to atomicstatus          // 注释：栈锁
 	goid         int64          // 注释：当前G的唯一标识，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
@@ -441,7 +441,7 @@ type g struct {
 	waitsince    int64          // approx time when the g become blocked // 注释：g被阻塞的时间
 	waitreason   waitReason     // if status==Gwaiting                   // 注释：g被阻塞的原因
 	// 注释：每个G都有三个与抢占有关的字段，分别为preempt、preemptStop和premptShrink
-	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt // 注释：标记是否可抢占，其值为 true 执行 stackguard0 = stackpreempt。
+	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt // 注释：标记是否可抢占，其值为 true 执行 stackguard0 = stackpreempt。(抢占调度标志，如果需要抢占调度，设置preempt为true)
 	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule // 注释：将抢占标记修改为_Gpreedmpted，如果修改失败则取消
 	preemptShrink bool // shrink stack at synchronous safe point                              // 注释：在同步安全点收缩栈
 
@@ -754,7 +754,7 @@ type schedt struct {
 
 	ngsys uint32 // number of system goroutines; updated atomically
 
-	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表
+	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表(这里指向的链表的头部)
 	npidle     uint32   // 注释：空闲的p结构体对象的数量
 	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）
 

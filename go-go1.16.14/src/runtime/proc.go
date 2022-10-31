@@ -2450,7 +2450,7 @@ func handoffp(_p_ *p) {
 		startm(_p_, true) // 注释：用另一个m跑这个p
 		return
 	}
-	lock(&sched.lock)
+	lock(&sched.lock) // 注释：上锁，准备对sched结构体进行修改
 	if sched.gcwaiting != 0 {
 		_p_.status = _Pgcstop
 		sched.stopwait--
@@ -2483,7 +2483,7 @@ func handoffp(_p_ *p) {
 	// The scheduler lock cannot be held when calling wakeNetPoller below
 	// because wakeNetPoller may call wakep which may call startm.
 	when := nobarrierWakeTime(_p_)
-	pidleput(_p_)
+	pidleput(_p_) // 注释：把p放到空闲队列的头部
 	unlock(&sched.lock)
 
 	if when != 0 {
@@ -5706,20 +5706,20 @@ func (p pMask) read(id uint32) bool {
 	return (atomic.Load(&p[word]) & mask) != 0
 }
 
-// 注释：p[]里有32个标识位(每32为一段，分组g的自增ID)
+// 注释：p[]数组，每个元素里有32个标识位(每32为一段，分别存的是p的自增ID)
 // set sets P id's bit.
 func (p pMask) set(id int32) {
-	word := id / 32                // 注释：高位
-	mask := uint32(1) << (id % 32) // 注释：低位
-	atomic.Or(&p[word], mask)      // 注释：原子操作：按位或运算
+	word := id / 32                // 注释：高位，确定在哪个数组元素里
+	mask := uint32(1) << (id % 32) // 注释：低位，在数组元素里确定位置（共32个位置）
+	atomic.Or(&p[word], mask)      // 注释：原子操作：按位或运算(把id所在元素对应的位置设置为1)
 }
 
-// 注释：p[]里有32个标识位(每32为一段，分组g的自增ID)
+// 注释：p[]数组，每个元素里有32个标识位(每32为一段，分别存的是p的自增ID)
 // clear clears P id's bit.
 func (p pMask) clear(id int32) {
-	word := id / 32                // 注释：高位
-	mask := uint32(1) << (id % 32) // 注释：低位
-	atomic.And(&p[word], ^mask)    // 注释：原子操作，清空位运算
+	word := id / 32                // 注释：高位，确定在哪个数组元素里
+	mask := uint32(1) << (id % 32) // 注释：低位，在数组元素里确定位置（共32个位置）
+	atomic.And(&p[word], ^mask)    // 注释：原子操作，清空位运算(把id所在的元素对应的位置清空)
 }
 
 // updateTimerPMask clears pp's timer mask if it has no timers on its heap.
@@ -5777,11 +5777,11 @@ func pidleput(_p_ *p) {
 	if !runqempty(_p_) {
 		throw("pidleput: P has non-empty run queue")
 	}
-	updateTimerPMask(_p_) // clear if there are no timers.
-	idlepMask.set(_p_.id)
-	_p_.link = sched.pidle
-	sched.pidle.set(_p_)
-	atomic.Xadd(&sched.npidle, 1) // TODO: fast atomic
+	updateTimerPMask(_p_)         // clear if there are no timers. // 注释：把p的id从定时器掩码中移除
+	idlepMask.set(_p_.id)         // 注释：设置空闲p的掩码(空闲的标记)，把p的id放在空闲p里
+	_p_.link = sched.pidle        // 注释：在链表的头部压入一个
+	sched.pidle.set(_p_)          // 注释：设置链表头部（把刚刚压入的那个链接上）
+	atomic.Xadd(&sched.npidle, 1) // TODO: fast atomic // 注释：原子操作，空闲p计数加一
 }
 
 // pidleget tries to get a p from the _Pidle list, acquiring ownership.

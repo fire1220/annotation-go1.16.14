@@ -287,6 +287,7 @@ func forcegchelper() {
 
 // Gosched yields the processor, allowing other goroutines to run. It does not
 // suspend the current goroutine, so execution resumes automatically.
+// 注释：让出CPU时间片，重新等待安排任务
 func Gosched() {
 	checkTimeouts()
 	mcall(gosched_m)

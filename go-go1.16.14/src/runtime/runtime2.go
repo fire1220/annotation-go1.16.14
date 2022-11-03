@@ -759,6 +759,8 @@ type schedt struct {
 	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）
 
 	// Global runnable queue. // 注释：全局可运行队列
+	// 注释：如果创建一个g并准备运行，这个g就会被放到调度器的全局运行队列中。
+	// 注释：之后，调度器就将这些队列中的g分配给一个逻辑处理器P，并放到这个逻辑处理器P对应的本地运行队列中。本地运行队列中的g会一直等待，直到自己被分配的逻辑处理器执行。
 	runq     gQueue // 注释：全局g运行队列
 	runqsize int32  // 注释：全局g队列的成员个数
 

@@ -81,8 +81,8 @@ var modinfo string
 // for nmspinning manipulation.
 
 var (
-	m0           m
-	g0           g
+	m0           m // 注释：代表进程的主线程
+	g0           g // 注释：m0的g0，也就是m0.g0 = &g0
 	mcache0      *mcache
 	raceprocctx0 uintptr
 )

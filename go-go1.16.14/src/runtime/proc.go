@@ -1716,6 +1716,7 @@ func runSafePointFn() {
 	// Resolve the race between forEachP running the safe-point
 	// function on this P's behalf and this P running the
 	// safe-point function directly.
+	// 注释：把p.runSafePointFn从1设置为0
 	if !atomic.Cas(&p.runSafePointFn, 1, 0) {
 		return
 	}
@@ -3147,20 +3148,22 @@ func schedule() {
 	}
 
 top:
-	pp := _g_.m.p.ptr()
-	pp.preempt = false
+	pp := _g_.m.p.ptr() // 注释：(当前运行的P指针)当前G绑定M里绑定的P指针
+	pp.preempt = false  // 注释：禁止抢占
 
+	// 注释：如果当前GC需要停止整个世界（STW), 则调用gcstopm休眠当前的M
 	if sched.gcwaiting != 0 {
-		gcstopm()
-		goto top
+		gcstopm() // 注释：为了STW，停止当前的M
+		goto top  // 注释：STW结束后回到 top
 	}
 	if pp.runSafePointFn != 0 {
-		runSafePointFn()
+		runSafePointFn() // 注释：如果pp.runSafePointFn != 0,运行sched.safePointFn
 	}
 
 	// Sanity check: if we are spinning, the run queue should be empty.
 	// Check this before calling checkTimers, as that might call
 	// goready to put a ready goroutine on the local run queue.
+	// 注释：如果当前p队列还有数据时，去其他p队列里偷时报错
 	if _g_.m.spinning && (pp.runnext != 0 || pp.runqhead != pp.runqtail) {
 		throw("schedule: spinning with local work")
 	}

@@ -1311,6 +1311,7 @@ func mstart1() {
 		mstartm0()
 	}
 
+	// 注释：判断是否有起始任务函数；如果有m的起始任务函数，则执行，比如sysmon函数。对于m0来说，是没有mstartfn的
 	if fn := _g_.m.mstartfn; fn != nil {
 		fn() // 注释：执行m里的函数
 	}

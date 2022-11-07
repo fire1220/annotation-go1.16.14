@@ -509,7 +509,7 @@ type m struct {
 	goSigStack gsignalStack // Go-allocated signal handling stack
 	sigmask    sigset       // storage for saved signal mask
 	tls        [6]uintptr   // thread-local storage (for x86 extern register) // 注释：通过TLS实现m结构体对象与工作线程之间的绑定,第一个元素是g(程序当前运行的g)
-	mstartfn   func()       // 注释：启动m（mstart）时执行的函数，如果不等于nil就执行
+	mstartfn   func()       // 注释：(起始函数)启动m（mstart）时执行的函数，如果不等于nil就执行
 
 	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的g结构体对象,要确定g是在用户堆栈还是系统堆栈上运行，可以使用if getg() == getg().m.curg {用户态堆栈} else {系统堆栈}
 	caughtsig     guintptr // goroutine running during fatal signal

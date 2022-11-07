@@ -3189,6 +3189,7 @@ top:
 		gp = gcController.findRunnableGCWorker(_g_.m.p.ptr())
 		tryWakeP = tryWakeP || gp != nil
 	}
+	// 注释：每隔61次调度尝试去全局队列中获取一个G
 	if gp == nil {
 		// Check the global runnable queue once in a while to ensure fairness.
 		// Otherwise two goroutines can completely occupy the local runqueue
@@ -3196,16 +3197,18 @@ top:
 		// 注释：每隔61次调度，尝试从全局队列种获取G，避免全局队列中的g被饿死
 		if _g_.m.p.ptr().schedtick%61 == 0 && sched.runqsize > 0 {
 			lock(&sched.lock)
-			gp = globrunqget(_g_.m.p.ptr(), 1)
+			gp = globrunqget(_g_.m.p.ptr(), 1) // 注释：从全局队列中获取一个g
 			unlock(&sched.lock)
 		}
 	}
+	// 注释：从p的本地队列里获取G
 	if gp == nil {
 		// 注释：从p的本地队列中获取g(从p.runnext获取g)
 		gp, inheritTime = runqget(_g_.m.p.ptr())
 		// We can see gp != nil here even if the M is spinning,
 		// if checkTimers added a local goroutine via goready.
 	}
+	// 注释：从其他地方获取G(试图从其他P中窃取(偷)，从本地或全局队列、轮询网络中获取g。)
 	if gp == nil {
 		// 注释：想尽办法找到可运行的G，找不到就不用返回了(调用 findrunnable找g，找不到的话就将m休眠，等待唤醒)
 		gp, inheritTime = findrunnable() // blocks until work is available
@@ -5962,6 +5965,7 @@ func runqputbatch(pp *p, q *gQueue, qsize int) {
 // If inheritTime is true, gp should inherit the remaining time in the
 // current time slice. Otherwise, it should start a new time slice.
 // Executed only by the owner P.
+// 注释：在本地P中获取G
 func runqget(_p_ *p) (gp *g, inheritTime bool) {
 	// If there's a runnext, it's the next G to run.
 	for {
@@ -5969,18 +5973,23 @@ func runqget(_p_ *p) (gp *g, inheritTime bool) {
 		if next == 0 {
 			break
 		}
+		// 注释：如果_p_指针等于next指针则把_p_设置为0,并返回next指针
 		if _p_.runnext.cas(next, 0) {
 			return next.ptr(), true
 		}
 	}
 
 	for {
+		// 注释：本地队列中的头,这里返回的时候指针(&_p_.runqhead)对应的值，（值是_p_.runq的数组下标）
 		h := atomic.LoadAcq(&_p_.runqhead) // load-acquire, synchronize with other consumers
-		t := _p_.runqtail
+		t := _p_.runqtail                  // 注释：本地队列中的尾
+		// 注释：如果头和尾相等，则说明本地队列里没有数据了
 		if t == h {
 			return nil, false
 		}
+		// 注释：把h对应的下标赋值给gp,最终返回的是gp;"[h%uint32(len(_p_.runq))]" 是为了防止数组越界
 		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr()
+		// 注释：_p_.runqhead 加 1
 		if atomic.CasRel(&_p_.runqhead, h, h+1) { // cas-release, commits consume
 			return gp, false
 		}

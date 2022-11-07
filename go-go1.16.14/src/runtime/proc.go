@@ -1316,11 +1316,12 @@ func mstart1() {
 		fn() // 注释：执行m里的函数
 	}
 
+	// 注释：如果不是m0，需要绑定p
 	if _g_.m != &m0 {
 		acquirep(_g_.m.nextp.ptr()) // 注释：把m里的nextp的p和m相互绑定(nextp是其他m给付的值，当m启动的时候会第一时间执行nextp)
 		_g_.m.nextp = 0             // 注释：清空m里的nextp
 	}
-	schedule() // 注释：执行调度程序
+	schedule() // 注释：执行调度程序，而且不会在返回
 }
 
 // mstartm0 implements part of mstart1 that only runs on the m0.

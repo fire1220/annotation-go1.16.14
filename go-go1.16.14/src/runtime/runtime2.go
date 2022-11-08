@@ -615,7 +615,7 @@ type p struct {
 	// Queue of runnable goroutines. Accessed without lock.
 	// 注释：本地g运行队列(用数组实现队列)
 	runqhead uint32        // 注释：本地g队列(数组)runq的头下标
-	runqtail uint32        // 注释：本地g队列(数组)runq的尾下标(如果(runqtail-runqhead)>len(runq)时会把本地队列的G的一半放到全局队列中)
+	runqtail uint32        // 注释：本地g队列(数组)runq的尾下标(如果队列装满(runqtail-runqhead)==len(runq)时会把本地队列的G的一半放到全局队列中)
 	runq     [256]guintptr // 注释：本地g的指针队列，使用数组实现的循环队列
 	// runnext, if non-nil, is a runnable G that was ready'd by
 	// the current G and should be run next instead of what's in

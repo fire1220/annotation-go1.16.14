@@ -2663,9 +2663,10 @@ top:
 	}
 
 	// global runq
+	// 注释：到全局队列中获取G
 	if sched.runqsize != 0 {
 		lock(&sched.lock)
-		gp := globrunqget(_p_, 0)
+		gp := globrunqget(_p_, 0) // 注释：从全局队列中获取G
 		unlock(&sched.lock)
 		if gp != nil {
 			return gp, false
@@ -5667,17 +5668,18 @@ func globrunqputhead(gp *g) {
 // Put a batch of runnable goroutines on the global runnable queue.
 // This clears *batch.
 // sched.lock must be held.
+// 注释：把新链表（batch）加入到全局链表中，并设置全局链表的元素数量；n代表新链表的个数
 func globrunqputbatch(batch *gQueue, n int32) {
 	assertLockHeld(&sched.lock)
 
-	sched.runq.pushBackAll(*batch)
-	sched.runqsize += n
-	*batch = gQueue{}
+	sched.runq.pushBackAll(*batch) // 注释：把新链表加入到全局链表中
+	sched.runqsize += n            // 注释：把新链表的数量加到全局链表的数量里
+	*batch = gQueue{}              // 注释：清空新的链表
 }
 
 // Try get a batch of G's from the global runnable queue.
 // sched.lock must be held.
-// 注释：从全局队列中获取G；返回取出的头指针；max代表指定从全局队列中那的最多G的个数
+// 注释：从全局队列中获取G；返回取出的头指针；max代表指定从全局队列中那的最多G的个数，0代表不设置
 func globrunqget(_p_ *p, max int32) *g {
 	assertLockHeld(&sched.lock)
 
@@ -5858,6 +5860,7 @@ const randomizeScheduler = raceenabled
 // 注释：如果运行队列已满，runnext会将g放入全局队列
 // Executed only by the owner P.
 // 注释：仅提供P的所有者执行
+// 注释：把全局的gp放到本地队列_p_里
 func runqput(_p_ *p, gp *g, next bool) {
 	if randomizeScheduler && next && fastrand()%2 == 0 {
 		next = false
@@ -5896,6 +5899,7 @@ retry:
 // Put g and a batch of work from local runnable queue on global queue.
 // 注释：将g和本地可运行队列中的一批工作放到全局队列中。
 // Executed only by the owner P.
+// 注释：把本地队列中的一半和gp一起放到全局队列中
 func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 	var batch [len(_p_.runq)/2 + 1]*g // 注释：声明数组，本地队列的一半
 
@@ -5907,12 +5911,12 @@ func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 		throw("runqputslow: queue is not full")
 	}
 	for i := uint32(0); i < n; i++ {
-		batch[i] = _p_.runq[(h+i)%uint32(len(_p_.runq))].ptr()
+		batch[i] = _p_.runq[(h+i)%uint32(len(_p_.runq))].ptr() // 注释：从本地队列中的头部开始获取n个数据，放在batch数组里
 	}
-	if !atomic.CasRel(&_p_.runqhead, h, h+n) { // cas-release, commits consume
+	if !atomic.CasRel(&_p_.runqhead, h, h+n) { // cas-release, commits consume // 注释：比较替换提交消费，就是重置队列的头部，原子操作。
 		return false
 	}
-	batch[n] = gp
+	batch[n] = gp // 注释：把gp放在数组尾部(gp是要从本地队列迁移到全局队列的G)（这里的意思是如果把本地队列的一半放到全局队列的同时要把gp放到最后一位）
 
 	if randomizeScheduler {
 		for i := uint32(1); i <= n; i++ {
@@ -5923,15 +5927,15 @@ func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 
 	// Link the goroutines.
 	for i := uint32(0); i < n; i++ {
-		batch[i].schedlink.set(batch[i+1])
+		batch[i].schedlink.set(batch[i+1]) // 注释：把本地队列（数组）里的G用链表结构连接起来
 	}
-	var q gQueue
-	q.head.set(batch[0])
-	q.tail.set(batch[n])
+	var q gQueue         // 注释：创建新链表（临时链表）
+	q.head.set(batch[0]) // 注释：链表的头
+	q.tail.set(batch[n]) // 注释：链表的尾
 
 	// Now put the batch on global queue.
 	lock(&sched.lock)
-	globrunqputbatch(&q, int32(n+1))
+	globrunqputbatch(&q, int32(n+1)) // 注释：把链表加入到全局链表中，并设置全局链表的数量
 	unlock(&sched.lock)
 	return true
 }
@@ -5974,7 +5978,7 @@ func runqputbatch(pp *p, q *gQueue, qsize int) {
 // If inheritTime is true, gp should inherit the remaining time in the
 // current time slice. Otherwise, it should start a new time slice.
 // Executed only by the owner P.
-// 注释：在本地P中获取G
+// 注释：在本地P中获取G，gp就是本地队列的首指针（第一个G的地址）
 func runqget(_p_ *p) (gp *g, inheritTime bool) {
 	// If there's a runnext, it's the next G to run.
 	for {
@@ -5997,7 +6001,7 @@ func runqget(_p_ *p) (gp *g, inheritTime bool) {
 			return nil, false
 		}
 		// 注释：把h对应的下标赋值给gp,最终返回的是gp;"[h%uint32(len(_p_.runq))]" 是为了防止数组越界
-		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr()
+		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr() // 注释：出栈，更改头指针
 		// 注释：_p_.runqhead 加 1
 		if atomic.CasRel(&_p_.runqhead, h, h+1) { // cas-release, commits consume
 			return gp, false
@@ -6117,17 +6121,19 @@ func (q *gQueue) pushBack(gp *g) {
 
 // pushBackAll adds all Gs in l2 to the tail of q. After this q2 must
 // not be used.
+// 注释：把新链表加入到全局链表中
 func (q *gQueue) pushBackAll(q2 gQueue) {
 	if q2.tail == 0 {
 		return
 	}
 	q2.tail.ptr().schedlink = 0
+	// 注释：如果全局链表有数据
 	if q.tail != 0 {
-		q.tail.ptr().schedlink = q2.head
+		q.tail.ptr().schedlink = q2.head // 注释：把新链表的头连接到全局链表的尾部
 	} else {
-		q.head = q2.head
+		q.head = q2.head // 注释：如果全局链表没有数据时，把新链表的头放到全局链表里
 	}
-	q.tail = q2.tail
+	q.tail = q2.tail // 注释：把新链表的尾部放到全局链表的尾部
 }
 
 // pop removes and returns the head of queue q. It returns nil if

@@ -2657,6 +2657,7 @@ top:
 	}
 
 	// local runq
+	// 注释：在本地P队列中获取G
 	if gp, inheritTime := runqget(_p_); gp != nil {
 		return gp, inheritTime
 	}
@@ -5676,6 +5677,7 @@ func globrunqputbatch(batch *gQueue, n int32) {
 
 // Try get a batch of G's from the global runnable queue.
 // sched.lock must be held.
+// 注释：从全局队列中获取G；返回取出的头指针；max代表指定从全局队列中那的最多G的个数
 func globrunqget(_p_ *p, max int32) *g {
 	assertLockHeld(&sched.lock)
 
@@ -5683,6 +5685,7 @@ func globrunqget(_p_ *p, max int32) *g {
 		return nil
 	}
 
+	// 注释：n代表从全局队列中拿去多少个G；全局G平均每个核数的数量
 	n := sched.runqsize/gomaxprocs + 1
 	if n > sched.runqsize {
 		n = sched.runqsize
@@ -5690,18 +5693,20 @@ func globrunqget(_p_ *p, max int32) *g {
 	if max > 0 && n > max {
 		n = max
 	}
+	// 注释：如果n大于本地队列的一半的时候
 	if n > int32(len(_p_.runq))/2 {
-		n = int32(len(_p_.runq)) / 2
+		n = int32(len(_p_.runq)) / 2 // 注释：拿走本地队列一般的数量
 	}
 
-	sched.runqsize -= n
+	sched.runqsize -= n // 注释：全局队列个数减少n
 
-	gp := sched.runq.pop()
+	gp := sched.runq.pop() // 注释：全局G队列出栈1个，返回出栈的指针（头指针（head））
 	n--
 	for ; n > 0; n-- {
-		gp1 := sched.runq.pop()
-		runqput(_p_, gp1, false)
+		gp1 := sched.runq.pop()  // 注释：全局G队列循环出栈
+		runqput(_p_, gp1, false) // 注释：把其余的G放到本地P队列中
 	}
+	// 注释：拿走第一个G，其余的G放到本地P队列中
 	return gp
 }
 
@@ -5874,11 +5879,13 @@ func runqput(_p_ *p, gp *g, next bool) {
 retry:
 	h := atomic.LoadAcq(&_p_.runqhead) // load-acquire, synchronize with consumers
 	t := _p_.runqtail
+	// 注释：G的个数小于本地队列时（t-h代表本地的G个数），如果等于本地队列则需要把本地队列的G一半放到全局队列中去
 	if t-h < uint32(len(_p_.runq)) {
-		_p_.runq[t%uint32(len(_p_.runq))].set(gp)
-		atomic.StoreRel(&_p_.runqtail, t+1) // store-release, makes the item available for consumption
+		_p_.runq[t%uint32(len(_p_.runq))].set(gp) // 注释：取出队列尾下标指向的G（这里是用数组实现的队列）
+		atomic.StoreRel(&_p_.runqtail, t+1)       // store-release, makes the item available for consumption // 注释：尾加一（原子的）&_p_.runqtail++
 		return
 	}
+	// 注释：将g和本地可运行队列中的一批工作放到全局队列中。
 	if runqputslow(_p_, gp, h, t) {
 		return
 	}
@@ -5887,13 +5894,15 @@ retry:
 }
 
 // Put g and a batch of work from local runnable queue on global queue.
+// 注释：将g和本地可运行队列中的一批工作放到全局队列中。
 // Executed only by the owner P.
 func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
-	var batch [len(_p_.runq)/2 + 1]*g
+	var batch [len(_p_.runq)/2 + 1]*g // 注释：声明数组，本地队列的一半
 
 	// First, grab a batch from local queue.
 	n := t - h
 	n = n / 2
+	// 注释：验证判读如果运行的G的一半不等于本地队列的一半时异常
 	if n != uint32(len(_p_.runq)/2) {
 		throw("runqputslow: queue is not full")
 	}
@@ -6123,11 +6132,12 @@ func (q *gQueue) pushBackAll(q2 gQueue) {
 
 // pop removes and returns the head of queue q. It returns nil if
 // q is empty.
+// 注释：G队列出栈，返回出栈的指针
 func (q *gQueue) pop() *g {
-	gp := q.head.ptr()
+	gp := q.head.ptr() // 注释：G队列的头指针
 	if gp != nil {
-		q.head = gp.schedlink
-		if q.head == 0 {
+		q.head = gp.schedlink // 注释：重新定义头指针（取下一个G的指针作为当前G队列的头指针）
+		if q.head == 0 {      // 注释：如果头指针为0时，把尾指针也设置为0（说明G队列已经没有数据了）
 			q.tail = 0
 		}
 	}

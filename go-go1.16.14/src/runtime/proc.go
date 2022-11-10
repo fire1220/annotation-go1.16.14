@@ -2559,21 +2559,23 @@ func startlockedm(gp *g) {
 
 // Stops the current m for stopTheWorld.
 // Returns when the world is restarted.
+// 注释：停止（休眠）M
 func gcstopm() {
 	_g_ := getg()
 
-	if sched.gcwaiting == 0 {
+	if sched.gcwaiting == 0 { // 注释：等于0时说明已经start the world 了
 		throw("gcstopm: not waiting for gc")
 	}
-	if _g_.m.spinning {
+	if _g_.m.spinning { // 注释：如果线程M试图偷其他线程的G时，需要关闭，不能再偷了哈
 		_g_.m.spinning = false
 		// OK to just drop nmspinning here,
 		// startTheWorld will unpark threads as necessary.
+		// 注释：关闭自旋的线程M,自旋说明当前线程M没有需要执行的G,试图从其他线程M中偷取G
 		if int32(atomic.Xadd(&sched.nmspinning, -1)) < 0 {
 			throw("gcstopm: negative nmspinning")
 		}
 	}
-	_p_ := releasep()
+	_p_ := releasep() // 注释：释放P
 	lock(&sched.lock)
 	_p_.status = _Pgcstop
 	sched.stopwait--
@@ -2636,9 +2638,9 @@ func findrunnable() (gp *g, inheritTime bool) {
 	// an M.
 
 top:
-	_p_ := _g_.m.p.ptr()
-	if sched.gcwaiting != 0 {
-		gcstopm()
+	_p_ := _g_.m.p.ptr() // 注释：获取当前运行的P
+	if sched.gcwaiting != 0 { // 注释：GC启动STW时设置为1，等待所有M全部停止
+		gcstopm() // 注释：停止（休眠）M
 		goto top
 	}
 	if _p_.runSafePointFn != 0 {
@@ -5057,7 +5059,7 @@ func wirep(_p_ *p) {
 }
 
 // Disassociate p and the current m.
-// 注释：解除p(当前g对应的p)和当前m的绑定,并返回p
+// 注释：释放P，解除P和M的绑定；解除p(当前g对应的p)和当前m的绑定,并返回p
 func releasep() *p {
 	_g_ := getg() // 注释：获取当前g
 

@@ -756,7 +756,7 @@ type schedt struct {
 
 	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表(这里指向的链表的头部)
 	npidle     uint32   // 注释：空闲的p结构体对象的数量
-	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）
+	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）(自旋说明当前线程M已经没有需要执行的G，正在打算去其他线程M偷G了)
 
 	// Global runnable queue. // 注释：全局可运行队列
 	// 注释：如果创建一个g并准备运行，这个g就会被放到调度器的全局运行队列中。
@@ -797,7 +797,7 @@ type schedt struct {
 	// m.exited is set. Linked through m.freelink.
 	freem *m
 
-	gcwaiting  uint32 // gc is waiting to run
+	gcwaiting  uint32 // gc is waiting to run // 注释：GC启动STW时会把gcwaiting=1，等待所有的M停止(休眠)
 	stopwait   int32
 	stopnote   note
 	sysmonwait uint32

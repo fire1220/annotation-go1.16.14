@@ -145,7 +145,7 @@ const (
 	//
 	// The P retains its run queue and startTheWorld will restart
 	// the scheduler on Ps with non-empty run queues.
-	_Pgcstop
+	_Pgcstop // 注释：GC停止世界（STW）时把当前的P也停止了，并设置这个状态
 
 	// _Pdead means a P is no longer used (GOMAXPROCS shrank). We
 	// reuse Ps if GOMAXPROCS increases. A dead P is mostly
@@ -798,7 +798,7 @@ type schedt struct {
 	freem *m
 
 	gcwaiting  uint32 // gc is waiting to run // 注释：GC启动STW时会把gcwaiting=1，等待所有的M停止(休眠)
-	stopwait   int32
+	stopwait   int32  // 注释：停止等待，默认值是cup核数，冻结时值为一个很大的值，STW时减1
 	stopnote   note
 	sysmonwait uint32
 	sysmonnote note

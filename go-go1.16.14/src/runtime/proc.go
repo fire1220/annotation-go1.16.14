@@ -5706,7 +5706,7 @@ func globrunqget(_p_ *p, max int32) *g {
 
 	sched.runqsize -= n // 注释：全局队列个数减少n
 
-	gp := sched.runq.pop() // 注释：全局G队列出栈1个，返回出栈的指针（头指针（head））
+	gp := sched.runq.pop() // 注释：全局G队列出栈1个（准备执行，其余的放到本地队列里面）
 	n--
 	for ; n > 0; n-- {
 		gp1 := sched.runq.pop()  // 注释：全局G队列循环出栈

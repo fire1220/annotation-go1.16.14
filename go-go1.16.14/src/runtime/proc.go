@@ -2706,23 +2706,26 @@ top:
 	// If number of spinning M's >= number of busy P's, block.
 	// This is necessary to prevent excessive CPU consumption
 	// when GOMAXPROCS>>1 but the program parallelism is low.
+	// 注释：如果没有打算去窃取（偷）时 && 2倍自旋（空闲）的M数量 >= 活动P数（总P数 - 空闲P数）则直接停止
 	if !_g_.m.spinning && 2*atomic.Load(&sched.nmspinning) >= procs-atomic.Load(&sched.npidle) {
 		goto stop
 	}
+	// 注释：设置状态准备窃取（偷）
 	if !_g_.m.spinning {
-		_g_.m.spinning = true
-		atomic.Xadd(&sched.nmspinning, 1)
+		_g_.m.spinning = true             // 注释：变更状态为true，说明自己已经空闲了打算去窃取（偷）其他的线程M本地的G了
+		atomic.Xadd(&sched.nmspinning, 1) // 注释：自旋（空闲）数加1
 	}
-	const stealTries = 4
+	const stealTries = 4 // 注释：尝试窃取（偷）的数量
 	for i := 0; i < stealTries; i++ {
-		stealTimersOrRunNextG := i == stealTries-1
+		stealTimersOrRunNextG := i == stealTries-1 // 注释：最后一次循环（true时false否）
 
+		// 注释：随机拿出一个P，通过stealOrder.reset(P的总数)初始化
 		for enum := stealOrder.start(fastrand()); !enum.done(); enum.next() {
 			if sched.gcwaiting != 0 {
 				goto top
 			}
-			p2 := allp[enum.position()]
-			if _p_ == p2 {
+			p2 := allp[enum.position()] // 注释：从所有的P数组中拿出一个P
+			if _p_ == p2 {              // 注释：判读是否是当前的P，跳过当前的P
 				continue
 			}
 

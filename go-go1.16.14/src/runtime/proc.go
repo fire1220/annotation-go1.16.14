@@ -2308,7 +2308,7 @@ func stopm() {
 	}
 
 	lock(&sched.lock)
-	mput(_g_.m)
+	mput(_g_.m) // 注释：把当前的M加入到空闲M链表中(空闲M链表是在全局的调度器中，所以需要加锁执行)
 	unlock(&sched.lock)
 	mPark()
 	acquirep(_g_.m.nextp.ptr())
@@ -5619,13 +5619,15 @@ func schedEnabled(gp *g) bool {
 // Put mp on midle list.
 // sched.lock must be held.
 // May run during STW, so write barriers are not allowed.
+// 注释：把M加入到空闲M链表中
 //go:nowritebarrierrec
 func mput(mp *m) {
 	assertLockHeld(&sched.lock)
 
-	mp.schedlink = sched.midle
-	sched.midle.set(mp)
-	sched.nmidle++
+	// 注释：把M加入空闲链表中
+	mp.schedlink = sched.midle // 注释：把M加入空闲链表中,把旧链表的头放在mp.schedlink中,形成新的链表头(此时未和链表建立连接)
+	sched.midle.set(mp)        // 注释：把M加入空闲链表中,把新的链表头放在链表头位置
+	sched.nmidle++             // 注释：空闲M的数量加一
 	checkdead()
 }
 

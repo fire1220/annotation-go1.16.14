@@ -537,9 +537,9 @@ type m struct {
 	cgoCallersUse uint32      // if non-zero, cgoCallers in use temporarily
 	cgoCallers    *cgoCallers // cgo traceback if crashing in cgo call
 	doesPark      bool        // non-P running threads: sysmon and newmHandoff never use .park // 注释：是否使用park
-	park          note        // 注释：没有g需要运行时，工作线程睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
+	park          note        // 注释：没有g需要运行时，工作线程M睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
 	alllink       *m          // on allm // 注释：记录所有工作线程m的一个链表
-	schedlink     muintptr    // 注释：空闲的m链表（由midle指向）
+	schedlink     muintptr    // 注释：空闲的m链表（由sched.midle指向）
 	lockedg       guintptr    // 注释：m下指定执行的g(m里锁定的g)
 	createstack   [32]uintptr // stack that created this thread.
 	lockedExt     uint32      // tracking for external LockOSThread
@@ -744,7 +744,7 @@ type schedt struct {
 	// When increasing nmidle, nmidlelocked, nmsys, or nmfreed, be
 	// sure to call checkdead().
 
-	midle        muintptr // idle m's waiting for work               // 注释：由空闲的工作线程m组成链表midle->m.schedlink
+	midle        muintptr // idle m's waiting for work               // 注释：由空闲的工作线程m组成链表(midle和m.schedlink组成的链表)(midle值是m,m中的m.schedlink连接下一个midle)
 	nmidle       int32    // number of idle m's waiting for work     // 注释：空闲的工作线程m的数量
 	nmidlelocked int32    // number of locked m's waiting for work
 	mnext        int64    // number of m's that have been created and next M ID // 注释：下一个新m的主键ID值(用来创建新m时使用)
@@ -798,7 +798,7 @@ type schedt struct {
 	freem *m
 
 	gcwaiting  uint32 // gc is waiting to run // 注释：GC启动STW时会把gcwaiting=1，等待所有的M停止(休眠)
-	stopwait   int32  // 注释：停止等待，默认值是cup核数，冻结时值为一个很大的值，STW时减1
+	stopwait   int32  // 注释：停止等待，默认值是P的个数，如果等于0代表所有的P都已经被抢占了。冻结时值为一个很大的值，STW时减1,
 	stopnote   note
 	sysmonwait uint32
 	sysmonnote note
@@ -1078,11 +1078,11 @@ func (w waitReason) String() string {
 
 var (
 	// 注释：全局变量
-	allm       *m    // 注释：所有的m构成的一个链表，包括下面的m0
-	gomaxprocs int32 // 注释：p的最大值，默认等于ncpu，但可以通过GOMAXPROCS修改
-	ncpu       int32 // 注释：系统中cpu核的数量，程序启动时由runtime代码初始化
+	allm       *m    // 注释：(全局)所有的m构成的一个链表，包括下面的m0
+	gomaxprocs int32 // 注释：(全局)p的最大值，默认等于ncpu，但可以通过GOMAXPROCS修改
+	ncpu       int32 // 注释：(全局)系统中cpu核的数量，程序启动时由runtime代码初始化
 	forcegc    forcegcstate
-	sched      schedt // 注释：调度器结构体对象，记录了调度器的工作状态
+	sched      schedt // 注释：(全局)调度器结构体对象，记录了调度器的工作状态
 	newprocs   int32
 
 	// allpLock protects P-less reads and size changes of allp, idlepMask,

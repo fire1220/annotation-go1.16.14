@@ -192,7 +192,7 @@ type note struct {
 	// Futex-based impl treats it as uint32 key,
 	// while sema-based impl as M* waitm.
 	// Used to be a union, but unions break precise GC.
-	key uintptr
+	key uintptr // 注释：这里的值是【0或1或*M】0什么都不做，1已经是唤醒的状态，*M待唤醒的M指针
 }
 
 type funcval struct {
@@ -797,7 +797,7 @@ type schedt struct {
 	// m.exited is set. Linked through m.freelink.
 	freem *m
 
-	gcwaiting  uint32 // gc is waiting to run // 注释：GC启动STW时会把gcwaiting=1，等待所有的M停止(休眠)
+	gcwaiting  uint32 // gc is waiting to run // 注释：GC启动STW时会把gcwaiting=1，等待所有的M停止(休眠),默认是0
 	stopwait   int32  // 注释：停止等待，默认值是P的个数，如果等于0代表所有的P都已经被抢占了。冻结时值为一个很大的值，STW时减1,
 	stopnote   note
 	sysmonwait uint32

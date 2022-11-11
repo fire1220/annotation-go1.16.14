@@ -2311,7 +2311,7 @@ func stopm() {
 	mput(_g_.m) // 注释：把当前的M加入到空闲M链表中(空闲M链表是在全局的调度器中，所以需要加锁执行)
 	unlock(&sched.lock)
 	mPark()
-	acquirep(_g_.m.nextp.ptr())
+	acquirep(_g_.m.nextp.ptr()) // 注释：(获得P)当前线程m和p相互绑定，并且把p的状态从_Pidle设置成_Prunning
 	_g_.m.nextp = 0
 }
 

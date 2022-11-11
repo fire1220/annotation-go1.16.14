@@ -162,13 +162,14 @@ func notewakeup(n *note) {
 	}
 }
 
+// 注释：把当前M放在n.key里
 func notesleep(n *note) {
 	gp := getg()
 	if gp != gp.m.g0 {
 		throw("notesleep not on g0")
 	}
 	semacreate(gp.m)
-	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) {
+	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) { // 注释：【MacOS系统下】把当前M放在n.key里
 		// Must be locked (got wakeup).
 		if n.key != locked {
 			throw("notesleep - waitm out of sync")
@@ -199,7 +200,7 @@ func notetsleep_internal(n *note, ns int64, gp *g, deadline int64) bool {
 	gp = getg()
 
 	// Register for wakeup on n->waitm.
-	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) {
+	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) { // 【MacOS系统下】注释：把当前M放在n.key里了
 		// Must be locked (got wakeup).
 		if n.key != locked {
 			throw("notetsleep - waitm out of sync")

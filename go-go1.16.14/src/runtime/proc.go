@@ -892,6 +892,7 @@ func castogscanstatus(gp *g, oldval, newval uint32) bool {
 // and casfrom_Gscanstatus instead.
 // casgstatus will loop if the g->atomicstatus is in a Gscan status until the routine that
 // put it in the Gscan state is finished.
+// 注释：if gp.atomicstatus == oldval { gp = newval}
 //go:nosplit
 func casgstatus(gp *g, oldval, newval uint32) {
 	if (oldval&_Gscan != 0) || (newval&_Gscan != 0) || oldval == newval {
@@ -2676,17 +2677,21 @@ top:
 	}
 
 	// Poll network.
+	// 网络轮询
 	// This netpoll is only an optimization before we resort to stealing.
+	// 注释：在我们采取偷窃手段之前，这个网络投票只是一种优化。
 	// We can safely skip it if there are no waiters or a thread is blocked
 	// in netpoll already. If there is any kind of logical race with that
 	// blocked thread (e.g. it has already returned from netpoll, but does
 	// not set lastpoll yet), this thread will do blocking netpoll below
 	// anyway.
+	// 注释：网络轮询，是个优化方案
 	if netpollinited() && atomic.Load(&netpollWaiters) > 0 && atomic.Load64(&sched.lastpoll) != 0 {
+		// 注释：netpoll检查就绪的网络连接,返回可运行的goroutine列表
 		if list := netpoll(0); !list.empty() { // non-blocking
 			gp := list.pop()
 			injectglist(&list)
-			casgstatus(gp, _Gwaiting, _Grunnable)
+			casgstatus(gp, _Gwaiting, _Grunnable) // 注释：修改G的状态如果等于_Gwaiting时则修改为_Grunnable
 			if trace.enabled {
 				traceGoUnpark(gp, 0)
 			}

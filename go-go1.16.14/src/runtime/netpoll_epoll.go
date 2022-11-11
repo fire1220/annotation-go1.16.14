@@ -100,6 +100,7 @@ func netpollBreak() {
 
 // netpoll checks for ready network connections.
 // Returns list of goroutines that become runnable.
+// 注释：netpoll检查就绪的网络连接,返回可运行的goroutine列表
 // delay < 0: blocks indefinitely
 // delay == 0: does not block, just polls
 // delay > 0: block for up to that many nanoseconds

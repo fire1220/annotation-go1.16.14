@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c03534b2-0bbf-4f8c-86d8-7f5d17e28829" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/watcherTasks.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go-go1.16.14/src/runtime/proc.go" beforeDir="false" afterPath="$PROJECT_DIR$/go-go1.16.14/src/runtime/proc.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go-go1.16.14/src/runtime/runtime2.go" beforeDir="false" afterPath="$PROJECT_DIR$/go-go1.16.14/src/runtime/runtime2.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,6 +33,7 @@
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
     <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
+    <property name="go.vendoring.notification.had.been.shown" value="true" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="settings.editor.selected.configurable" value="watcher.settings" />
   </component>
@@ -47,7 +46,8 @@
       <option name="presentableId" value="Default" />
       <updated>1667992926408</updated>
       <workItem from="1667992927758" duration="171000" />
-      <workItem from="1667993125795" duration="7219000" />
+      <workItem from="1667993125795" duration="7330000" />
+      <workItem from="1668133375687" duration="1076000" />
     </task>
     <servers />
   </component>

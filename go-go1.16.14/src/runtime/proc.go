@@ -2577,9 +2577,9 @@ func gcstopm() {
 	}
 	_p_ := releasep() // 注释：释放P,解除P和M的绑定
 	lock(&sched.lock)
-	_p_.status = _Pgcstop // 注释：设置P的状态为GCstop，GC停止世界（STW）时把当前的P也停止了，并设置这个状态
-	sched.stopwait--      // 注释：停止等待，默认值是cup核数，冻结时值为一个很大的值，STW时减1
-	if sched.stopwait == 0 {
+	_p_.status = _Pgcstop    // 注释：设置P的状态为GCstop，GC停止世界（STW）时把当前的P也停止了，并设置这个状态
+	sched.stopwait--         // 注释：停止等待，默认值是cup核数，冻结时值为一个很大的值，STW时减1
+	if sched.stopwait == 0 { // 注释：如果没有需要停止等待的调度
 		notewakeup(&sched.stopnote)
 	}
 	unlock(&sched.lock)

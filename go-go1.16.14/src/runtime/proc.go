@@ -2631,6 +2631,7 @@ func execute(gp *g, inheritTime bool) {
 
 // Finds a runnable goroutine to execute.
 // Tries to steal from other P's, get g from local or global queue, poll network.
+// 注释：获取G；获取顺序是：先从本地P中获取-》全局队列中获取-》网络轮询，已经就绪的网络连接中获取（优化方案）-》去其他线程的本地队列里窃取（偷）
 func findrunnable() (gp *g, inheritTime bool) {
 	_g_ := getg()
 
@@ -3220,6 +3221,7 @@ top:
 	// 注释：从其他地方获取G(试图从其他P中窃取(偷)，从本地或全局队列、轮询网络中获取g。)
 	if gp == nil {
 		// 注释：想尽办法找到可运行的G，找不到就不用返回了(调用 findrunnable找g，找不到的话就将m休眠，等待唤醒)
+		// 注释：获取G；获取顺序是：先从本地P中获取-》全局队列中获取-》网络轮询，已经就绪的网络连接中获取（优化方案）-》去其他线程的本地队列里窃取（偷）
 		gp, inheritTime = findrunnable() // blocks until work is available
 	}
 

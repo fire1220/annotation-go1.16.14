@@ -9,6 +9,7 @@ import (
 	"internal/cpu"
 	"runtime/internal/atomic"
 	"runtime/internal/sys"
+	"time"
 	"unsafe"
 )
 
@@ -317,11 +318,12 @@ func goschedguarded() {
 // Reason explains why the goroutine has been parked. It is displayed in stack
 // traces and heap dumps. Reasons should be unique and descriptive. Do not
 // re-use reasons, add new ones.
+// 注释：把go代码停车；延迟执行。把要执行的方法放在mp.wait...前缀里，等待唤醒的时候执行
 func gopark(unlockf func(*g, unsafe.Pointer) bool, lock unsafe.Pointer, reason waitReason, traceEv byte, traceskip int) {
 	if reason != waitReasonSleep {
 		checkTimeouts() // timeouts may expire while two goroutines keep the scheduler busy
 	}
-	mp := acquirem()
+	mp := acquirem() // 注释：获取m
 	gp := mp.curg
 	status := readgstatus(gp)
 	if status != _Grunning && status != _Gscanrunning {
@@ -334,7 +336,7 @@ func gopark(unlockf func(*g, unsafe.Pointer) bool, lock unsafe.Pointer, reason w
 	mp.waittraceskip = traceskip
 	releasem(mp)
 	// can't do anything that might move the G between Ms here.
-	mcall(park_m)
+	mcall(park_m) // 注释：保存现场，并且变更G的状态	casgstatus(gp, _Grunning, _Gwaiting)
 }
 
 // Puts the current goroutine into a waiting state and unlocks the lock.
@@ -3297,7 +3299,7 @@ func checkTimers(pp *p, now int64) (rnow, pollUntil int64, ran bool) {
 	next := int64(atomic.Load64(&pp.timer0When))
 	nextAdj := int64(atomic.Load64(&pp.timerModifiedEarliest))
 	if next == 0 || (nextAdj != 0 && nextAdj < next) {
-		next = nextAdj
+		next = nextAdj // 注释：取next和nextAdj的最小值
 	}
 
 	if next == 0 {

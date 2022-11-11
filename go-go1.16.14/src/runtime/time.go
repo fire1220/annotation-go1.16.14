@@ -172,6 +172,7 @@ const verifyTimers = false
 // time.now is implemented in assembly.
 
 // timeSleep puts the current goroutine to sleep for at least ns nanoseconds.
+// 注释：暂停操作，time.sleep()
 //go:linkname timeSleep time.Sleep
 func timeSleep(ns int64) {
 	if ns <= 0 {
@@ -184,13 +185,14 @@ func timeSleep(ns int64) {
 		t = new(timer)
 		gp.timer = t
 	}
-	t.f = goroutineReady
-	t.arg = gp
-	t.nextwhen = nanotime() + ns
-	if t.nextwhen < 0 { // check for overflow.
+	t.f = goroutineReady         // 注释：casgstatus(gp, _Gwaiting, _Grunnable),把当期的G状态变更
+	t.arg = gp                   // 注释：这个是t.f的入参
+	t.nextwhen = nanotime() + ns // 注释：设置延迟执行的时间
+	if t.nextwhen < 0 {          // check for overflow.
 		t.nextwhen = maxWhen
 	}
-	gopark(resetForSleep, unsafe.Pointer(t), waitReasonSleep, traceEvGoSleep, 1)
+	// 注释：resetForSleep是重置定时器
+	gopark(resetForSleep, unsafe.Pointer(t), waitReasonSleep, traceEvGoSleep, 1) // 注释：延迟执行，把需要延迟执行的函数放这里，然后变更G的状态
 }
 
 // resetForSleep is called after the goroutine is parked for timeSleep.

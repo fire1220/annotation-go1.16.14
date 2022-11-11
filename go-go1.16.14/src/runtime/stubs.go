@@ -32,6 +32,7 @@ func getg() *g
 // This must NOT be go:noescape: if fn is a stack-allocated closure,
 // fn puts g on a run queue, and g executes before fn returns, the
 // closure will be invalidated while it is still executing.
+// 注释：保存现场; 汇编函数是：TEXT runtime·mcall(SB), NOSPLIT, $0-8
 func mcall(fn func(*g))
 
 // systemstack runs fn on a system stack.

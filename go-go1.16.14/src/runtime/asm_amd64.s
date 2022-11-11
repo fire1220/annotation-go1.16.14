@@ -309,6 +309,7 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	fn+0(FP), DI
 
+    // 注释：保存现场
 	get_tls(CX)
 	MOVQ	g(CX), AX	// save state in g->sched
 	MOVQ	0(SP), BX	// caller's PC

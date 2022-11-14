@@ -2766,9 +2766,9 @@ top:
 				}
 			}
 
-			// Don't bother to attempt to steal if p2 is idle.
+			// Don't bother to attempt to steal if p2 is idle. // 注释： 如果p2空闲，不要费心去偷。
 			if !idlepMask.read(enum.position()) {
-				if gp := runqsteal(_p_, p2, stealTimersOrRunNextG); gp != nil {
+				if gp := runqsteal(_p_, p2, stealTimersOrRunNextG); gp != nil { // 注释：开始窃取（偷）P2的G
 					return gp, false
 				}
 			}

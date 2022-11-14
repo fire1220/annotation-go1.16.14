@@ -6084,6 +6084,7 @@ func runqgrab(_p_ *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool
 // Steal half of elements from local runnable queue of p2
 // and put onto local runnable queue of p.
 // Returns one of the stolen elements (or nil if failed).
+// 注释：从P2中窃取（偷）一些G
 func runqsteal(_p_, p2 *p, stealRunNextG bool) *g {
 	t := _p_.runqtail
 	n := runqgrab(p2, &_p_.runq, t, stealRunNextG)
@@ -6091,7 +6092,7 @@ func runqsteal(_p_, p2 *p, stealRunNextG bool) *g {
 		return nil
 	}
 	n--
-	gp := _p_.runq[(t+n)%uint32(len(_p_.runq))].ptr()
+	gp := _p_.runq[(t+n)%uint32(len(_p_.runq))].ptr() // 注释：取出最后一个（这时候已经窃取（偷）完并且已经放在本地队列里了）
 	if n == 0 {
 		return gp
 	}
@@ -6099,7 +6100,7 @@ func runqsteal(_p_, p2 *p, stealRunNextG bool) *g {
 	if t-h+n >= uint32(len(_p_.runq)) {
 		throw("runqsteal: runq overflow")
 	}
-	atomic.StoreRel(&_p_.runqtail, t+n) // store-release, makes the item available for consumption
+	atomic.StoreRel(&_p_.runqtail, t+n) // store-release, makes the item available for consumption // 注释：&_p_.runqtail = t+n
 	return gp
 }
 

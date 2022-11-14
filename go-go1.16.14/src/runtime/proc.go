@@ -2767,7 +2767,7 @@ top:
 
 			// Don't bother to attempt to steal if p2 is idle. // 注释： 如果p2空闲，不要费心去偷。
 			if !idlepMask.read(enum.position()) {
-				if gp := runqsteal(_p_, p2, stealTimersOrRunNextG); gp != nil { // 注释：开始窃取（偷）P2的G
+				if gp := runqsteal(_p_, p2, stealTimersOrRunNextG); gp != nil { // 注释：向P2中窃取（偷）一些G
 					return gp, false
 				}
 			}
@@ -6088,7 +6088,7 @@ func runqgrab(_p_ *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool
 // 注释：从P2中窃取（偷）一些G
 func runqsteal(_p_, p2 *p, stealRunNextG bool) *g {
 	t := _p_.runqtail
-	n := runqgrab(p2, &_p_.runq, t, stealRunNextG)
+	n := runqgrab(p2, &_p_.runq, t, stealRunNextG) // 注释：从P2中窃取（偷）一下，如果P2中队列中没有，则尝试窃取下一个要运行的G（P2.runnext）
 	if n == 0 {
 		return nil
 	}

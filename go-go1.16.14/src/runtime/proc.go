@@ -9,7 +9,6 @@ import (
 	"internal/cpu"
 	"runtime/internal/atomic"
 	"runtime/internal/sys"
-	"time"
 	"unsafe"
 )
 

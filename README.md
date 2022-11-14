@@ -1,3 +1,14 @@
 # go1.16.14AnalysisRemarks
 go1.16.14源码分析和备注
-test
+
+### 已经备注的内容
+- map
+- 启动流程
+  - runtime.mstart -> runtime.mstart1 -> runtime.mstart0-> runtime.schedule
+- 调度器:runtime.schedule
+  - runtime.schedule 调度器开始
+  - runtime.globrunqget(每61次执行一下) 
+  - runtime.runqget 本地队列拿
+  - runtime.findrunnable 尝试从其他地方拿
+  - runtime.globrunqget 全局队列里拿 -netpoll 从网络轮询里拿（优化方案）
+  - runtime.runqsteal 从其他线程M的本地队列里窃取

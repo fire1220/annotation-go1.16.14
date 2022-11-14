@@ -1,10 +1,17 @@
 # go1.16.14AnalysisRemarks
-go1.16.14源码分析和备注
+go1.16.14源码分析备注
 
 ### 已经备注的内容
 - map
+
+
 - 启动流程
-  - runtime.mstart -> runtime.mstart1 -> runtime.mstart0-> runtime.schedule
+  - runtime.mstart 
+  - runtime.mstart1
+  - runtime.mstart0
+  - runtime.schedule
+
+
 - 调度器:runtime.schedule
   - runtime.schedule 调度器开始
   - runtime.globrunqget(每61次执行一下,到全局队列里拿一个)

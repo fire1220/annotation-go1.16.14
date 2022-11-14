@@ -5712,7 +5712,7 @@ func globrunqget(_p_ *p, max int32) *g {
 	}
 	// 注释：如果n大于本地队列的一半的时候
 	if n > int32(len(_p_.runq))/2 {
-		n = int32(len(_p_.runq)) / 2 // 注释：拿走本地队列一般的数量
+		n = int32(len(_p_.runq)) / 2 // 注释：拿走本地队列一半的数量
 	}
 
 	sched.runqsize -= n // 注释：全局队列个数减少n

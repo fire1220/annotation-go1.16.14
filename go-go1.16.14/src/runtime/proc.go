@@ -6028,6 +6028,7 @@ func runqget(_p_ *p) (gp *g, inheritTime bool) {
 // Batch is a ring buffer starting at batchHead.
 // Returns number of grabbed goroutines.
 // Can be executed by any P.
+// 注释：窃取（偷），目前只有窃取函数runqsteal调用此函数。_p_代表其他线程M下P，batch是本地队列,stealRunNextG代表是否是最有一次窃取
 func runqgrab(_p_ *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool) uint32 {
 	for {
 		h := atomic.LoadAcq(&_p_.runqhead) // load-acquire, synchronize with other consumers
@@ -6035,10 +6036,10 @@ func runqgrab(_p_ *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool
 		n := t - h
 		n = n - n/2
 		if n == 0 {
-			if stealRunNextG {
+			if stealRunNextG { // 注释：判断是否是最后一次窃取
 				// Try to steal from _p_.runnext.
-				if next := _p_.runnext; next != 0 {
-					if _p_.status == _Prunning {
+				if next := _p_.runnext; next != 0 { // 注释：尝试窃取P2下一个要运行的G
+					if _p_.status == _Prunning { // 注释：如果P2处于运行中,就等它一会
 						// Sleep to ensure that _p_ isn't about to run the g
 						// we are about to steal.
 						// The important use case here is when the g running
@@ -6058,10 +6059,11 @@ func runqgrab(_p_ *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool
 							osyield()
 						}
 					}
-					if !_p_.runnext.cas(next, 0) {
+					// 注释：如果处于运行中并且已经等了一会后，发现还没有被运行，则强过来
+					if !_p_.runnext.cas(next, 0) { // 注释：把_p_.runnext设置为0,原子操作,如果失败则跳过
 						continue
 					}
-					batch[batchHead%uint32(len(batch))] = next
+					batch[batchHead%uint32(len(batch))] = next // 注释：把P2下一个要运行的G抢过来
 					return 1
 				}
 			}
@@ -6071,11 +6073,11 @@ func runqgrab(_p_ *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool
 			continue
 		}
 		for i := uint32(0); i < n; i++ {
-			g := _p_.runq[(h+i)%uint32(len(_p_.runq))]
-			batch[(batchHead+i)%uint32(len(batch))] = g
+			g := _p_.runq[(h+i)%uint32(len(_p_.runq))]  // 注释：取出G
+			batch[(batchHead+i)%uint32(len(batch))] = g // 注释：把取出的G放到batch的尾部,(把偷过来的G放到本地队列P后面)
 		}
-		if atomic.CasRel(&_p_.runqhead, h, h+n) { // cas-release, commits consume
-			return n
+		if atomic.CasRel(&_p_.runqhead, h, h+n) { // cas-release, commits consume // 注释：从新设置P2的队列头部偏移量&_p_.runqhead = h+n
+			return n // 注释：返回窃取（偷）的数量
 		}
 	}
 }

@@ -29,17 +29,18 @@ const (
 	debugChan = false
 )
 
+// 注释：通道的结构体
 type hchan struct {
-	qcount   uint           // total data in the queue
-	dataqsiz uint           // size of the circular queue
-	buf      unsafe.Pointer // points to an array of dataqsiz elements
-	elemsize uint16
-	closed   uint32
-	elemtype *_type // element type
-	sendx    uint   // send index
-	recvx    uint   // receive index
-	recvq    waitq  // list of recv waiters
-	sendq    waitq  // list of send waiters
+	qcount   uint           // total data in the queue // 注释：通道队列中的数据个数
+	dataqsiz uint           // size of the circular queue // 注释：通道队列中的数据大小
+	buf      unsafe.Pointer // points to an array of dataqsiz elements // 注释：存放实际数据的指针
+	elemsize uint16         // 注释：通道类型大小
+	closed   uint32         // 注释：通道是否关闭
+	elemtype *_type         // element type // 注释：通道类型
+	sendx    uint           // send index // 注释：记录发送者在buf中的序号
+	recvx    uint           // receive index // 注释：记录接受者在buf中的序号
+	recvq    waitq          // list of recv waiters // 注释：读取的阻塞协程队列
+	sendq    waitq          // list of send waiters // 注释：写入的阻塞协程队列
 
 	// lock protects all fields in hchan, as well as several
 	// fields in sudogs blocked on this channel.
@@ -47,7 +48,7 @@ type hchan struct {
 	// Do not change another G's status while holding this lock
 	// (in particular, do not ready a G), as this can deadlock
 	// with stack shrinking.
-	lock mutex
+	lock mutex // 注释：锁，并发保护
 }
 
 type waitq struct {

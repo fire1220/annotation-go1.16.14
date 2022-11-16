@@ -51,6 +51,7 @@ type hchan struct {
 	lock mutex // 注释：锁，并发保护
 }
 
+// 注释：阻塞队列结构体
 type waitq struct {
 	first *sudog
 	last  *sudog

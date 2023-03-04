@@ -35,9 +35,9 @@ type _type struct {
 	ptrdata    uintptr // size of memory prefix holding all pointers
 	hash       uint32  // 注释：哈希是动态类型的唯一标识
 	tflag      tflag   // 注释：标志
-	align      uint8
-	fieldAlign uint8
-	kind       uint8 // 注释：基础类型
+	align      uint8   // 注释：类型的内存对齐
+	fieldAlign uint8   // 注释：字段内存对齐
+	kind       uint8   // 注释：基础类型
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
 	equal func(unsafe.Pointer, unsafe.Pointer) bool

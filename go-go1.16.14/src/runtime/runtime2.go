@@ -352,19 +352,19 @@ type sudog struct {
 	// channel this sudog is blocking on. shrinkstack depends on
 	// this for sudogs involved in channel ops.
 
-	g *g
+	g *g // 注释：需要休眠的G
 
-	next *sudog
-	prev *sudog
-	elem unsafe.Pointer // data element (may point to stack)
+	next *sudog         // 注释：双向循环链表的下一个指针
+	prev *sudog         // 注释：双向循环链表的上一个指针
+	elem unsafe.Pointer // data element (may point to stack) // 注释：数据元素指针（保存或读取的元素数据指针）
 
 	// The following fields are never accessed concurrently.
 	// For channels, waitlink is only accessed by g.
 	// For semaphores, all fields (including the ones above)
 	// are only accessed when holding a semaRoot lock.
 
-	acquiretime int64
-	releasetime int64
+	acquiretime int64 // 注释：初始胡的时间
+	releasetime int64 // 注释：释放时的时间
 	ticket      uint32
 
 	// isSelect indicates g is participating in a select, so

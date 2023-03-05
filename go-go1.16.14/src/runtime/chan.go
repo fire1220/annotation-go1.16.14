@@ -94,26 +94,26 @@ func makechan(t *chantype, size int) *hchan {
 	// TODO(dvyukov,rlh): Rethink when collector can move allocated objects.
 	var c *hchan
 	switch {
-	case mem == 0: // 注释：无缓冲区，直接开辟channel结构体的大小
+	case mem == 0: // 注释：无缓冲区，开辟channel结构体的大小
 		// Queue or element size is zero.
 		c = (*hchan)(mallocgc(hchanSize, nil, true))
 		// Race detector uses this location for synchronization.
 		c.buf = c.raceaddr()
-	case elem.ptrdata == 0: // 注释：不是指针数据，则直接开辟连续的空间
+	case elem.ptrdata == 0: // 注释：不是指针数据，开辟连续的空间
 		// Elements do not contain pointers.
 		// Allocate hchan and buf in one call.
 		c = (*hchan)(mallocgc(hchanSize+mem, nil, true))
 		c.buf = add(unsafe.Pointer(c), hchanSize)
-	default:
+	default: // 注释：默认情况下，实例化channel类型指针，然后单独申请地址给c.buf
 		// Elements contain pointers.
 		c = new(hchan)
 		c.buf = mallocgc(mem, elem, true)
 	}
 
-	c.elemsize = uint16(elem.size)
-	c.elemtype = elem
-	c.dataqsiz = uint(size)
-	lockInit(&c.lock, lockRankHchan)
+	c.elemsize = uint16(elem.size)   // 注释：每个元素的类型大小
+	c.elemtype = elem                // 注释：元素类型
+	c.dataqsiz = uint(size)          // 注释：整个channel的容量大小
+	lockInit(&c.lock, lockRankHchan) // 注释：初始化并发锁
 
 	if debugChan {
 		print("makechan: chan=", c, "; elemsize=", elem.size, "; dataqsiz=", size, "\n")

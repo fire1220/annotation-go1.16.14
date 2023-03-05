@@ -70,6 +70,7 @@ func makechan64(t *chantype, size int64) *hchan {
 	return makechan(t, int(size))
 }
 
+// 注释：make一个chan的主函数；make(chan类型, chan缓冲区大小)
 func makechan(t *chantype, size int) *hchan {
 	elem := t.elem
 
@@ -81,7 +82,7 @@ func makechan(t *chantype, size int) *hchan {
 		throw("makechan: bad alignment")
 	}
 
-	mem, overflow := math.MulUintptr(elem.size, uintptr(size))
+	mem, overflow := math.MulUintptr(elem.size, uintptr(size)) // 注释：两数相乘（单个元素大小*缓冲区大小=需要开辟的内存大小）
 	if overflow || mem > maxAlloc-hchanSize || size < 0 {
 		panic(plainError("makechan: size out of range"))
 	}

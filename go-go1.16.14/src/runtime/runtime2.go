@@ -98,7 +98,7 @@ const (
 	// return to when the scan completes.
 	_Gscan          = 0x1000               // 注释：_Gscan=10 GC 正在扫描栈空间，没有执行代码，可以与其他状态同时存在
 	_Gscanrunnable  = _Gscan + _Grunnable  // 0x1001
-	_Gscanrunning   = _Gscan + _Grunning   // 0x1002
+	_Gscanrunning   = _Gscan + _Grunning   // 0x1002 // 注释：GC扫描中+G运行中
 	_Gscansyscall   = _Gscan + _Gsyscall   // 0x1003
 	_Gscanwaiting   = _Gscan + _Gwaiting   // 0x1004
 	_Gscanpreempted = _Gscan + _Gpreempted // 0x1009
@@ -520,7 +520,7 @@ type m struct {
 
 	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的g结构体对象,要确定g是在用户堆栈还是系统堆栈上运行，可以使用if getg() == getg().m.curg {用户态堆栈} else {系统堆栈}
 	caughtsig     guintptr // goroutine running during fatal signal
-	p             puintptr // attached p for executing go code (nil if not executing go code) // 注释：记录与当前工作线程绑定的p结构体对象
+	p             puintptr // 注释：记录与当前工作线程绑定的p结构体对象 // attached p for executing go code (nil if not executing go code)
 	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定)
 	oldp          puintptr // the p that was attached before executing a syscall
 	id            int64
@@ -530,7 +530,7 @@ type m struct {
 	locks         int32  // 注释：大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
-	spinning      bool // m is out of work and is actively looking for work // 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g
+	spinning      bool // 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work
 	blocked       bool // m is blocked on a note
 	newSigstack   bool // minit on C thread called sigaltstack
 	printlock     int8
@@ -539,23 +539,23 @@ type m struct {
 	fastrand      [2]uint32
 	needextram    bool
 	traceback     uint8
-	ncgocall      uint64      // number of cgo calls in total
-	ncgo          int32       // number of cgo calls currently in progress
-	cgoCallersUse uint32      // if non-zero, cgoCallers in use temporarily
-	cgoCallers    *cgoCallers // cgo traceback if crashing in cgo call
-	doesPark      bool        // non-P running threads: sysmon and newmHandoff never use .park // 注释：是否使用park
-	park          note        // 注释：没有g需要运行时，工作线程M睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
-	alllink       *m          // on allm // 注释：记录所有工作线程m的一个链表
-	schedlink     muintptr    // 注释：空闲的m链表（由sched.midle指向）
-	lockedg       guintptr    // 注释：m下指定执行的g(m里锁定的g)
-	createstack   [32]uintptr // stack that created this thread.
-	lockedExt     uint32      // tracking for external LockOSThread
-	lockedInt     uint32      // tracking for internal lockOSThread
-	nextwaitm     muintptr    // next m waiting for lock
-	waitunlockf   func(*g, unsafe.Pointer) bool
-	waitlock      unsafe.Pointer
-	waittraceev   byte
-	waittraceskip int
+	ncgocall      uint64                        // number of cgo calls in total
+	ncgo          int32                         // number of cgo calls currently in progress
+	cgoCallersUse uint32                        // if non-zero, cgoCallers in use temporarily
+	cgoCallers    *cgoCallers                   // cgo traceback if crashing in cgo call
+	doesPark      bool                          // 注释：是否使用park // non-P running threads: sysmon and newmHandoff never use .park
+	park          note                          // 注释：没有g需要运行时，工作线程M睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
+	alllink       *m                            // 注释：记录所有工作线程m的一个链表 // on allm
+	schedlink     muintptr                      // 注释：空闲的m链表（由sched.midle指向）
+	lockedg       guintptr                      // 注释：m下指定执行的g(m里锁定的g)
+	createstack   [32]uintptr                   // stack that created this thread.
+	lockedExt     uint32                        // tracking for external LockOSThread
+	lockedInt     uint32                        // tracking for internal lockOSThread
+	nextwaitm     muintptr                      // next m waiting for lock
+	waitunlockf   func(*g, unsafe.Pointer) bool // 注释：解除等待锁指针的函数
+	waitlock      unsafe.Pointer                // 注释：等待锁指针
+	waittraceev   byte                          // 注释：等待追踪事件类型
+	waittraceskip int                           // 注释：跳过几层事件追踪的结果（事件追踪结果中从哪一级返回数据，跳过的是不重要的）
 	startingtrace bool
 	syscalltick   uint32
 	freelink      *m // on sched.freem // 注释：对应freem的链表(freelink->sched.freem)
@@ -1016,6 +1016,7 @@ const _TracebackMaxFrames = 100
 // See gopark. Do not re-use waitReasons, add new ones.
 type waitReason uint8
 
+// 注释：等待锁的原因
 const (
 	waitReasonZero                  waitReason = iota // ""
 	waitReasonGCAssistMarking                         // "GC assist marking"

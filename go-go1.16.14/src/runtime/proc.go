@@ -322,18 +322,19 @@ func gopark(unlockf func(*g, unsafe.Pointer) bool, lock unsafe.Pointer, reason w
 	if reason != waitReasonSleep {
 		checkTimeouts() // timeouts may expire while two goroutines keep the scheduler busy
 	}
-	mp := acquirem() // 注释：获取m
-	gp := mp.curg
-	status := readgstatus(gp)
+	mp := acquirem()          // 注释：获取当前G对应的M
+	gp := mp.curg             // 注释：获取M里正在工作的G
+	status := readgstatus(gp) // 注释：获取gp的G的状态
+	// 注释：如果G的状态（不是运行中）和（不是GC扫描加运行中）时报错
 	if status != _Grunning && status != _Gscanrunning {
 		throw("gopark: bad g status")
 	}
-	mp.waitlock = lock
-	mp.waitunlockf = unlockf
-	gp.waitreason = reason
-	mp.waittraceev = traceEv
-	mp.waittraceskip = traceskip
-	releasem(mp)
+	mp.waitlock = lock           // 注释：设置等待锁
+	mp.waitunlockf = unlockf     // 注释：设置解除等待锁的函数
+	gp.waitreason = reason       // 注释：设置锁的原因
+	mp.waittraceev = traceEv     // 注释：设置等待追踪事件类型
+	mp.waittraceskip = traceskip // 注释：跳过几级事件追踪结果
+	releasem(mp)                 // 注释：释放掉m
 	// can't do anything that might move the G between Ms here.
 	mcall(park_m) // 注释：保存现场，并且变更G的状态	casgstatus(gp, _Grunning, _Gwaiting)
 }

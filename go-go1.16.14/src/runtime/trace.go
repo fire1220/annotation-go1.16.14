@@ -19,6 +19,7 @@ import (
 )
 
 // Event types in the trace, args are given in square brackets.
+// 注释：追踪的事件类型，参数在方括号中给出
 const (
 	traceEvNone              = 0  // unused
 	traceEvBatch             = 1  // start of per-P batch of events [pid, timestamp]

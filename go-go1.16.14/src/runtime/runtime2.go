@@ -369,7 +369,7 @@ type sudog struct {
 
 	// isSelect indicates g is participating in a select, so
 	// g.selectDone must be CAS'd to win the wake-up race.
-	isSelect bool
+	isSelect bool // 注释：是否参与select
 
 	// success indicates whether communication over channel c
 	// succeeded. It is true if the goroutine was awoken because a
@@ -382,7 +382,7 @@ type sudog struct {
 	parent   *sudog // semaRoot binary tree
 	waitlink *sudog // g.waiting list or semaRoot
 	waittail *sudog // semaRoot
-	c        *hchan // channel
+	c        *hchan // channel   // 注释：所在管道channel的地址
 }
 
 type libcall struct {

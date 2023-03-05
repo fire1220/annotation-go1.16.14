@@ -34,11 +34,11 @@ type hchan struct {
 	qcount   uint           // total data in the queue // 注释：通道队列中的数据个数（有效数据个数）
 	dataqsiz uint           // size of the circular queue // 注释：通道队列的尺寸（可以容纳的总个数）
 	buf      unsafe.Pointer // points to an array of dataqsiz elements // 注释：存放实际数据的指针
-	elemsize uint16         // 注释：通道类型大小
+	elemsize uint16         // 注释：元素类型大小
 	closed   uint32         // 注释：通道是否关闭
-	elemtype *_type         // element type // 注释：通道类型（写入通道的时候用到）
-	sendx    uint           // send index // 注释：记录发送者（写入）在buf中的序号
-	recvx    uint           // receive index // 注释：记录接收者（读取）在buf中的序号
+	elemtype *_type         // element type // 注释：元素类型（写入通道的时候用到）
+	sendx    uint           // send index // 注释：记录发送者（写入）在buf中的序号（数组下标）
+	recvx    uint           // receive index // 注释：记录接收者（读取）在buf中的序号（数组下标）
 	recvq    waitq          // list of recv waiters // 注释：读取的阻塞协程队列
 	sendq    waitq          // list of send waiters // 注释：写入的阻塞协程队列
 

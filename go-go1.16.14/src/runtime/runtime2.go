@@ -375,6 +375,8 @@ type sudog struct {
 	// succeeded. It is true if the goroutine was awoken because a
 	// value was delivered over channel c, and false if awoken
 	// because c was closed.
+	// 注释：信道c上的通信是否成功。如果goroutine因为值通过通道c传递而被唤醒，则为true，如果因为c被关闭而被唤醒则为false
+	// 注释：是否因通道唤醒
 	success bool
 
 	parent   *sudog // semaRoot binary tree

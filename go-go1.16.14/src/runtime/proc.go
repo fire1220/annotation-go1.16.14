@@ -317,7 +317,7 @@ func goschedguarded() {
 // Reason explains why the goroutine has been parked. It is displayed in stack
 // traces and heap dumps. Reasons should be unique and descriptive. Do not
 // re-use reasons, add new ones.
-// 注释：把go代码停车；延迟执行。把要执行的方法放在mp.wait...前缀里，等待唤醒的时候执行
+// 注释：(让渡控制权，当前携程G阻塞)把go代码停车；延迟执行。把要执行的方法放在mp.wait...前缀里，等待唤醒的时候执行
 func gopark(unlockf func(*g, unsafe.Pointer) bool, lock unsafe.Pointer, reason waitReason, traceEv byte, traceskip int) {
 	if reason != waitReasonSleep {
 		checkTimeouts() // timeouts may expire while two goroutines keep the scheduler busy

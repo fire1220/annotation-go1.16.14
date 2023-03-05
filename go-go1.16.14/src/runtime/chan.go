@@ -159,21 +159,23 @@ func chansend1(c *hchan, elem unsafe.Pointer) {
  * been closed.  it is easiest to loop and re-run
  * the operation; we'll see that it's now closed.
  */
-// 注释：写入（发送）channel数据；ep是写入数据的变量指针
+// 注释：写入（发送）管道数据；ep是写入数据的变量指针
 func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if c == nil {
 		if !block {
 			return false
 		}
-		// 注释：如果channel为nil的时候，让渡G的控制权（携程G阻塞）
+		// 注释：如果channel为nil的时候，让渡G的控制权（携程G阻塞），然后抛出异常
 		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}
 
+	// 注释：如果设置管道debug，则打印管道指针
 	if debugChan {
 		print("chansend: chan=", c, "\n")
 	}
 
+	// 注释：如果开启数据竞争，则收集数据竞争需要的内容数据
 	if raceenabled {
 		racereadpc(c.raceaddr(), callerpc, funcPC(chansend))
 	}

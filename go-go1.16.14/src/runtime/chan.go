@@ -94,12 +94,12 @@ func makechan(t *chantype, size int) *hchan {
 	// TODO(dvyukov,rlh): Rethink when collector can move allocated objects.
 	var c *hchan
 	switch {
-	case mem == 0:
+	case mem == 0: // 注释：无缓冲区，直接开辟channel结构体的大小
 		// Queue or element size is zero.
 		c = (*hchan)(mallocgc(hchanSize, nil, true))
 		// Race detector uses this location for synchronization.
 		c.buf = c.raceaddr()
-	case elem.ptrdata == 0:
+	case elem.ptrdata == 0: // 注释：不是指针数据，则直接开辟连续的空间
 		// Elements do not contain pointers.
 		// Allocate hchan and buf in one call.
 		c = (*hchan)(mallocgc(hchanSize+mem, nil, true))
@@ -827,6 +827,7 @@ func (c *hchan) raceaddr() unsafe.Pointer {
 	// or dataqsiz, because the len() and cap() builtins read
 	// those addresses, and we don't want them racing with
 	// operations like close().
+	// 注释：将通道上的类读和类写操作视为在此地址发生。避免使用qcount或dataqsiz的地址，因为len()和cap()内置函数读取这些地址，我们不希望它们与close()等操作竞争。
 	return unsafe.Pointer(&c.buf)
 }
 

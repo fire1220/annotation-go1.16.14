@@ -83,6 +83,7 @@ func makechan(t *chantype, size int) *hchan {
 	}
 
 	mem, overflow := math.MulUintptr(elem.size, uintptr(size)) // 注释：两数相乘（单个元素大小*缓冲区大小=需要开辟的内存大小）
+	// 注释：内存有溢出或者超出可分配的最大值或者第二个参数size小于0是报错
 	if overflow || mem > maxAlloc-hchanSize || size < 0 {
 		panic(plainError("makechan: size out of range"))
 	}

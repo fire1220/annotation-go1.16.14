@@ -339,14 +339,19 @@ type gobuf struct {
 
 // sudog represents a g in a wait list, such as for sending/receiving
 // on a channel.
+// 注释：sudog表示等待列表中的g，例如用于在信道上发送/接收。
 //
 // sudog is necessary because the g ↔ synchronization object relation
 // is many-to-many. A g can be on many wait lists, so there may be
 // many sudogs for one g; and many gs may be waiting on the same
 // synchronization object, so there may be many sudogs for one object.
+// 注释：sudog是必要的，因为g↔ 同步对象关系是多对多的。一个g可以在很多等待列表中，所以一个g可能有很多sudog；许多gs可能正在等待同一个同步对象，因此一个对象可能有许多sudog。
 //
 // sudogs are allocated from a special pool. Use acquireSudog and
 // releaseSudog to allocate and free them.
+// 注释：sudog是从一个特殊的池中分配的。使用acquireSudog和releaseSudog来分配和释放它们。
+//
+// 注释：等待列表中的G
 type sudog struct {
 	// The following fields are protected by the hchan.lock of the
 	// channel this sudog is blocking on. shrinkstack depends on

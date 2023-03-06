@@ -9,7 +9,7 @@ package atomic
 import "unsafe"
 
 //go:noescape
-func Cas(ptr *uint32, old, new uint32) bool
+func Cas(ptr *uint32, old, new uint32) bool // 注释：比较赋值，如果prt==old,则赋值ptr=new，返回TRUE否则返回FALSE
 
 // NO go:noescape annotation; see atomic_pointer.go.
 func Casp1(ptr *unsafe.Pointer, old, new unsafe.Pointer) bool

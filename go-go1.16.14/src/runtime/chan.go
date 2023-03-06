@@ -213,6 +213,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		panic(plainError("send on closed channel"))
 	}
 
+	// 注释：获取读取等待队列里最先陷入等待的G，直接写入（发送）；（如果有G说明缓冲区已经满了或没有缓冲区）
 	if sg := c.recvq.dequeue(); sg != nil {
 		// Found a waiting receiver. We pass the value we want to send
 		// directly to the receiver, bypassing the channel buffer (if any).
@@ -794,6 +795,7 @@ func (q *waitq) enqueue(sgp *sudog) {
 	q.last = sgp
 }
 
+// 注释：出栈，把链表第一个元素取出来
 func (q *waitq) dequeue() *sudog {
 	for {
 		sgp := q.first
@@ -801,10 +803,12 @@ func (q *waitq) dequeue() *sudog {
 			return nil
 		}
 		y := sgp.next
+		// 注释：如果链表的下一个元素为nil，说明出栈以后，链表已经没有元素了
 		if y == nil {
 			q.first = nil
 			q.last = nil
 		} else {
+			// 注释：把链表的下一个元素绑定到first上，然后断开出栈的元素与链表的关系
 			y.prev = nil
 			q.first = y
 			sgp.next = nil // mark as removed (see dequeueSudog)
@@ -818,10 +822,12 @@ func (q *waitq) dequeue() *sudog {
 		// We use a flag in the G struct to tell us when someone
 		// else has won the race to signal this goroutine but the goroutine
 		// hasn't removed itself from the queue yet.
+		// 注释：如果出栈的数据处于select中，并且原子操作，判断是否完成，如果没有关闭则设置为完成，然后跳过循环
 		if sgp.isSelect && !atomic.Cas(&sgp.g.selectDone, 0, 1) {
 			continue
 		}
 
+		// 注释：返回链表第一个元素（出栈）
 		return sgp
 	}
 }

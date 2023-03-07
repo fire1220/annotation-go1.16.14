@@ -99,7 +99,7 @@ func makechan(t *chantype, size int) *hchan {
 		c = (*hchan)(mallocgc(hchanSize, nil, true))
 		// Race detector uses this location for synchronization.
 		c.buf = c.raceaddr()
-	case elem.ptrdata == 0: // 注释：不是指针数据，开辟连续的空间
+	case elem.ptrdata == 0: // 注释：元素不包含指针，不是指针数据，开辟连续的空间
 		// Elements do not contain pointers.
 		// Allocate hchan and buf in one call.
 		c = (*hchan)(mallocgc(hchanSize+mem, nil, true))

@@ -131,6 +131,7 @@ func chanbuf(c *hchan, i uint) unsafe.Pointer {
 // It uses a single word-sized read of mutable state, so although
 // the answer is instantaneously true, the correct answer may have changed
 // by the time the calling function receives the return value.
+// 注释：判读管道是否已经满了，满了返回TRUE
 func full(c *hchan) bool {
 	// c.dataqsiz is immutable (never written after the channel is created)
 	// so it is safe to read at any time during channel operation.

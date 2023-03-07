@@ -1172,7 +1172,7 @@ opswitch:
 	case OADDSTR: // 注释：字符串用加号（+）拼接时类型的节点，是通过OADD节点转换过来的
 		n = addstr(n, init)
 
-	case OAPPEND:
+	case OAPPEND: // 注释：追加切片
 		// order should make sure we only see OAS(node, OAPPEND), which we handle above.
 		Fatalf("append outside assignment")
 
@@ -1180,13 +1180,13 @@ opswitch:
 		n = copyany(n, init, instrumenting && !compiling_runtime)
 
 		// cannot use chanfn - closechan takes any, not chan any
-	case OCLOSE:
+	case OCLOSE: // 注释：关闭管道
 		fn := syslook("closechan")
 
 		fn = substArgTypes(fn, n.Left.Type)
 		n = mkcall1(fn, nil, init, n.Left)
 
-	case OMAKECHAN:
+	case OMAKECHAN: // 注释：make管道
 		// When size fits into int, use makechan instead of
 		// makechan64, which is faster and shorter on 32 bit platforms.
 		size := n.Left
@@ -1203,7 +1203,7 @@ opswitch:
 
 		n = mkcall1(chanfn(fnname, 1, n.Type), n.Type, init, typename(n.Type), conv(size, argtype))
 
-	case OMAKEMAP:
+	case OMAKEMAP: // 注释：make一个map
 		t := n.Type
 		// 注释：构建结构申请内存
 		hmapType := hmap(t)
@@ -1568,7 +1568,7 @@ opswitch:
 		anylit(n, var_, init)
 		n = var_
 
-	case OSEND:
+	case OSEND: // 注释：写入管道数据（c <- x）
 		n1 := n.Right
 		n1 = assignconv(n1, n.Left.Type.Elem(), "chan send")
 		n1 = walkexpr(n1, init)

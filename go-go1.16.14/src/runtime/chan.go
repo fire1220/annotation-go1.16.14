@@ -62,6 +62,7 @@ func reflect_makechan(t *chantype, size int) *hchan {
 	return makechan(t, size)
 }
 
+// 注释：64位make管道；主要是判断是否超出int类型大小，一个管道的大小最大是int类型大小
 func makechan64(t *chantype, size int64) *hchan {
 	if int64(int(size)) != size {
 		panic(plainError("makechan: size out of range"))
@@ -70,7 +71,7 @@ func makechan64(t *chantype, size int64) *hchan {
 	return makechan(t, int(size))
 }
 
-// 注释：make一个chan的主函数；make(chan类型, chan缓冲区大小)
+// 注释：make管道的主函数；make(chan类型, chan缓冲区大小)
 func makechan(t *chantype, size int) *hchan {
 	elem := t.elem
 

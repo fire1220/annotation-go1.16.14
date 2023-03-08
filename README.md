@@ -3,7 +3,24 @@ go1.16.14源码分析备注
 
 ### 已经备注的内容
 - map
+  - hmap核心结构体；bmap等相关结构体
+  - makemap
+  - 读取和写入
+  - 哈希冲突
+  
 
+- 切片
+  - 切片扩容规则
+  
+  
+- 字符串
+
+
+- 管道
+  - hchan等相关结构体
+  - makechan
+  - sendchan发送数据（写入数据）
+  
 
 - 启动流程
   - runtime.mstart 

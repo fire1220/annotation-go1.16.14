@@ -361,7 +361,7 @@ type sudog struct {
 
 	next *sudog         // 注释：双向循环链表的下一个指针
 	prev *sudog         // 注释：双向循环链表的上一个指针
-	elem unsafe.Pointer // data element (may point to stack) // 注释：数据元素指针（保存或读取的元素数据指针）
+	elem unsafe.Pointer // 注释：数据元素指针（保存或读取的元素数据指针）// data element (may point to stack)
 
 	// The following fields are never accessed concurrently.
 	// For channels, waitlink is only accessed by g.
@@ -381,8 +381,7 @@ type sudog struct {
 	// value was delivered over channel c, and false if awoken
 	// because c was closed.
 	// 注释：信道c上的通信是否成功。如果goroutine因为值通过通道c传递而被唤醒，则为true，如果因为c被关闭而被唤醒则为false
-	// 注释：是否因通道唤醒
-	success bool
+	success bool // 注释：是否因通道唤醒
 
 	parent   *sudog // semaRoot binary tree
 	waitlink *sudog // g.waiting list or semaRoot

@@ -303,6 +303,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 // sg must already be dequeued from c.
 // ep must be non-nil and point to the heap or the caller's stack.
 func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
+	// 注释：如果开启数据竞争则进行标记或提示
 	if raceenabled {
 		if c.dataqsiz == 0 {
 			racesync(c, sg)
@@ -320,17 +321,18 @@ func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 		}
 	}
 	if sg.elem != nil {
+		// 注释：（直接发送）如果元素有值则直接发送，sg是读取阻塞队列里出来的元素（读取管道的地方），ep是写入管道数据指针，c是管道
 		sendDirect(c.elemtype, sg, ep)
 		sg.elem = nil
 	}
 	gp := sg.g
 	unlockf()
-	gp.param = unsafe.Pointer(sg)
-	sg.success = true
-	if sg.releasetime != 0 {
-		sg.releasetime = cputicks()
+	gp.param = unsafe.Pointer(sg) // 注释：唤醒时需要使用的参数
+	sg.success = true             // 注释：设置为因通道唤醒（该字段含义：是否因通道唤醒）
+	if sg.releasetime != 0 {      // 注释：如果存在释放时间
+		sg.releasetime = cputicks() // 注释：设置CPU的频率（每毫秒）为释放时间
 	}
-	goready(gp, skip+1)
+	goready(gp, skip+1) // 注释：把读取阻塞的G拿出来，放到下一个准备执行的G位置上
 }
 
 // Sends and receives on unbuffered or empty-buffered channels are the
@@ -343,6 +345,7 @@ func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 // are not in the heap, so that will not help. We arrange to call
 // memmove and typeBitsBulkBarrier instead.
 
+// 注释：直接发送，把读取等待队列的sg拿出来（读取管道），直接执行src（写入管道的数据）
 func sendDirect(t *_type, sg *sudog, src unsafe.Pointer) {
 	// src is on our stack, dst is a slot on another stack.
 
@@ -798,7 +801,7 @@ func (q *waitq) enqueue(sgp *sudog) {
 	q.last = sgp
 }
 
-// 注释：出栈，把链表第一个元素取出来
+// 注释：元素移除队列，把链表第一个元素取出来
 func (q *waitq) dequeue() *sudog {
 	for {
 		sgp := q.first

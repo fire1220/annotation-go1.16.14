@@ -345,7 +345,9 @@ func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
 	gopark(parkunlock_c, unsafe.Pointer(lock), reason, traceEv, traceskip)
 }
 
+// 注释：把gp放到下traceskip个位置上等待执行
 func goready(gp *g, traceskip int) {
+	// 注释：系统栈切换，把gp放到下traceskip个执行的栈位置上
 	systemstack(func() {
 		ready(gp, traceskip, true)
 	})

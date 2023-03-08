@@ -97,17 +97,17 @@ func makechan(t *chantype, size int) *hchan {
 	switch {
 	case mem == 0: // 注释：无缓冲区，开辟channel结构体的大小
 		// Queue or element size is zero.
-		c = (*hchan)(mallocgc(hchanSize, nil, true))
+		c = (*hchan)(mallocgc(hchanSize, nil, true)) // 注释：分配管道地址
 		// Race detector uses this location for synchronization.
 		c.buf = c.raceaddr()
 	case elem.ptrdata == 0: // 注释：元素不包含指针，不是指针数据，开辟连续的空间
 		// Elements do not contain pointers.
 		// Allocate hchan and buf in one call.
-		c = (*hchan)(mallocgc(hchanSize+mem, nil, true))
+		c = (*hchan)(mallocgc(hchanSize+mem, nil, true)) // 注释：分配管道地址
 		c.buf = add(unsafe.Pointer(c), hchanSize)
-	default: // 注释：默认情况下，实例化channel类型指针，然后单独申请地址给c.buf
+	default: // 注释：元素包含指针的情况下（默认情况），实例化channel类型指针，然后单独申请地址给c.buf
 		// Elements contain pointers.
-		c = new(hchan)
+		c = new(hchan) // 注释：分配管道地址
 		c.buf = mallocgc(mem, elem, true)
 	}
 
@@ -223,6 +223,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		return true
 	}
 
+	// 注释当c.qcount（实际数据数量）小于c.dataqsiz（可容纳的总数量）时，说明缓冲区还有地方
 	if c.qcount < c.dataqsiz {
 		// Space is available in the channel buffer. Enqueue the element to send.
 		qp := chanbuf(c, c.sendx)

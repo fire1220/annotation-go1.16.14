@@ -19,7 +19,7 @@ go1.16.14源码分析备注
 - 管道
   - hchan等相关结构体
   - makechan
-  - sendchan发送数据（写入数据）
+  - chansend发送数据（写入数据）
   
 
 - 启动流程

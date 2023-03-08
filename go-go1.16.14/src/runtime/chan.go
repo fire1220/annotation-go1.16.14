@@ -219,7 +219,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if sg := c.recvq.dequeue(); sg != nil {
 		// Found a waiting receiver. We pass the value we want to send
 		// directly to the receiver, bypassing the channel buffer (if any).
-		send(c, sg, ep, func() { unlock(&c.lock) }, 3)
+		send(c, sg, ep, func() { unlock(&c.lock) }, 3) // 注释：直接发送，把写入的数据直接直接发送到阻塞的读取位置，设置系统调用栈，把其放到下一个要执行的G里
 		return true
 	}
 

@@ -207,7 +207,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		t0 = cputicks()
 	}
 
-	lock(&c.lock) // 注释：锁定管道
+	lock(&c.lock) // 注释：锁定管道，下面开始正式写入操作
 
 	// 注释：写入一个已经关闭的管道时异常（如果管道已经处于关闭状态时：解锁，抛出异常）
 	if c.closed != 0 {

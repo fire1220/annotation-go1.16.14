@@ -162,9 +162,11 @@ func chansend1(c *hchan, elem unsafe.Pointer) {
  * been closed.  it is easiest to loop and re-run
  * the operation; we'll see that it's now closed.
  */
-// 注释：写入（发送）管道数据；ep是写入的数据变量指针(element pointer)
+// 注释：写入（发送）管道数据；ep是写入的数据变量指针(element pointer)， block是否阻塞
 func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
+	// 注释：如果管道没有初始化
 	if c == nil {
+		// 注释：并且是非阻塞的情况下返回FALSE，否则进入阻塞状态并且报错
 		if !block {
 			return false
 		}
@@ -243,6 +245,9 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		return true
 	}
 
+	// 注释：下面是无缓冲区或者缓冲区已满的情况下执行
+
+	// 注释：缓冲区已满或无缓冲区，并且是非阻塞的情况下：解锁，并返回FALSE
 	if !block {
 		unlock(&c.lock)
 		return false

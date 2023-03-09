@@ -224,6 +224,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		return true
 	}
 
+	// 注释：有缓存的情况下写入
 	// 注释当c.qcount（实际数据数量）小于c.dataqsiz（可容纳的总数量）时，说明缓冲区还有地方
 	if c.qcount < c.dataqsiz {
 		// Space is available in the channel buffer. Enqueue the element to send.

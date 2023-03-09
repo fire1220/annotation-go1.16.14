@@ -123,8 +123,9 @@ func makechan(t *chantype, size int) *hchan {
 }
 
 // chanbuf(c, i) is pointer to the i'th slot in the buffer.
+// 注释：返回要插入管道的位置指针（根据管道和要插入位置的坐标c.sendx和c.elemsize每个元素的大小得出要插入的位置的指针）
 func chanbuf(c *hchan, i uint) unsafe.Pointer {
-	return add(c.buf, uintptr(i)*uintptr(c.elemsize))
+	return add(c.buf, uintptr(i)*uintptr(c.elemsize)) // 注释：c.buf是数据头指针，i是要插入的位置(是c.sendx的值),c.elemsize是单个元素的大小
 }
 
 // full reports whether a send on c would block (that is, the channel is full).
@@ -161,7 +162,7 @@ func chansend1(c *hchan, elem unsafe.Pointer) {
  * been closed.  it is easiest to loop and re-run
  * the operation; we'll see that it's now closed.
  */
-// 注释：写入（发送）管道数据；ep是写入数据的变量指针(element pointer)
+// 注释：写入（发送）管道数据；ep是写入的数据变量指针(element pointer)
 func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if c == nil {
 		if !block {
@@ -226,17 +227,18 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	// 注释当c.qcount（实际数据数量）小于c.dataqsiz（可容纳的总数量）时，说明缓冲区还有地方
 	if c.qcount < c.dataqsiz {
 		// Space is available in the channel buffer. Enqueue the element to send.
-		qp := chanbuf(c, c.sendx)
+		qp := chanbuf(c, c.sendx) // 注释：计算要插入位置的地址
+		// 注释：判断是否开启数据竞争
 		if raceenabled {
 			racenotify(c, c.sendx, nil)
 		}
-		typedmemmove(c.elemtype, qp, ep)
+		typedmemmove(c.elemtype, qp, ep) // 注释：异动数据（c.elemtyep是类型，qp是插入的位置指针，ep是数据指针）
 		c.sendx++
-		if c.sendx == c.dataqsiz {
+		if c.sendx == c.dataqsiz { // 注释：如果c.sendx到超过数组尾部，则重置为数组的首部，形成一个环形数据结构
 			c.sendx = 0
 		}
-		c.qcount++
-		unlock(&c.lock)
+		c.qcount++      // 注释：数据总数加一
+		unlock(&c.lock) // 注释：解锁，写入管道结束
 		return true
 	}
 

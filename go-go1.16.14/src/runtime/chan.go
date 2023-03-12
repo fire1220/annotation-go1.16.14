@@ -254,8 +254,8 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 
 	// Block on the channel. Some receiver will complete our operation for us.
-	gp := getg()
-	mysg := acquireSudog()
+	gp := getg()           // 注释：获取当前运行的G
+	mysg := acquireSudog() // 注释：获得sudog结构体（初始化sudog）
 	mysg.releasetime = 0
 	if t0 != 0 {
 		mysg.releasetime = -1

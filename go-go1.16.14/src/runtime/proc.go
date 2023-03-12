@@ -363,8 +363,8 @@ func acquireSudog() *sudog {
 	// Break the cycle by doing acquirem/releasem around new(sudog).
 	// The acquirem/releasem increments m.locks during new(sudog),
 	// which keeps the garbage collector from being invoked.
-	mp := acquirem()
-	pp := mp.p.ptr()
+	mp := acquirem() // 注释：获得当前的M（当前G对应的M）
+	pp := mp.p.ptr() // 注释：当前M对应的P指针
 	if len(pp.sudogcache) == 0 {
 		lock(&sched.sudoglock)
 		// First, try to grab a batch from central cache.

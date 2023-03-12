@@ -640,7 +640,7 @@ type p struct {
 		n int32
 	}
 
-	sudogcache []*sudog
+	sudogcache []*sudog // 注释：P中阻塞的G切片
 	sudogbuf   [128]*sudog
 
 	// Cache of mspan objects from the heap.

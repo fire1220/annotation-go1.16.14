@@ -213,14 +213,14 @@ func walkrange(n *Node) *Node {
 	default:
 		Fatalf("walkrange")
 
-	case TARRAY, TSLICE:
+	case TARRAY, TSLICE: // 注释：循环数组或切片
 		if arrayClear(n, v1, v2, a) {
 			lineno = lno
 			return n
 		}
 
 		// order.stmt arranged for a copy of the array/slice variable if needed.
-		ha := a
+		ha := a // 注释：把要循环的数据复制到临时变量里
 
 		hv1 := temp(types.Types[TINT])
 		hn := temp(types.Types[TINT])
@@ -293,10 +293,10 @@ func walkrange(n *Node) *Node {
 		a = typecheck(a, ctxStmt)
 		n.List.Set1(a)
 
-	case TMAP:
+	case TMAP: // 注释：循环map数据
 		// order.stmt allocated the iterator for us.
 		// we only use a once, so no copy needed.
-		ha := a
+		ha := a // 注释：把数据赋值到ha中等待循环
 
 		hit := prealloc[n]
 		th := hit.Type
@@ -304,7 +304,7 @@ func walkrange(n *Node) *Node {
 		keysym := th.Field(0).Sym  // depends on layout of iterator struct.  See reflect.go:hiter
 		elemsym := th.Field(1).Sym // ditto
 
-		fn := syslook("mapiterinit")
+		fn := syslook("mapiterinit") // 注释：运行时执行，初始化map(go-go1.16.14/src/runtime/map.go:mapiterinit)
 
 		fn = substArgTypes(fn, t.Key(), t.Elem(), th)
 		init = append(init, mkcall1(fn, nil, nil, typename(t), ha, nod(OADDR, hit, nil)))

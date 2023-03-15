@@ -90,11 +90,14 @@ const (
 	// Each bucket (including its overflow buckets, if any) will have either all or none of its
 	// entries in the evacuated* states (except during the evacuate() method, which only happens
 	// during map writes and thus no one else can observe the map during that time).
-	emptyRest      = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows. // 注释：当前桶和链接的所有桶全部为空时
-	emptyOne       = 1 // this cell is empty                                                                        // 注释：只有当前桶为空时
+	// 注释：当前桶和链接的所有桶全部为空时
+	emptyRest      = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
+	// 注释：只有当前桶为空时
+	emptyOne       = 1 // this cell is empty
 	evacuatedX     = 2 // key/elem is valid.  Entry has been evacuated to first half of larger table.
 	evacuatedY     = 3 // same as above, but evacuated to second half of larger table.
-	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.                                                       // 注释：旧桶的该位置已经被迁移了
+	// 注释：旧桶的该位置已经被迁移了
+	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.
 	minTopHash     = 5 // minimum tophash for a normal filled cell.
 
 	// flags
@@ -113,23 +116,33 @@ func isEmpty(x uint8) bool {
 }
 
 // A header for a Go map.
+// 注释：map结构体
 type hmap struct {
 	// Note: the format of the hmap is also encoded in cmd/compile/internal/gc/reflect.go.
 	// Make sure this stays in sync with the compiler's definition.
+	// 注释：map元素总数
 	count     int // # live cells == size of map.  Must be first (used by len() builtin)
-	flags     uint8
+	flags     uint8 // 注释：标识，用来记录map当时的状态，比如正在扩容中
+	// 注释：桶数是2的B次方，所以桶数都是2的整数倍
 	B         uint8  // log_2 of # of buckets (can hold up to loadFactor * 2^B items)
+	// 注释：溢出桶数量，计算如何发生二倍扩容时需要
 	noverflow uint16 // approximate number of overflow buckets; see incrnoverflow for details
+	// 注释：hash粽子，每次初始化时随机生成，等倍扩容是会从新生成，用来打散元素分配到不同桶里
 	hash0     uint32 // hash seed
 
+	// 注释：桶指针，桶指针指向的是一个数组的头指针，数组会在末尾处预留一些溢出桶位置，如果count=0时为nil
 	buckets    unsafe.Pointer // array of 2^B Buckets. may be nil if count==0.
+	// 注释：旧桶指针，只有发生扩容时才会出现
 	oldbuckets unsafe.Pointer // previous bucket array of half the size, non-nil only when growing
+	// 注释：旧桶移动到新桶的数量（移动的进度）
 	nevacuate  uintptr        // progress counter for evacuation (buckets less than this have been evacuated)
 
+	// 注释：扩展字段，用来记录溢出桶指针和旧溢出桶指针（发生扩容时出现），这里的溢出桶是对象指针，不是数组头指针
 	extra *mapextra // optional fields
 }
 
 // mapextra holds fields that are not present on all maps.
+// 注释：hmap的扩展字段
 type mapextra struct {
 	// If both key and elem do not contain pointers and are inline, then we mark bucket
 	// type as containing no pointers. This avoids scanning such maps.
@@ -139,19 +152,23 @@ type mapextra struct {
 	// overflow contains overflow buckets for hmap.buckets.
 	// oldoverflow contains overflow buckets for hmap.oldbuckets.
 	// The indirection allows to store a pointer to the slice in hiter.
-	overflow    *[]*bmap
-	oldoverflow *[]*bmap
+	overflow    *[]*bmap  // 注释：溢出桶对象指针
+	oldoverflow *[]*bmap  // 注释：旧溢出桶对象指针，只有扩容的时候才会出现
 
 	// nextOverflow holds a pointer to a free overflow bucket.
-	nextOverflow *bmap
+	nextOverflow *bmap    // 注释：下一个空溢出桶对象指针，但需要新溢出桶时会直接使用这个并加入到溢出桶链表中，然后这里会生成一个新的指针
 }
 
 // A bucket for a Go map.
+// 注释：桶结构体（每个桶8个数据）
 type bmap struct {
 	// tophash generally contains the top byte of the hash value
 	// for each key in this bucket. If tophash[0] < minTopHash,
 	// tophash[0] is a bucket evacuation state instead.
-	tophash [bucketCnt]uint8
+	tophash [bucketCnt]uint8 // 注释：记录key的hash的高8位，这里会存8个数据（每个桶8个数据）
+	// 注释：后面还有3个字段，是在运行时出现的，分别时keys,values(旧版本中时elem),overflow
+	// 注释：keys和values的存储方式是：8个key和8个value（旧版本中是key/elem/key/elem的方式共8组）
+	// 注释：overflow是溢出桶的地址
 	// Followed by bucketCnt keys and then bucketCnt elems.
 	// NOTE: packing all the keys together and then all the elems together makes the
 	// code a bit more complicated than alternating key/elem/key/elem/... but it allows
@@ -838,12 +855,14 @@ search:
 // The hiter struct pointed to by 'it' is allocated on the stack
 // by the compilers order pass or on the heap by reflect_mapiterinit.
 // Both need to have zeroed hiter since the struct contains pointers.
+// 注释：for range循环map时初始化map，这里会做随机偏移量操作
 func mapiterinit(t *maptype, h *hmap, it *hiter) {
 	if raceenabled && h != nil {
 		callerpc := getcallerpc()
 		racereadpc(unsafe.Pointer(h), callerpc, funcPC(mapiterinit))
 	}
 
+	// 注释：如果没有数据或0个元素是直接返回
 	if h == nil || h.count == 0 {
 		return
 	}

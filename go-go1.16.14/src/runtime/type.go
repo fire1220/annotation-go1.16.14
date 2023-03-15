@@ -11,10 +11,11 @@ import "unsafe"
 // tflag is documented in reflect/type.go.
 //
 // tflag values must be kept in sync with copies in:
-//	cmd/compile/internal/gc/reflect.go
-//	cmd/link/internal/ld/decodesym.go
-//	reflect/type.go
-//      internal/reflectlite/type.go
+//
+//		cmd/compile/internal/gc/reflect.go
+//		cmd/link/internal/ld/decodesym.go
+//		reflect/type.go
+//	     internal/reflectlite/type.go
 type tflag uint8
 
 const (
@@ -376,17 +377,20 @@ type interfacetype struct {
 }
 
 // 注释：maptype对象记键值对和桶的大小等必要信息
+// 注释：map的类型
 type maptype struct {
-	typ    _type
-	key    *_type
-	elem   *_type
+	typ  _type  // 注释：map的基础类型
+	key  *_type // 注释：key的类型
+	elem *_type // 注释：value值的类型
+	// 注释：桶的类型，一般是创建新的桶时用到（newobject），比如发生扩容时会创建新的桶，是根据这个类型创建桶的数组
 	bucket *_type // internal type representing a hash bucket
 	// function for hashing keys (ptr to key, seed) -> hash
+	// 注释：存放随机粽子的方法
 	hasher     func(unsafe.Pointer, uintptr) uintptr
-	keysize    uint8  // size of key slot
-	elemsize   uint8  // size of elem slot
-	bucketsize uint16 // size of bucket
-	flags      uint32
+	keysize    uint8  // size of key slot // 注释：key的大小
+	elemsize   uint8  // size of elem slot // 注释：元素(值）的大小
+	bucketsize uint16 // size of bucket // 注释：桶的大小
+	flags      uint32 // 注释：用来标记，例如”间接key、直接key、反射key、离散可能会死机”等信息
 }
 
 // Note: flag values must match those used in the TMAP case

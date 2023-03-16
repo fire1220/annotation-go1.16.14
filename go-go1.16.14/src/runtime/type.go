@@ -33,7 +33,7 @@ const (
 // 注释：_type包含了类型的大小、哈希、标志、偏移量等元数据。
 type _type struct {
 	size       uintptr // 注释：类型大小
-	ptrdata    uintptr // size of memory prefix holding all pointers
+	ptrdata    uintptr // size of memory prefix holding all pointers // 注释：包含所有指针的内存前缀的大小
 	hash       uint32  // 注释：哈希是动态类型的唯一标识
 	tflag      tflag   // 注释：标志
 	align      uint8   // 注释：类型的内存对齐
@@ -41,7 +41,7 @@ type _type struct {
 	kind       uint8   // 注释：基础类型
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
-	equal func(unsafe.Pointer, unsafe.Pointer) bool
+	equal func(unsafe.Pointer, unsafe.Pointer) bool // 注释：比较函数
 	// gcdata stores the GC type data for the garbage collector.
 	// If the KindGCProg bit is set in kind, gcdata is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.

@@ -80,7 +80,7 @@ const (
 	// data offset should be the size of the bmap struct, but needs to be
 	// aligned correctly. For amd64p32 this means 64-bit alignment
 	// even though pointers are 32 bit.
-	// 注释：结构体头指针到属性v指针的大小，这里就是计算bmap的大小
+	// 注释：动态计算bmap占用的数据内存大小；结构体头指针到属性v指针的大小，这里就是计算bmap的大小
 	dataOffset = unsafe.Offsetof(struct {
 		b bmap
 		v int64
@@ -90,16 +90,12 @@ const (
 	// Each bucket (including its overflow buckets, if any) will have either all or none of its
 	// entries in the evacuated* states (except during the evacuate() method, which only happens
 	// during map writes and thus no one else can observe the map during that time).
-	// 注释：当前桶和链接的所有桶全部为空时
-	emptyRest = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
-	// 注释：只有当前桶为空时
-	emptyOne   = 1 // this cell is empty
-	evacuatedX = 2 // key/elem is valid.  Entry has been evacuated to first half of larger table.
-	evacuatedY = 3 // same as above, but evacuated to second half of larger table.
-	// 注释：旧桶的该位置已经被迁移了
-	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.
-	// 注释：正常填充单元格的最小topHash。(5以内的数都是保留数)
-	minTopHash = 5 // minimum tophash for a normal filled cell.
+	emptyRest      = 0 // 注释：当前桶和链接的所有桶全部为空时 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
+	emptyOne       = 1 // 注释：只有当前桶为空时 // this cell is empty
+	evacuatedX     = 2 // key/elem is valid.  Entry has been evacuated to first half of larger table.
+	evacuatedY     = 3 // same as above, but evacuated to second half of larger table.
+	evacuatedEmpty = 4 // 注释：旧桶的该位置已经被迁移了 // cell is empty, bucket is evacuated.
+	minTopHash     = 5 // 注释：正常填充单元格的最小topHash。(5以内的数都是保留数) // minimum tophash for a normal filled cell.
 
 	// flags
 	iterator     = 1 // there may be an iterator using buckets                  // 注释：新桶迭代中标识
@@ -112,8 +108,9 @@ const (
 )
 
 // isEmpty reports whether the given tophash array entry represents an empty bucket entry.
+// 注释：判断桶内下标的位置是否为空的
 func isEmpty(x uint8) bool {
-	return x <= emptyOne
+	return x <= emptyOne // 注释：如果下标小于等于1时说明该下标位置为空
 }
 
 // A header for a Go map.
@@ -190,17 +187,17 @@ type hiter struct {
 	bptr        *bmap          // 注释：当前桶的指针 // current bucket
 	overflow    *[]*bmap       // keeps overflow buckets of hmap.buckets alive
 	oldoverflow *[]*bmap       // keeps overflow buckets of hmap.oldbuckets alive
-	startBucket uintptr        // 注释：标记开始遍历的桶的小标 // bucket iteration started at
-	offset      uint8          // intra-bucket offset to start from during iteration (should be big enough to hold bucketCnt-1)
-	wrapped     bool           // already wrapped around from end of bucket array to beginning
-	B           uint8
-	i           uint8
-	bucket      uintptr // 注释：当前正在遍历的桶的编号
-	checkBucket uintptr
+	startBucket uintptr        // 注释：开始遍历的桶号（遍历初始化时随机） // bucket iteration started at
+	offset      uint8          // 注释：桶内偏移量小标（遍历初始化时随机） // intra-bucket offset to start from during iteration (should be big enough to hold bucketCnt-1)
+	wrapped     bool           // 注释：标记已经到过桶的尾部过了（已经从bucket数组的末尾绕到了开头）already wrapped around from end of bucket array to beginning
+	B           uint8          // 注释：获取桶数量B快照
+	i           uint8          // 注释：单个桶内遍历的下标（真实下标是：offi := (i + it.offset) & (bucketCnt - 1)）
+	bucket      uintptr        // 注释：当前正在遍历的桶的编号
+	checkBucket uintptr        // 注释：记录需要检查的桶号，如果不需要检查桶号时，就放一个最大数，这个特殊的数是不会被检查
 }
 
 // bucketShift returns 1<<b, optimized for code generation.
-// 注释：返回 1 << b
+// 注释：返回 1 << b ; 最后一个桶的下标
 func bucketShift(b uint8) uintptr {
 	// Masking the shift amount allows overflow checks to be elided.
 	// 注释：sys.PtrSize是系统指针的大小，32位系统是4,64位系统是8
@@ -884,7 +881,7 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 	it.h = h // 注释：复制hmap结构体数据
 
 	// grab snapshot of bucket state
-	it.B = h.B
+	it.B = h.B             // 注释：获取桶数量快照
 	it.buckets = h.buckets // 桶指针
 	if t.bucket.ptrdata == 0 {
 		// Allocate the current slice and remember pointers to both current and old.
@@ -928,14 +925,15 @@ func mapiternext(it *hiter) {
 	if h.flags&hashWriting != 0 {
 		throw("concurrent map iteration and map write")
 	}
-	t := it.t           // 注释：map的类型结构体指针
-	bucket := it.bucket // 注释：记录开始循环的桶号
-	b := it.bptr        // 注释：当前桶的指针，第一次nil，当前是nil
-	i := it.i
-	checkBucket := it.checkBucket
+	t := it.t                     // 注释：map的类型结构体指针
+	bucket := it.bucket           // 注释：记录开始循环的桶号
+	b := it.bptr                  // 注释：当前桶的指针，第一次nil，当前是nil
+	i := it.i                     // 注释：初始化循环桶内的偏移量（默认是0，这里是0）
+	checkBucket := it.checkBucket // 注释：记录需要检查的桶号，如果不需要检查桶号时，就放一个最大数，这个特殊的数是不会被检查
 
 next:
 	// 注释：如果没有要遍历的桶指针时，通过桶号获取桶指针，或者判断是否循环已经结束，然后返回
+	// 注释：找到一个需要遍历的桶
 	if b == nil {
 		// 注释：当遍历的桶等于起始的桶号，并且标记已经经过了桶的末尾的时候表示已经循环完毕了，清空key和value并退出
 		if bucket == it.startBucket && it.wrapped {
@@ -944,33 +942,37 @@ next:
 			it.elem = nil
 			return
 		}
+		// 注释：判断是否处于扩容当中 和 桶数量快照如果定于桶数
 		if h.growing() && it.B == h.B {
 			// Iterator was started in the middle of a grow, and the grow isn't done yet.
 			// If the bucket we're looking at hasn't been filled in yet (i.e. the old
 			// bucket hasn't been evacuated) then we need to iterate through the old
 			// bucket and only return the ones that will be migrated to this bucket.
-			oldbucket := bucket & it.h.oldbucketmask()
-			b = (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize)))
+			oldbucket := bucket & it.h.oldbucketmask()                      // 注释：去旧桶里找数据（找旧桶的桶号）
+			b = (*bmap)(add(h.oldbuckets, oldbucket*uintptr(t.bucketsize))) // 注释：旧桶的桶指针
+			// 注释：如果没有迁移完成时
 			if !evacuated(b) {
-				checkBucket = bucket
+				checkBucket = bucket // 注释：记录需要检查的桶号
 			} else {
-				b = (*bmap)(add(it.buckets, bucket*uintptr(t.bucketsize)))
-				checkBucket = noCheck
+				b = (*bmap)(add(it.buckets, bucket*uintptr(t.bucketsize))) // 注释：如果全部迁移完成，则使用新桶的桶地址
+				checkBucket = noCheck                                      // 注释：如果不需要检查桶号时，就放一个最大数，这个特殊的数是不会被检查
 			}
 		} else {
-			b = (*bmap)(add(it.buckets, bucket*uintptr(t.bucketsize)))
-			checkBucket = noCheck
+			b = (*bmap)(add(it.buckets, bucket*uintptr(t.bucketsize))) // 注释：如果没有处于扩容中时，使用新桶的地址
+			checkBucket = noCheck                                      // 注释：如果不需要检查桶号时，就放一个最大数，这个特殊的数是不会被检查
 		}
 		bucket++
+		// 注释：如果桶号等于最大桶号，表示已经到最后了，这个时候需要回到头部，并且标价已经到过桶尾部了
 		if bucket == bucketShift(it.B) {
 			bucket = 0
-			it.wrapped = true
+			it.wrapped = true // 注释：标记已经到过桶的尾部过了
 		}
-		i = 0
+		i = 0 // 注释：每次选择新的桶时；桶内循环的下标需要回到0位置
 	}
+	// 注释：开始循环桶内数据，每个桶可以容纳8个数据
 	for ; i < bucketCnt; i++ {
-		offi := (i + it.offset) & (bucketCnt - 1)
-		if isEmpty(b.tophash[offi]) || b.tophash[offi] == evacuatedEmpty {
+		offi := (i + it.offset) & (bucketCnt - 1)                          // 注释：根据随机起点，获取偏移量
+		if isEmpty(b.tophash[offi]) || b.tophash[offi] == evacuatedEmpty { // 注释：当前下标位置为空时或者旧桶全部迁移完成了就跳过
 			// TODO: emptyRest is hard to use here, as we start iterating
 			// in the middle of a bucket. It's feasible, just tricky.
 			continue

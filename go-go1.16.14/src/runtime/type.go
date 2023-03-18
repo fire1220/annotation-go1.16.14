@@ -33,7 +33,7 @@ const (
 // 注释：_type包含了类型的大小、哈希、标志、偏移量等元数据。
 type _type struct {
 	size       uintptr // 注释：类型大小
-	ptrdata    uintptr // size of memory prefix holding all pointers // 注释：包含所有指针的内存前缀的大小
+	ptrdata    uintptr // 注释：包含所有指针的内存前缀的大小 // size of memory prefix holding all pointers
 	hash       uint32  // 注释：哈希是动态类型的唯一标识
 	tflag      tflag   // 注释：标志
 	align      uint8   // 注释：类型的内存对齐
@@ -385,12 +385,11 @@ type maptype struct {
 	// 注释：桶的类型，一般是创建新的桶时用到（newobject），比如发生扩容时会创建新的桶，是根据这个类型创建桶的数组
 	bucket *_type // internal type representing a hash bucket
 	// function for hashing keys (ptr to key, seed) -> hash
-	// 注释：存放随机粽子的方法
-	hasher     func(unsafe.Pointer, uintptr) uintptr
-	keysize    uint8  // size of key slot // 注释：key的大小
-	elemsize   uint8  // size of elem slot // 注释：元素(值）的大小
-	bucketsize uint16 // size of bucket // 注释：桶的大小
-	flags      uint32 // 注释：用来标记，例如”间接key、直接key、反射key、离散可能会死机”等信息
+	hasher     func(unsafe.Pointer, uintptr) uintptr // 注释：存放随机粽子的方法
+	keysize    uint8                                 // 注释：key的大小 // size of key slot
+	elemsize   uint8                                 // 注释：元素(值）的大小 // size of elem slot
+	bucketsize uint16                                // 注释：单个桶的大小 // size of bucket
+	flags      uint32                                // 注释：用来标记，例如”间接key、直接key、反射key、离散可能会死机”等信息
 }
 
 // Note: flag values must match those used in the TMAP case

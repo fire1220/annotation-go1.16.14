@@ -190,12 +190,12 @@ type hiter struct {
 	bptr        *bmap          // 注释：当前桶的指针 // current bucket
 	overflow    *[]*bmap       // keeps overflow buckets of hmap.buckets alive
 	oldoverflow *[]*bmap       // keeps overflow buckets of hmap.oldbuckets alive
-	startBucket uintptr        // bucket iteration started at
+	startBucket uintptr        // 注释：标记开始遍历的桶的小标 // bucket iteration started at
 	offset      uint8          // intra-bucket offset to start from during iteration (should be big enough to hold bucketCnt-1)
 	wrapped     bool           // already wrapped around from end of bucket array to beginning
 	B           uint8
 	i           uint8
-	bucket      uintptr
+	bucket      uintptr // 注释：当前正在遍历的桶的编号
 	checkBucket uintptr
 }
 
@@ -901,11 +901,11 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 	if h.B > 31-bucketCntBits { // 注释：如果桶的次幂数大于28，则超出了随机数长度，需要加随机数长度
 		r += uintptr(fastrand()) << 31
 	}
-	it.startBucket = r & bucketMask(h.B)          // 注释：随机桶。计算起始位置的桶号， r是随机数，bucketMask(h.B)是桶掩码（最大可以有多少个桶）
+	it.startBucket = r & bucketMask(h.B)          // 注释：随机桶（控制随机数在有效桶号内）。计算起始位置的桶号， r是随机数，bucketMask(h.B)是桶掩码（最大可以有多少个桶）
 	it.offset = uint8(r >> h.B & (bucketCnt - 1)) // 注释：随机桶内数据（一个桶内是8个数据）
 
 	// iterator state
-	it.bucket = it.startBucket
+	it.bucket = it.startBucket // 注释：记录开始遍历的桶的小标
 
 	// Remember we have an iterator.
 	// Can run concurrently with another mapiterinit().
@@ -928,14 +928,16 @@ func mapiternext(it *hiter) {
 	if h.flags&hashWriting != 0 {
 		throw("concurrent map iteration and map write")
 	}
-	t := it.t // 注释：map的类型结构体指针
-	bucket := it.bucket
-	b := it.bptr // 注释：当前桶的指针，第一次nil，当前是nil
+	t := it.t           // 注释：map的类型结构体指针
+	bucket := it.bucket // 注释：记录开始循环的桶号
+	b := it.bptr        // 注释：当前桶的指针，第一次nil，当前是nil
 	i := it.i
 	checkBucket := it.checkBucket
 
 next:
+	// 注释：如果没有要遍历的桶指针时，通过桶号获取桶指针，或者判断是否循环已经结束，然后返回
 	if b == nil {
+		// 注释：当遍历的桶等于起始的桶号，并且标记已经经过了桶的末尾的时候表示已经循环完毕了，清空key和value并退出
 		if bucket == it.startBucket && it.wrapped {
 			// end of iteration
 			it.key = nil

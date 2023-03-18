@@ -80,9 +80,9 @@ const (
 	// data offset should be the size of the bmap struct, but needs to be
 	// aligned correctly. For amd64p32 this means 64-bit alignment
 	// even though pointers are 32 bit.
-	// 注释：动态计算bmap占用的数据内存大小；结构体头指针到属性v指针的大小，这里就是计算bmap的大小
+	// 注释：bmap占用的数据内存大小；结构体头指针到属性v指针的大小，这里就是计算bmap的大小(目前bmap里只有tophash,当前返回tophash后面的指针)
 	dataOffset = unsafe.Offsetof(struct {
-		b bmap
+		b bmap // 注释：现在的bmap里只有一个元素tophash,这里返回tophash元素后面的位置,后面方便追加数据到bmap结构体里
 		v int64
 	}{}.v)
 

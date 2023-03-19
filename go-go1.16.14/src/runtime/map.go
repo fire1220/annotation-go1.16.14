@@ -977,12 +977,14 @@ next:
 			// in the middle of a bucket. It's feasible, just tricky.
 			continue
 		}
+		// 注释：找map的key，这里是用bmap的头指针+bmap大小（这里的大小是只有一个元素tophash的时候）+ (偏移量 * key的大小)；bmap在初始胡的时候就已预留了足够的空间
 		k := add(unsafe.Pointer(b), dataOffset+uintptr(offi)*uintptr(t.keysize))
-		if t.indirectkey() {
+		if t.indirectkey() { // 注释：判断是否是间接的key,如果是间接的key就取地址里的值
 			k = *((*unsafe.Pointer)(k))
 		}
+		// 注释：取map的value，这里是用bmap的头指针 + bmap的大小（只有tophash元素）+ （8 * key的大小）+ （偏移量*value的大小）
 		e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+uintptr(offi)*uintptr(t.elemsize))
-		if checkBucket != noCheck && !h.sameSizeGrow() {
+		if checkBucket != noCheck && !h.sameSizeGrow() { // 注释：如果待检查的桶不是特殊的最大值时，并且不是等量扩容中时
 			// Special case: iterator was started during a grow to a larger size
 			// and the grow is not done yet. We're working on a bucket whose
 			// oldbucket has not been evacuated yet. Or at least, it wasn't
@@ -1178,6 +1180,7 @@ func (h *hmap) growing() bool {
 }
 
 // sameSizeGrow reports whether the current growth is to a map of the same size.
+// 注释：判断是否是等量扩容
 func (h *hmap) sameSizeGrow() bool {
 	return h.flags&sameSizeGrow != 0
 }

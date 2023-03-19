@@ -98,10 +98,10 @@ const (
 	minTopHash     = 5 // 注释：正常填充单元格的最小topHash。(5以内的数都是保留数) // minimum tophash for a normal filled cell.
 
 	// flags
-	iterator     = 1 // there may be an iterator using buckets                  // 注释：新桶迭代中标识
-	oldIterator  = 2 // there may be an iterator using oldbuckets               // 注释：旧桶迭代中标识
-	hashWriting  = 4 // a goroutine is writing to the map                       // 注释：正在写入标识
-	sameSizeGrow = 8 // the current map growth is to a new map of the same size // 注释：等量扩容标识
+	iterator     = 1 // 注释：新桶迭代中标识 // there may be an iterator using buckets
+	oldIterator  = 2 // 注释：旧桶迭代中标识 // there may be an iterator using oldbuckets
+	hashWriting  = 4 // 注释：正在写入标识 // a goroutine is writing to the map
+	sameSizeGrow = 8 // 注释：等量扩容标识 // the current map growth is to a new map of the same size
 
 	// sentinel bucket ID for iterator checks
 	noCheck = 1<<(8*sys.PtrSize) - 1

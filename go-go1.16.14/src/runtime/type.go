@@ -389,7 +389,7 @@ type maptype struct {
 	keysize    uint8                                 // 注释：key的大小 // size of key slot
 	elemsize   uint8                                 // 注释：元素(值）的大小 // size of elem slot
 	bucketsize uint16                                // 注释：单个桶的大小 // size of bucket
-	flags      uint32                                // 注释：用来标记，例如”间接key、直接key、反射key、离散可能会死机”等信息
+	flags      uint32                                // 注释：用来标记，例如”间接key、间接的value、反射key、离散可能会死机”等信息
 }
 
 // Note: flag values must match those used in the TMAP case
@@ -399,7 +399,7 @@ func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itsel
 	return mt.flags&1 != 0 // 注释：indirect key(间接的key)
 }
 func (mt *maptype) indirectelem() bool { // store ptr to elem instead of elem itself
-	return mt.flags&2 != 0 // 注释：indirect value(间接的值)
+	return mt.flags&2 != 0 // 注释：indirect value(间接的value)
 }
 func (mt *maptype) reflexivekey() bool { // true if k==k for all keys
 	return mt.flags&4 != 0 // 注释：reflexive key(反射的key)

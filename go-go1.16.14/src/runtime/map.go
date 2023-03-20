@@ -187,7 +187,7 @@ type hiter struct {
 }
 
 // bucketShift returns 1<<b, optimized for code generation.
-// 注释：返回 1 << b ; 最后一个桶的下标
+// 注释：最大桶下标。返回 1 << b ; 最后一个桶的下标
 func bucketShift(b uint8) uintptr {
 	// Masking the shift amount allows overflow checks to be elided.
 	// 注释：sys.PtrSize是系统指针的大小，32位系统是4,64位系统是8

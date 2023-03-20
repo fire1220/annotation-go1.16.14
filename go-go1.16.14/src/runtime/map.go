@@ -118,25 +118,15 @@ func isEmpty(x uint8) bool {
 type hmap struct {
 	// Note: the format of the hmap is also encoded in cmd/compile/internal/gc/reflect.go.
 	// Make sure this stays in sync with the compiler's definition.
-	// 注释：map元素总数
-	count int   // # live cells == size of map.  Must be first (used by len() builtin)
-	flags uint8 // 注释：标识，用来记录map当时的状态，比如正在扩容中、新桶迭代中、旧桶迭代中、正在写入
-	// 注释：桶数是2的B次方，所以桶数都是2的整数倍
-	B uint8 // log_2 of # of buckets (can hold up to loadFactor * 2^B items)
-	// 注释：溢出桶数量，计算如何发生二倍扩容时需要
-	noverflow uint16 // approximate number of overflow buckets; see incrnoverflow for details
-	// 注释：hash粽子，每次初始化时随机生成，等倍扩容是会从新生成，用来打散元素分配到不同桶里
-	hash0 uint32 // hash seed
-
-	// 注释：桶指针，桶指针指向的是一个数组的头指针，数组会在末尾处预留一些溢出桶位置，如果count=0时为nil
-	buckets unsafe.Pointer // array of 2^B Buckets. may be nil if count==0.
-	// 注释：旧桶指针，只有发生扩容时才会出现
-	oldbuckets unsafe.Pointer // previous bucket array of half the size, non-nil only when growing
-	// 注释：旧桶移动到新桶的数量（移动的进度）
-	nevacuate uintptr // progress counter for evacuation (buckets less than this have been evacuated)
-
-	// 注释：扩展字段，用来记录溢出桶指针和旧溢出桶指针（发生扩容时出现），这里的溢出桶是对象指针，不是数组头指针
-	extra *mapextra // optional fields
+	count      int            // 注释：map元素总数 // # live cells == size of map.  Must be first (used by len() builtin)
+	flags      uint8          // 注释：标识，用来记录map当时的状态，比如正在扩容中、新桶迭代中、旧桶迭代中、正在写入
+	B          uint8          // 注释：桶数是2的B次方，所以桶数都是2的整数倍 // log_2 of # of buckets (can hold up to loadFactor * 2^B items)
+	noverflow  uint16         // 注释：溢出桶数量，计算如何发生二倍扩容时需要 // approximate number of overflow buckets; see incrnoverflow for details
+	hash0      uint32         // 注释：hash种子，每次初始化时随机生成，等倍扩容是会从新生成，用来打散元素分配到不同桶里 // hash seed
+	buckets    unsafe.Pointer // 注释：桶指针，桶指针指向的是一个数组的头指针，数组会在末尾处预留一些溢出桶位置，如果count=0时为nil // array of 2^B Buckets. may be nil if count==0.
+	oldbuckets unsafe.Pointer // 注释：旧桶指针，只有发生扩容时才会出现 // previous bucket array of half the size, non-nil only when growing
+	nevacuate  uintptr        // 注释：旧桶移动到新桶的数量（移动的进度） // progress counter for evacuation (buckets less than this have been evacuated)
+	extra      *mapextra      // 注释：扩展字段，用来记录溢出桶指针和旧溢出桶指针（发生扩容时出现），这里的溢出桶是对象指针，不是数组头指针 // optional fields
 }
 
 // mapextra holds fields that are not present on all maps.
@@ -179,8 +169,8 @@ type bmap struct {
 // the layout of this structure.
 // 注释：map遍历迭代的时候使用的结构体
 type hiter struct {
-	key         unsafe.Pointer // Must be in first position.  Write nil to indicate iteration end (see cmd/compile/internal/gc/range.go).
-	elem        unsafe.Pointer // Must be in second position (see cmd/compile/internal/gc/range.go).
+	key         unsafe.Pointer // 注释：迭代返回的key // Must be in first position.  Write nil to indicate iteration end (see cmd/compile/internal/gc/range.go).
+	elem        unsafe.Pointer // 注释：迭代返回的value // Must be in second position (see cmd/compile/internal/gc/range.go).
 	t           *maptype       // 注释：map的类型结构体指针
 	h           *hmap          // 注释：hmap的结构体指针
 	buckets     unsafe.Pointer // 注释：hmap桶指针 // bucket ptr at hash_iter initialization time

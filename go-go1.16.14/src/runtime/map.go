@@ -1021,7 +1021,7 @@ next:
 			// has been deleted, updated, or deleted and reinserted.
 			// NOTE: we need to regrab the key as it has potentially been
 			// updated to an equal() but not identical key (e.g. +0.0 vs -0.0).
-			rk, re := mapaccessK(t, h, k) // 注释：正在扩容中时
+			rk, re := mapaccessK(t, h, k) // 注释：正在扩容中时，迭代map
 			if rk == nil {
 				continue // key has been deleted
 			}

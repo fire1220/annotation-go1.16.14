@@ -95,7 +95,7 @@ func CasRel(ptr *uint32, old, new uint32) bool
 func Store(ptr *uint32, val uint32)
 
 //go:noescape
-func Store8(ptr *uint8, val uint8)
+func Store8(ptr *uint8, val uint8) // 注释：把val赋值给ptr（函数含义是：把val的值和ptr调换）
 
 //go:noescape
 func Store64(ptr *uint64, val uint64)

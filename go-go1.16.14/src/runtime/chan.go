@@ -274,7 +274,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	// to park on a channel. The window between when this G's status
 	// changes and when we set gp.activeStackChans is not safe for
 	// stack shrinking.
-	atomic.Store8(&gp.parkingOnChan, 1)
+	atomic.Store8(&gp.parkingOnChan, 1)                                                        // 注释：把&gp.parkingOnChan赋值为1（这个方法是调换两个值的内容）
 	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2) // 注释：阻塞，让渡控制权，保存现场
 	// Ensure the value being sent is kept alive until the
 	// receiver copies it out. The sudog has a pointer to the

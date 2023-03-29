@@ -226,8 +226,8 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		return true
 	}
 
-	// 注释：有缓存的情况下写入
-	// 注释当c.qcount（实际数据数量）小于c.dataqsiz（可容纳的总数量）时，说明缓冲区还有地方
+	// 注释：有缓存的情况下写入，并直接返回
+	// 注释：当c.qcount（实际数据数量）小于c.dataqsiz（可容纳的总数量）时，说明缓冲区还有地方
 	if c.qcount < c.dataqsiz {
 		// Space is available in the channel buffer. Enqueue the element to send.
 		qp := chanbuf(c, c.sendx) // 注释：计算要插入位置的地址
@@ -256,20 +256,20 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	// Block on the channel. Some receiver will complete our operation for us.
 	gp := getg()           // 注释：获取当前运行的G
 	mysg := acquireSudog() // 注释：获得sudog结构体（初始化sudog）
-	mysg.releasetime = 0
+	mysg.releasetime = 0   // 注释：设置释放时间
 	if t0 != 0 {
 		mysg.releasetime = -1
 	}
 	// No stack splits between assigning elem and enqueuing mysg
 	// on gp.waiting where copystack can find it.
-	mysg.elem = ep
+	mysg.elem = ep // 注释：保存源数据指针
 	mysg.waitlink = nil
-	mysg.g = gp
-	mysg.isSelect = false
-	mysg.c = c
-	gp.waiting = mysg
-	gp.param = nil
-	c.sendq.enqueue(mysg)
+	mysg.g = gp           // 注释：保存当前运行的G
+	mysg.isSelect = false // 注释：不参与select
+	mysg.c = c            // 注释：保存所在的管道
+	gp.waiting = mysg     // 注释：把当前对应的sudog放到等待链表中
+	gp.param = nil        // 注释：设置唤醒时不需要传递参数
+	c.sendq.enqueue(mysg) // 注释：把sudog放到管道的发送队列中
 	// Signal to anyone trying to shrink our stack that we're about
 	// to park on a channel. The window between when this G's status
 	// changes and when we set gp.activeStackChans is not safe for

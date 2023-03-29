@@ -1021,7 +1021,7 @@ next:
 			// has been deleted, updated, or deleted and reinserted.
 			// NOTE: we need to regrab the key as it has potentially been
 			// updated to an equal() but not identical key (e.g. +0.0 vs -0.0).
-			rk, re := mapaccessK(t, h, k)
+			rk, re := mapaccessK(t, h, k) // 注释：正在扩容中时
 			if rk == nil {
 				continue // key has been deleted
 			}
@@ -1262,7 +1262,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 			e := add(k, bucketCnt*uintptr(t.keysize)) // 注释：溢出桶value的首地址（一共8个）
 			// 注释：遍历桶里的数据, i, k, e :对应下标，key和value
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
-				top := b.tophash[i] // 注释：hash高8位或则自定义的站位标识
+				top := b.tophash[i] // 注释：hash高8位或则自定义的站位标识，这里不会是预留的数字，后面有判断，如果是预留的则抛出异常
 				if isEmpty(top) {   // 注释：(过滤空数据)判断该站位标识表示的数据是否是空
 					b.tophash[i] = evacuatedEmpty // 注释：更改状态标识(这里会把emptyOne或emptyRest状态为更改为evacuatedEmpty）
 					continue
@@ -1275,7 +1275,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 					k2 = *((*unsafe.Pointer)(k2))
 				}
 				var useY uint8 // 注释：是否使用y
-				// 注释：判断是否是2倍扩容
+				// 注释：判断是否是等量扩容，（如果不是等量扩容则是2倍扩容）
 				if !h.sameSizeGrow() {
 					// Compute hash to make our evacuation decision (whether we need
 					// to send this key/elem to bucket x or bucket y).

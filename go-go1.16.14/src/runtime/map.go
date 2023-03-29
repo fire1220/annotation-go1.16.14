@@ -1025,19 +1025,19 @@ next:
 			if rk == nil {
 				continue // key has been deleted
 			}
-			it.key = rk
-			it.elem = re
+			it.key = rk  // 注释：返回的key
+			it.elem = re // 注释：返回的value
 		}
-		it.bucket = bucket
-		if it.bptr != b { // avoid unnecessary write barrier; see issue 14921
-			it.bptr = b
+		it.bucket = bucket // 注释：校准桶号
+		if it.bptr != b {  // avoid unnecessary write barrier; see issue 14921
+			it.bptr = b // 注释：如果桶指针发生变化时，修改对应的指针
 		}
-		it.i = i + 1
-		it.checkBucket = checkBucket
+		it.i = i + 1                 // 注释：单个桶内的下标加1
+		it.checkBucket = checkBucket // 注释：标记需要检查的桶号
 		return
 	}
-	b = b.overflow(t)
-	i = 0
+	b = b.overflow(t) // 注释：处理溢出桶
+	i = 0             // 注释：重置单个桶内的数据下标
 	goto next
 }
 

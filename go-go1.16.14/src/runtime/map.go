@@ -92,8 +92,8 @@ const (
 	// during map writes and thus no one else can observe the map during that time).
 	emptyRest      = 0 // 注释：当前桶和链接的所有桶全部为空时 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
 	emptyOne       = 1 // 注释：只有当前桶为空时 // this cell is empty
-	evacuatedX     = 2 // key/elem is valid.  Entry has been evacuated to first half of larger table.
-	evacuatedY     = 3 // same as above, but evacuated to second half of larger table.
+	evacuatedX     = 2 // 注释：一倍扩容或二倍扩容的前半部分扩容 // key/elem is valid.  Entry has been evacuated to first half of larger table.
+	evacuatedY     = 3 // 注释：二倍扩容的后半部分 (x=旧桶相同的位置的数据；y=x+旧桶总数的位置)// same as above, but evacuated to second half of larger table.
 	evacuatedEmpty = 4 // 注释：旧桶的该位置已经被迁移了 // cell is empty, bucket is evacuated.
 	minTopHash     = 5 // 注释：正常填充单元格的最小topHash。(5以内的数都是保留数) // minimum tophash for a normal filled cell.
 

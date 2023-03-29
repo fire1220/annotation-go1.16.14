@@ -1306,8 +1306,8 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 					throw("bad evacuatedN")
 				}
 
-				b.tophash[i] = evacuatedX + useY // evacuatedX + 1 == evacuatedY
-				dst := &xy[useY]                 // evacuation destination
+				b.tophash[i] = evacuatedX + useY // 注释：移动数据位置打上标记 // evacuatedX + 1 == evacuatedY
+				dst := &xy[useY]                 // 注释：要移动的数据 // evacuation destination
 
 				// 注释：判断是否超出最后一个桶，如果超出的话，链接溢出桶
 				if dst.i == bucketCnt {

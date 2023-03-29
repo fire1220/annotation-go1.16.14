@@ -429,36 +429,36 @@ type g struct {
 	// 注释：先调用runtime·morestack_noctxt()进行栈扩容，然后又跳回到函数的开始位置，此时函数的栈已经调整了。
 	// 注释：然后再进行一次栈大小的检测，如果依然不足则继续扩容，直到栈足够大为止。
 	// 注释：下面两个成员用于栈溢出检查，实现栈的自动伸缩，抢占调度也会用到stackguard0
-	stackguard0 uintptr // offset known to liblink // 注释：Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求
-	stackguard1 uintptr // offset known to liblink // 注释：C 代码检查栈空间低于这个值会扩张。
+	stackguard0 uintptr // 注释：Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
+	stackguard1 uintptr // 注释：C 代码检查栈空间低于这个值会扩张。 // offset known to liblink
 
-	_panic       *_panic        // innermost panic - offset known to liblink // 注释：当前G的panic的数据指针
-	_defer       *_defer        // innermost defer                           // 注释：当前G的延迟调用的数据指针
-	m            *m             // current m; offset known to arm liblink    // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行）
+	_panic       *_panic        // 注释：当前G的panic的数据指针 // innermost panic - offset known to liblink
+	_defer       *_defer        // 注释：当前G的延迟调用的数据指针 // innermost defer
+	m            *m             // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行） // current m; offset known to arm liblink
 	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据，存储当前G调度相关的数据
-	syscallsp    uintptr        // if status==Gsyscall, syscallsp = sched.sp to use during gc // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间
-	syscallpc    uintptr        // if status==Gsyscall, syscallpc = sched.pc to use during gc // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间
-	stktopsp     uintptr        // expected sp at top of stack, to check in traceback         // 注释：期望sp位于栈顶，用于回源跟踪
-	param        unsafe.Pointer // passed parameter on wakeup                                 // 注释：wakeup唤醒时候传递的参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready()
+	syscallsp    uintptr        // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间 // if status==Gsyscall, syscallsp = sched.sp to use during gc
+	syscallpc    uintptr        // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间 // if status==Gsyscall, syscallpc = sched.pc to use during gc
+	stktopsp     uintptr        // 注释：期望sp位于栈顶，用于回源跟踪 // expected sp at top of stack, to check in traceback
+	param        unsafe.Pointer // 注释：wakeup唤醒时候传递的参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready() // passed parameter on wakeup
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
-	stackLock    uint32         // sigprof/scang lock; TODO: fold in to atomicstatus          // 注释：栈锁
+	stackLock    uint32         // 注释：栈锁 // sigprof/scang lock; TODO: fold in to atomicstatus
 	goid         int64          // 注释：当前G的唯一标识，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
 	schedlink    guintptr       // 注释：指向全局运行队列中的下一个g（全局行队列中的g是个链表）
-	waitsince    int64          // approx time when the g become blocked // 注释：g被阻塞的时间
-	waitreason   waitReason     // if status==Gwaiting                   // 注释：g被阻塞的原因
+	waitsince    int64          // 注释：g被阻塞的时间 // approx time when the g become blocked
+	waitreason   waitReason     // 注释：g被阻塞的原因 // if status==Gwaiting
 	// 注释：每个G都有三个与抢占有关的字段，分别为preempt、preemptStop和premptShrink
-	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt // 注释：标记是否可抢占，其值为 true 执行 stackguard0 = stackpreempt。(抢占调度标志，如果需要抢占调度，设置preempt为true)
-	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule // 注释：将抢占标记修改为_Gpreedmpted，如果修改失败则取消
-	preemptShrink bool // shrink stack at synchronous safe point                              // 注释：在同步安全点收缩栈
+	preempt       bool // 注释：标记是否可抢占，其值为 true 执行 stackguard0 = stackpreempt。(抢占调度标志，如果需要抢占调度，设置preempt为true) // preemption signal, duplicates stackguard0 = stackpreempt
+	preemptStop   bool // 注释：将抢占标记修改为_Gpreedmpted，如果修改失败则取消 // transition to _Gpreempted on preemption; otherwise, just deschedule
+	preemptShrink bool // 注释：在同步安全点收缩栈 // shrink stack at synchronous safe point
 
 	// asyncSafePoint is set if g is stopped at an asynchronous
 	// safe point. This means there are frames on the stack
 	// without precise pointer information.
 	asyncSafePoint bool // 注释：异步安全点；如果G在异步安全点停止则设置为true，表示在栈上没有精确的指针信息
 
-	paniconfault bool // panic (instead of crash) on unexpected fault address   // 注释：地址异常引起的panic（代替了崩溃）
-	gcscandone   bool // g has scanned stack; protected by _Gscan bit in status // 注释：g扫描完了栈，受状态_Gscan位保护。
-	throwsplit   bool // must not split stack                                   // 注释：不允许拆分stack
+	paniconfault bool // 注释：地址异常引起的panic（代替了崩溃） // panic (instead of crash) on unexpected fault address
+	gcscandone   bool // 注释：g扫描完了栈，受状态_Gscan位保护。 // g has scanned stack; protected by _Gscan bit in status
+	throwsplit   bool // 注释：不允许拆分stack // must not split stack
 	// activeStackChans indicates that there are unlocked channels
 	// pointing into this goroutine's stack. If true, stack
 	// copying needs to acquire channel locks to protect these
@@ -480,14 +480,14 @@ type g struct {
 	sigcode0       uintptr
 	sigcode1       uintptr
 	sigpc          uintptr
-	gopc           uintptr         // pc of go statement that created this goroutine // 注释：创建当前G的PC(调用者的PC(rip))
+	gopc           uintptr         // 注释：创建当前G的PC(调用者的PC(rip)) // pc of go statement that created this goroutine
 	ancestors      *[]ancestorInfo // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
-	startpc        uintptr         // pc of goroutine function                       // 注释：任务函数(go函数对应的pc值)
+	startpc        uintptr         // 注释：任务函数(go函数对应的pc值) // pc of goroutine function
 	racectx        uintptr
-	waiting        *sudog         // sudog structures this g is waiting on (that have a valid elem ptr); in lock order
+	waiting        *sudog         // 注释：等待的sudog链表头指针  // sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt        []uintptr      // cgo traceback context
 	labels         unsafe.Pointer // profiler labels
-	timer          *timer         // cached timer for time.Sleep                    // 注释：通过time.Sleep缓存timer
+	timer          *timer         // 注释：通过time.Sleep缓存timer // cached timer for time.Sleep
 	selectDone     uint32         // are we participating in a select and did someone win the race?
 
 	// Per-G GC state

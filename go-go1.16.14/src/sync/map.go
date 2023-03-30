@@ -24,6 +24,7 @@ import (
 // contention compared to a Go map paired with a separate Mutex or RWMutex.
 //
 // The zero Map is empty and ready for use. A Map must not be copied after first use.
+// 注释：sync.Map的结构体，这个结构适合多读少新增修改的情况下使用，可以实现几乎不加锁读取
 type Map struct {
 	mu Mutex
 
@@ -36,7 +37,7 @@ type Map struct {
 	// Entries stored in read may be updated concurrently without mu, but updating
 	// a previously-expunged entry requires that the entry be copied to the dirty
 	// map and unexpunged with mu held.
-	read atomic.Value // readOnly
+	read atomic.Value // 注释：存储读取的数据(只读) // readOnly
 
 	// dirty contains the portion of the map's contents that require mu to be
 	// held. To ensure that the dirty map can be promoted to the read map quickly,
@@ -48,7 +49,7 @@ type Map struct {
 	//
 	// If the dirty map is nil, the next write to the map will initialize it by
 	// making a shallow copy of the clean map, omitting stale entries.
-	dirty map[interface{}]*entry
+	dirty map[interface{}]*entry // 注释：新增数据放在这里(读写)，当read里没有读到的时候会到这里读取
 
 	// misses counts the number of loads since the read map was last updated that
 	// needed to lock mu to determine whether the key was present.
@@ -56,7 +57,7 @@ type Map struct {
 	// Once enough misses have occurred to cover the cost of copying the dirty
 	// map, the dirty map will be promoted to the read map (in the unamended
 	// state) and the next store to the map will make a new dirty copy.
-	misses int
+	misses int // 注释：计数read未读到数据的次数，如果次数达到dirty的数量时，就会把dirty赋值到read里，并清空dirty和misses
 }
 
 // readOnly is an immutable struct stored atomically in the Map.read field.
@@ -99,10 +100,12 @@ func newEntry(i interface{}) *entry {
 // Load returns the value stored in the map for a key, or nil if no
 // value is present.
 // The ok result indicates whether value was found in the map.
+// 注释：sync.Map读取数据
 func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
 	read, _ := m.read.Load().(readOnly)
 	e, ok := read.m[key]
 	if !ok && read.amended {
+		// 注释：如果没有读到，则加锁到dirty里读取
 		m.mu.Lock()
 		// Avoid reporting a spurious miss if m.dirty got promoted while we were
 		// blocked on m.mu. (If further loads of the same key will not miss, it's
@@ -114,7 +117,7 @@ func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
 			// Regardless of whether the entry was present, record a miss: this key
 			// will take the slow path until the dirty map is promoted to the read
 			// map.
-			m.missLocked()
+			m.missLocked() // 注释：累加未读到数据的次数，如果次数达到len(dirty)时，会把dirty赋值到raed里，并清空dirty和misses
 		}
 		m.mu.Unlock()
 	}
@@ -348,6 +351,7 @@ func (m *Map) Range(f func(key, value interface{}) bool) {
 	}
 }
 
+// 注释：计数读取不到的次数，如果大于len(m.dirty)时，把dirty拷贝到read里，并清空dirty和misses
 func (m *Map) missLocked() {
 	m.misses++
 	if m.misses < len(m.dirty) {

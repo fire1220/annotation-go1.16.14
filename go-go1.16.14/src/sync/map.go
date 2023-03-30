@@ -63,7 +63,7 @@ type Map struct {
 // readOnly is an immutable struct stored atomically in the Map.read field.
 type readOnly struct {
 	m       map[interface{}]*entry
-	amended bool // true if the dirty map contains some key not in m.
+	amended bool // 注释：如果是true时，标记m里没有对应key的数据 // true if the dirty map contains some key not in m.
 }
 
 // expunged is an arbitrary pointer that marks entries which have been deleted
@@ -136,6 +136,7 @@ func (e *entry) load() (value interface{}, ok bool) {
 }
 
 // Store sets the value for a key.
+// 注释：sync.Map写入数据
 func (m *Map) Store(key, value interface{}) {
 	read, _ := m.read.Load().(readOnly)
 	if e, ok := read.m[key]; ok && e.tryStore(&value) {
@@ -144,6 +145,7 @@ func (m *Map) Store(key, value interface{}) {
 
 	m.mu.Lock()
 	read, _ = m.read.Load().(readOnly)
+	// 注释：read里有数据（之前软删除），则修改read和dirty里对应的值
 	if e, ok := read.m[key]; ok {
 		if e.unexpungeLocked() {
 			// The entry was previously expunged, which implies that there is a
@@ -151,16 +153,17 @@ func (m *Map) Store(key, value interface{}) {
 			m.dirty[key] = e
 		}
 		e.storeLocked(&value)
-	} else if e, ok := m.dirty[key]; ok {
+	} else if e, ok := m.dirty[key]; ok { // 注释：如果dirty里有数据（之前软删除），则修改dirty里对应的数据
 		e.storeLocked(&value)
 	} else {
+		// 注释：如果没有找到对应的值时，在dirty里新增数据
 		if !read.amended {
 			// We're adding the first new key to the dirty map.
 			// Make sure it is allocated and mark the read-only map as incomplete.
 			m.dirtyLocked()
-			m.read.Store(readOnly{m: read.m, amended: true})
+			m.read.Store(readOnly{m: read.m, amended: true}) // 注释：如果amended是true时，标记m里没有对应key的数据
 		}
-		m.dirty[key] = newEntry(value)
+		m.dirty[key] = newEntry(value) // 注释：在dirty里新增数据
 	}
 	m.mu.Unlock()
 }

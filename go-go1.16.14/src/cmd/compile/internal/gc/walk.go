@@ -541,10 +541,10 @@ opswitch:
 	case OPRINT, OPRINTN:
 		n = walkprint(n, init)
 
-	case OPANIC:
+	case OPANIC: // 注释：当执行panic时会执行，最终会执行runtime.gopanic
 		n = mkcall("gopanic", nil, init, n.Left)
 
-	case ORECOVER:
+	case ORECOVER: // 注释：当执行recover时会执行，最终会执行runtime.gorecover
 		n = mkcall("gorecover", n.Type, init, nod(OADDR, nodfp, nil))
 
 	case OCLOSUREVAR, OCFUNC:

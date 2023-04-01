@@ -432,8 +432,8 @@ type g struct {
 	stackguard0 uintptr // 注释：Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
 	stackguard1 uintptr // 注释：C 代码检查栈空间低于这个值会扩张。 // offset known to liblink
 
-	_panic       *_panic        // 注释：当前G的panic的数据指针 // innermost panic - offset known to liblink
-	_defer       *_defer        // 注释：当前G的延迟调用的数据指针 // innermost defer
+	_panic       *_panic        // 注释：当前G的panic的数据指针(panic的链表，_panic.link 链接) // innermost panic - offset known to liblink
+	_defer       *_defer        // 注释：当前G的延迟调用的数据指针(单向链表，deferreturn会获取链表数据) // innermost defer
 	m            *m             // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行） // current m; offset known to arm liblink
 	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据，存储当前G调度相关的数据
 	syscallsp    uintptr        // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间 // if status==Gsyscall, syscallsp = sched.sp to use during gc
@@ -971,14 +971,15 @@ type _defer struct {
 // handling during stack growth: because they are pointer-typed and
 // _panic values only live on the stack, regular stack pointer
 // adjustment takes care of them.
+// 注释：panic的结构体
 type _panic struct {
-	argp      unsafe.Pointer // pointer to arguments of deferred call run during panic; cannot move - known to liblink
-	arg       interface{}    // argument to panic
-	link      *_panic        // link to earlier panic
-	pc        uintptr        // where to return to in runtime if this panic is bypassed
-	sp        unsafe.Pointer // where to return to in runtime if this panic is bypassed
-	recovered bool           // whether this panic is over
-	aborted   bool           // the panic was aborted
+	argp      unsafe.Pointer // 注释：指向defer调用时参数的指针 // pointer to arguments of deferred call run during panic; cannot move - known to liblink
+	arg       interface{}    // 注释：panic的参数，打印panic的内容 // argument to panic
+	link      *_panic        // 注释：panic的单向链表  // link to earlier panic
+	pc        uintptr        // 注释：recover的时候,如果绕过painc的时候需要继续之前的pc位置执行 // where to return to in runtime if this panic is bypassed
+	sp        unsafe.Pointer // 注释：recover的时候,如果绕过painc的时候需要继续之前的sp栈位置 // where to return to in runtime if this panic is bypassed
+	recovered bool           // 注释：当前是否被recover恢复 // whether this panic is over
+	aborted   bool           // 注释：当前是否被强行终止 // the panic was aborted
 	goexit    bool
 }
 

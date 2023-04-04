@@ -35,7 +35,7 @@ type Locker interface {
 }
 
 const (
-	mutexLocked      = 1 << iota // 注释：表示互斥锁的锁定状态 // mutex is locked
+	mutexLocked      = 1 << iota // 注释：上锁，表示互斥锁的锁定状态 // mutex is locked
 	mutexWoken                   // 注释：表示从正常模式被从唤醒
 	mutexStarving                // 注释：当前的互斥锁进入饥饿状态
 	mutexWaiterShift = iota

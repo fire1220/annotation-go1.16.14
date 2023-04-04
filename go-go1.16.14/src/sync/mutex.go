@@ -22,9 +22,10 @@ func throw(string) // provided by runtime
 // The zero value for a Mutex is an unlocked mutex.
 //
 // A Mutex must not be copied after first use.
+// 注释：互斥锁的结构体
 type Mutex struct {
-	state int32
-	sema  uint32
+	state int32  // 注释：表示当前互斥锁的状态,最低三位分别表示 mutexLocked、mutexWoken 和 mutexStarving,剩下的位置用来表示当前有多少个Goroutine在等待互斥锁的释放
+	sema  uint32 // 注释：用于控制锁状态的信号量
 }
 
 // A Locker represents an object that can be locked and unlocked.
@@ -34,9 +35,9 @@ type Locker interface {
 }
 
 const (
-	mutexLocked = 1 << iota // mutex is locked
-	mutexWoken
-	mutexStarving
+	mutexLocked      = 1 << iota // 注释：表示互斥锁的锁定状态 // mutex is locked
+	mutexWoken                   // 注释：表示从正常模式被从唤醒
+	mutexStarving                // 注释：当前的互斥锁进入饥饿状态
 	mutexWaiterShift = iota
 
 	// Mutex fairness.

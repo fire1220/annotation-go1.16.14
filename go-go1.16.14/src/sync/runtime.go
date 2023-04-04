@@ -55,6 +55,7 @@ func init() {
 // runtime_canSpin reports whether spinning makes sense at the moment.
 func runtime_canSpin(i int) bool // 注释：sync.runtime_canSpin 是 runtime.sync_runtime_canSpin 的别名
 
+// 注释：执行30次PAUSE系统指令，该指令只会占用 CPU 并消耗 CPU 时间
 // runtime_doSpin does active spinning.
 func runtime_doSpin() // 注释：sync.runtime_doSpin 是 runtime.sync_runtime_doSpin 的别名
 

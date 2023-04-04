@@ -762,7 +762,7 @@ type schedt struct {
 
 	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表(这里指向的链表的头部)
 	npidle     uint32   // 注释：空闲的p结构体对象的数量
-	nmspinning uint32   // See "Worker thread parking/unparking" comment in proc.go. // 注释：自旋的线程m数量（工作线程数据）(自旋说明当前线程M已经没有需要执行的G，正在打算去其他线程M偷G了)
+	nmspinning uint32   // 注释：自旋的线程m数量（工作线程数据）(自旋说明当前线程M已经没有需要执行的G，正在打算去其他线程M偷G了) // See "Worker thread parking/unparking" comment in proc.go.
 
 	// Global runnable queue. // 注释：全局可运行队列
 	// 注释：如果创建一个g并准备运行，这个g就会被放到调度器的全局运行队列中。
@@ -1087,11 +1087,11 @@ func (w waitReason) String() string {
 
 var (
 	// 注释：全局变量
-	allm       *m    // 注释：(全局)所有的m构成的一个链表，包括下面的m0
-	gomaxprocs int32 // 注释：(全局)p的最大值，默认等于ncpu，但可以通过GOMAXPROCS修改
-	ncpu       int32 // 注释：(全局)系统中cpu核的数量，程序启动时由runtime代码初始化
+	allm       *m    // 注释：(全局变量)所有的m构成的一个链表，包括下面的m0
+	gomaxprocs int32 // 注释：(全局变量)p的最大值，默认等于ncpu，但可以通过GOMAXPROCS修改
+	ncpu       int32 // 注释：(全局变量)系统中cpu核的数量，程序启动时由runtime代码初始化
 	forcegc    forcegcstate
-	sched      schedt // 注释：(全局)调度器结构体对象，记录了调度器的工作状态
+	sched      schedt // 注释：(全局变量)调度器结构体对象，记录了调度器的工作状态
 	newprocs   int32
 
 	// allpLock protects P-less reads and size changes of allp, idlepMask,
@@ -1099,7 +1099,7 @@ var (
 	allpLock mutex
 	// len(allp) == gomaxprocs; may change at safe points, otherwise
 	// immutable.
-	allp []*p // 注释：保存所有的p，len(allp) == gomaxprocs
+	allp []*p // 注释：(全局变量)保存所有的p，len(allp) == gomaxprocs
 	// Bitmask of Ps in _Pidle list, one bit per P. Reads and writes must
 	// be atomic. Length may change at safe points.
 	//

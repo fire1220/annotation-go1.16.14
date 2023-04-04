@@ -27,7 +27,7 @@ import (
 const (
 	locked uintptr = 1
 
-	active_spin     = 4
+	active_spin     = 4 // 注释：活动的自旋次数
 	active_spin_cnt = 30
 	passive_spin    = 1
 )

@@ -86,16 +86,23 @@ func (m *Mutex) Lock() {
 func (m *Mutex) lockSlow() {
 	var waitStartTime int64
 	starving := false
-	awoke := false
+	awoke := false // 注释：是否唤醒
 	iter := 0
 	old := m.state
+	// 注释：开始自旋，保持CPU占用，自旋可以避免G的切换
 	for {
 		// Don't spin in starvation mode, ownership is handed off to waiters
 		// so we won't be able to acquire the mutex anyway.
+		// 注释：互斥锁只有在普通模式才能进入自旋
+		// 注释：运行在多 CPU 的机器上；
+		// 注释：当前 Goroutine 为了获取该锁进入自旋的次数小于四次；
+		// 注释：当前机器上至少存在一个正在运行的处理器 P
+		// 注释：并且处理的运行队列为空；
 		if old&(mutexLocked|mutexStarving) == mutexLocked && runtime_canSpin(iter) {
 			// Active spinning makes sense.
 			// Try to set mutexWoken flag to inform Unlock
 			// to not wake other blocked goroutines.
+			// 注释：通过自旋，尝试唤醒
 			if !awoke && old&mutexWoken == 0 && old>>mutexWaiterShift != 0 &&
 				atomic.CompareAndSwapInt32(&m.state, old, old|mutexWoken) {
 				awoke = true

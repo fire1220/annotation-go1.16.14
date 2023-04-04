@@ -47,6 +47,10 @@ func init() {
 	runtime_notifyListCheck(unsafe.Sizeof(n))
 }
 
+// 注释：运行在多 CPU 的机器上；
+// 注释：当前 Goroutine 为了获取该锁进入自旋的次数小于四次；
+// 注释：当前机器上至少存在一个正在运行的处理器 P
+// 注释：并且处理的运行队列为空；
 // Active spinning runtime support.
 // runtime_canSpin reports whether spinning makes sense at the moment.
 func runtime_canSpin(i int) bool // 注释：sync.runtime_canSpin 是 runtime.sync_runtime_canSpin 的别名

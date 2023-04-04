@@ -27,8 +27,8 @@ import (
 const (
 	locked uintptr = 1
 
-	active_spin     = 4 // 注释：活动的自旋次数
-	active_spin_cnt = 30
+	active_spin     = 4  // 注释：活动的自旋次数
+	active_spin_cnt = 30 // 注释：执行30次的PAUSE指令
 	passive_spin    = 1
 )
 

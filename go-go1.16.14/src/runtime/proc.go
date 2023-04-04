@@ -6314,7 +6314,7 @@ func sync_runtime_canSpin(i int) bool {
 //go:linkname sync_runtime_doSpin sync.runtime_doSpin
 //go:nosplit
 func sync_runtime_doSpin() {
-	procyield(active_spin_cnt)
+	procyield(active_spin_cnt) // 注释：执行30次PAUSE系统指令；TEXT runtime·procyield(SB)
 }
 
 var stealOrder randomOrder

@@ -583,6 +583,7 @@ CALLFN(·call268435456, 268435456)
 CALLFN(·call536870912, 536870912)
 CALLFN(·call1073741824, 1073741824)
 
+// 注释：循环执行PAUSE系统指令，循环次数是第一个参数，该指令只会占用 CPU 并消耗 CPU 时间
 TEXT runtime·procyield(SB),NOSPLIT,$0-0
 	MOVL	cycles+0(FP), AX
 again:

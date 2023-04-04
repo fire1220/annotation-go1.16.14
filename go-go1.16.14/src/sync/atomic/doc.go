@@ -70,6 +70,7 @@ func SwapUintptr(addr *uintptr, new uintptr) (old uintptr)
 // SwapPointer atomically stores new into *addr and returns the previous *addr value.
 func SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer) (old unsafe.Pointer)
 
+// 注释：方法的别名：runtime.abigen_sync_atomic_CompareAndSwapInt32，汇编方法：sync∕atomic·CompareAndSwapInt32
 // CompareAndSwapInt32 executes the compare-and-swap operation for an int32 value.
 func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool) // 注释：如果addr==old时，addr=new,返回true；if addr == old {addr = new;return true;} else {return false;}
 

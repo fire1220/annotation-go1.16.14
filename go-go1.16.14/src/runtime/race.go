@@ -632,7 +632,7 @@ func abigen_sync_atomic_AddUint64(addr *uint64, delta uint64) (new uint64)
 func abigen_sync_atomic_AddUintptr(addr *uintptr, delta uintptr) (new uintptr)
 
 //go:linkname abigen_sync_atomic_CompareAndSwapInt32 sync/atomic.CompareAndSwapInt32
-func abigen_sync_atomic_CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)
+func abigen_sync_atomic_CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool) // 注释：汇编方法sync∕atomic·CompareAndSwapInt32
 
 //go:linkname abigen_sync_atomic_CompareAndSwapInt64 sync/atomic.CompareAndSwapInt64
 func abigen_sync_atomic_CompareAndSwapInt64(addr *int64, old, new int64) (swapped bool)

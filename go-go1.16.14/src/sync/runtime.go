@@ -56,6 +56,6 @@ func init() {
 func runtime_canSpin(i int) bool // 注释：sync.runtime_canSpin 是 runtime.sync_runtime_canSpin 的别名
 
 // runtime_doSpin does active spinning.
-func runtime_doSpin()
+func runtime_doSpin() // 注释：sync.runtime_doSpin 是 runtime.sync_runtime_doSpin 的别名
 
 func runtime_nanotime() int64

@@ -6300,12 +6300,14 @@ func sync_runtime_canSpin(i int) bool {
 	if i >= active_spin || ncpu <= 1 || gomaxprocs <= int32(sched.npidle+sched.nmspinning)+1 {
 		return false
 	}
+	// 注释：并且处理的运行队列不为空；
 	if p := getg().m.p.ptr(); !runqempty(p) {
 		return false
 	}
-	//注释：运行在多 CPU 的机器上；
-	//注释：当前 Goroutine 为了获取该锁进入自旋的次数小于四次；
-	//注释：当前机器上至少存在一个正在运行的处理器 P 并且处理的运行队列为空；
+	// 注释：运行在多 CPU 的机器上；
+	// 注释：当前 Goroutine 为了获取该锁进入自旋的次数小于四次；
+	// 注释：当前机器上至少存在一个正在运行的处理器 P
+	// 注释：并且处理的运行队列为空；
 	return true
 }
 

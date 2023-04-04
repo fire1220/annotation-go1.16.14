@@ -49,7 +49,7 @@ func init() {
 
 // Active spinning runtime support.
 // runtime_canSpin reports whether spinning makes sense at the moment.
-func runtime_canSpin(i int) bool // 注释：sync.runtime_canSpin是sync_runtime_canSpin的别名
+func runtime_canSpin(i int) bool // 注释：sync.runtime_canSpin 是 runtime.sync_runtime_canSpin 的别名
 
 // runtime_doSpin does active spinning.
 func runtime_doSpin()

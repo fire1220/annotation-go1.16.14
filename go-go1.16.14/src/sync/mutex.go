@@ -35,10 +35,10 @@ type Locker interface {
 }
 
 const (
-	mutexLocked      = 1 << iota // 注释：上锁，表示互斥锁的锁定状态 // mutex is locked
+	mutexLocked      = 1 << iota // 注释：正常模式上锁，表示互斥锁的锁定状态 // mutex is locked
 	mutexWoken                   // 注释：表示从正常模式被从唤醒
-	mutexStarving                // 注释：当前的互斥锁进入饥饿状态
-	mutexWaiterShift = iota
+	mutexStarving                // 注释：饥饿状态上锁,当前的互斥锁进入饥饿状态
+	mutexWaiterShift = iota      // 注释：向右移动该位（3位），剩下的是数表示互斥锁上等待的Goroutine个数
 
 	// Mutex fairness.
 	//
@@ -70,9 +70,10 @@ const (
 // Lock locks m.
 // If the lock is already in use, the calling goroutine
 // blocks until the mutex is available.
+// 互斥锁，锁定方法
 func (m *Mutex) Lock() {
 	// Fast path: grab unlocked mutex.
-	if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) {
+	if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) { // 注释：如果state==0,则设置互斥锁状态
 		if race.Enabled {
 			race.Acquire(unsafe.Pointer(m))
 		}

@@ -26,7 +26,7 @@ type WaitGroup struct {
 	// compilers do not ensure it. So we allocate 12 bytes and then use
 	// the aligned 8 bytes in them as state, and the other 4 as storage
 	// for the sema.
-	// 注释：共96位（3个32位）,存储着状态(waiter,counter两个组合成一个uint64类型的数据)和信号量(sema)，每个站32位字节
+	// 注释：共96位（3个32位）,存储着状态(低32位)等待者waiter,(高32位)计数器counter两个组合成一个uint64类型的数据)和信号量(sema)，每个站32位字节
 	// 注释：在64位操作系统是：uint64(第一个32位waiter(低位)+第二个32位counter(高位)) + 第三个32位sema
 	// 注释：在32位操作系统是：第一个32位sema + uint64(第二个32位waiter(低位)+第三个32位counter(高位))
 	state1 [3]uint32

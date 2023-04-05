@@ -136,7 +136,7 @@ func (wg *WaitGroup) Wait() {
 				// otherwise concurrent Waits will race with each other.
 				race.Write(unsafe.Pointer(semap))
 			}
-			runtime_Semacquire(semap)
+			runtime_Semacquire(semap) // 注释：获取设置信号量
 			if *statep != 0 {
 				panic("sync: WaitGroup is reused before previous Wait has returned")
 			}

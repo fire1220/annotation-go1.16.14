@@ -11,7 +11,7 @@ import "unsafe"
 // Semacquire waits until *s > 0 and then atomically decrements it.
 // It is intended as a simple sleep primitive for use by the synchronization
 // library and should not be used directly.
-func runtime_Semacquire(s *uint32)
+func runtime_Semacquire(s *uint32) // 注释：别名 runtime.sync_runtime_Semacquire
 
 // SemacquireMutex is like Semacquire, but for profiling contended Mutexes.
 // If lifo is true, queue waiter at the head of wait queue.

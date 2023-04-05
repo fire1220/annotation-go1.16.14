@@ -26,7 +26,7 @@ type WaitGroup struct {
 	// compilers do not ensure it. So we allocate 12 bytes and then use
 	// the aligned 8 bytes in them as state, and the other 4 as storage
 	// for the sema.
-	// 注释：共96位（3个32位）,存储着状态(低32位)等待者waiter,(高32位)计数器counter两个组合成一个uint64类型的数据)和信号量(sema)，每个站32位字节
+	// 注释：共96位（3个32位）,存储着状态(低32位)等待者数量waiter,(高32位)计数器counter两个组合成一个uint64类型的数据)和信号量(sema)，每个站32位字节
 	// 注释：在64位操作系统是：uint64(第一个32位waiter(低位)+第二个32位counter(高位)) + 第三个32位sema
 	// 注释：在32位操作系统是：第一个32位sema + uint64(第二个32位waiter(低位)+第三个32位counter(高位))
 	state1 [3]uint32
@@ -55,7 +55,7 @@ func (wg *WaitGroup) state() (statep *uint64, semap *uint32) {
 // new Add calls must happen after all previous Wait calls have returned.
 // See the WaitGroup example.
 func (wg *WaitGroup) Add(delta int) {
-	statep, semap := wg.state()
+	statep, semap := wg.state() // 注释：获取计数器状态和信号量
 	if race.Enabled {
 		_ = *statep // trigger nil deref early
 		if delta < 0 {
@@ -65,15 +65,16 @@ func (wg *WaitGroup) Add(delta int) {
 		race.Disable()
 		defer race.Enable()
 	}
-	state := atomic.AddUint64(statep, uint64(delta)<<32)
-	v := int32(state >> 32)
-	w := uint32(state)
+	state := atomic.AddUint64(statep, uint64(delta)<<32) // 注释：高32位 + delta
+	v := int32(state >> 32)                              // 注释：高32位，计数器counter
+	w := uint32(state)                                   // 注释：低32位，等待者数量waiter
 	if race.Enabled && delta > 0 && v == int32(delta) {
 		// The first increment must be synchronized with Wait.
 		// Need to model this as a read, because there can be
 		// several concurrent wg.counter transitions from 0.
 		race.Read(unsafe.Pointer(semap))
 	}
+	// 注释：高32位，计数器counter不能小于0
 	if v < 0 {
 		panic("sync: negative WaitGroup counter")
 	}

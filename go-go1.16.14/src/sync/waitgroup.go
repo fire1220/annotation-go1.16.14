@@ -91,11 +91,13 @@ func (wg *WaitGroup) Add(delta int) {
 	// - Adds must not happen concurrently with Wait,
 	// - Wait does not increment waiters if it sees counter == 0.
 	// Still do a cheap sanity check to detect WaitGroup misuse.
+	// 注释：这两个不相等说明计数器counter(高32位)不为零
 	if *statep != state {
 		panic("sync: WaitGroup misuse: Add called concurrently with Wait")
 	}
 	// Reset waiters count to 0.
-	*statep = 0
+	*statep = 0 // 注释：重置地32位waiter
+	// 注释：遍历所有等待者，逐个释放等待者
 	for ; w != 0; w-- {
 		runtime_Semrelease(semap, false, 0)
 	}

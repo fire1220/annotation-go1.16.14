@@ -156,6 +156,7 @@ func semrelease(addr *uint32) {
 	semrelease1(addr, false, 0)
 }
 
+// 注释：信号量释放
 func semrelease1(addr *uint32, handoff bool, skipframes int) {
 	root := semroot(addr)
 	atomic.Xadd(addr, 1)

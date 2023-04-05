@@ -26,7 +26,7 @@ func runtime_SemacquireMutex(s *uint32, lifo bool, skipframes int)
 // If handoff is true, pass count directly to the first waiter.
 // skipframes is the number of frames to omit during tracing, counting from
 // runtime_Semrelease's caller.
-func runtime_Semrelease(s *uint32, handoff bool, skipframes int)
+func runtime_Semrelease(s *uint32, handoff bool, skipframes int) // 注释：别名 runtime.sync_runtime_Semrelease
 
 // See runtime/sema.go for documentation.
 func runtime_notifyListAdd(l *notifyList) uint32

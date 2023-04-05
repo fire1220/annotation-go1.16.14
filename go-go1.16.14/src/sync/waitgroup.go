@@ -17,23 +17,27 @@ import (
 // Wait can be used to block until all goroutines have finished.
 //
 // A WaitGroup must not be copied after first use.
+// 注释：等待组结构体
 type WaitGroup struct {
-	noCopy noCopy
+	noCopy noCopy // 注释：不允许复制标识，复制时会panic
 
 	// 64-bit value: high 32 bits are counter, low 32 bits are waiter count.
 	// 64-bit atomic operations require 64-bit alignment, but 32-bit
 	// compilers do not ensure it. So we allocate 12 bytes and then use
 	// the aligned 8 bytes in them as state, and the other 4 as storage
 	// for the sema.
+	// 注释：共96位（3个32位）,存储着状态(waiter,counter两个组合成一个uint64类型的数据)和信号量(sema)，每个站32位字节
+	// 注释：在64位操作系统是：uint64(第一个32位waiter(低位)+第二个32位counter(高位)) + 第三个32位sema
+	// 注释：在32位操作系统是：第一个32位sema + uint64(第二个32位waiter(低位)+第三个32位counter(高位))
 	state1 [3]uint32
 }
 
 // state returns pointers to the state and sema fields stored within wg.state1.
 func (wg *WaitGroup) state() (statep *uint64, semap *uint32) {
-	if uintptr(unsafe.Pointer(&wg.state1))%8 == 0 {
-		return (*uint64)(unsafe.Pointer(&wg.state1)), &wg.state1[2]
-	} else {
-		return (*uint64)(unsafe.Pointer(&wg.state1[1])), &wg.state1[0]
+	if uintptr(unsafe.Pointer(&wg.state1))%8 == 0 { // 注释：64位系统
+		return (*uint64)(unsafe.Pointer(&wg.state1)), &wg.state1[2] // 注释：共96位（3个32位）：uint64(第一个32位waiter(低位)+第二个32位counter(高位)) + 第三个32位sema
+	} else { // 注释：32位系统
+		return (*uint64)(unsafe.Pointer(&wg.state1[1])), &wg.state1[0] // 注释：共96位（3个32位）：第一个32位sema + uint64(第二个32位waiter(低位)+第三个32位counter(高位))
 	}
 }
 

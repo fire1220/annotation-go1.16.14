@@ -294,6 +294,7 @@ TEXT	sync∕atomic·AddInt32(SB), NOSPLIT, $0-20
 	ADDL	AX, ret+16(FP)
 	RET
 
+// 注释：原子加法
 TEXT	sync∕atomic·AddInt64(SB), NOSPLIT, $0-24
 	GO_ARGS
 	MOVQ	$__tsan_go_atomic64_fetch_add(SB), AX

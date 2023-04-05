@@ -65,7 +65,7 @@ func (wg *WaitGroup) Add(delta int) {
 		race.Disable()
 		defer race.Enable()
 	}
-	state := atomic.AddUint64(statep, uint64(delta)<<32) // 注释：高32位 + delta
+	state := atomic.AddUint64(statep, uint64(delta)<<32) // 注释：statep的高32位 + delta
 	v := int32(state >> 32)                              // 注释：高32位，计数器counter
 	w := uint32(state)                                   // 注释：低32位，等待者数量waiter
 	if race.Enabled && delta > 0 && v == int32(delta) {
@@ -78,9 +78,11 @@ func (wg *WaitGroup) Add(delta int) {
 	if v < 0 {
 		panic("sync: negative WaitGroup counter")
 	}
+	// 注释：第一个add必须在wait前面
 	if w != 0 && delta > 0 && v == int32(delta) {
 		panic("sync: WaitGroup misuse: Add called concurrently with Wait")
 	}
+	// 注释：在计数器counter有值或者在wait前面时直接返回
 	if v > 0 || w == 0 {
 		return
 	}

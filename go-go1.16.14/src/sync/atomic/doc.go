@@ -103,7 +103,7 @@ func AddInt64(addr *int64, delta int64) (new int64)
 // AddUint64 atomically adds delta to *addr and returns the new value.
 // To subtract a signed positive constant value c from x, do AddUint64(&x, ^uint64(c-1)).
 // In particular, to decrement x, do AddUint64(&x, ^uint64(0)).
-func AddUint64(addr *uint64, delta uint64) (new uint64)
+func AddUint64(addr *uint64, delta uint64) (new uint64) // 注释：别名 runtime.abigen_sync_atomic_AddUint64
 
 // AddUintptr atomically adds delta to *addr and returns the new value.
 func AddUintptr(addr *uintptr, delta uintptr) (new uintptr)

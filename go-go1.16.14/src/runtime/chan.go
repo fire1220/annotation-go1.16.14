@@ -53,8 +53,8 @@ type hchan struct {
 
 // 注释：阻塞队列结构体
 type waitq struct {
-	first *sudog
-	last  *sudog
+	first *sudog // 注释：队列头部
+	last  *sudog // 注释：队列尾部
 }
 
 //go:linkname reflect_makechan reflect.makechan
@@ -76,6 +76,7 @@ func makechan(t *chantype, size int) *hchan {
 	elem := t.elem
 
 	// compiler checks this but be safe.
+	// 注释：基础类型是int类型，最大值时10的32次方
 	if elem.size >= 1<<16 {
 		throw("makechan: invalid channel element type")
 	}

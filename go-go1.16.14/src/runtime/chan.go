@@ -39,8 +39,8 @@ type hchan struct {
 	elemtype *_type         // 注释：元素类型（写入通道的时候用到） // element type
 	sendx    uint           // 注释：记录发送者（写入）在buf中的序号（数组下标） // send index
 	recvx    uint           // 注释：记录接收者（读取）在buf中的序号（数组下标） // receive index
-	recvq    waitq          // 注释：读取的阻塞协程队列 // list of recv waiters
-	sendq    waitq          // 注释：写入的阻塞协程队列 // list of send waiters
+	recvq    waitq          // 注释：读取的阻塞协程的双向链表 // list of recv waiters
+	sendq    waitq          // 注释：写入的阻塞协程的双向链表 // list of send waiters
 
 	// lock protects all fields in hchan, as well as several
 	// fields in sudogs blocked on this channel.
@@ -51,10 +51,10 @@ type hchan struct {
 	lock mutex // 注释：锁，并发保护
 }
 
-// 注释：阻塞队列结构体
+// 注释：阻塞双向链表结构体
 type waitq struct {
-	first *sudog // 注释：队列头部
-	last  *sudog // 注释：队列尾部
+	first *sudog // 注释：双向链表头部
+	last  *sudog // 注释：双向链表尾部
 }
 
 //go:linkname reflect_makechan reflect.makechan
@@ -796,6 +796,7 @@ func reflect_chanclose(c *hchan) {
 	closechan(c)
 }
 
+// 注释：在双向链表尾部加入元素
 func (q *waitq) enqueue(sgp *sudog) {
 	sgp.next = nil
 	x := q.last
@@ -810,7 +811,7 @@ func (q *waitq) enqueue(sgp *sudog) {
 	q.last = sgp
 }
 
-// 注释：元素移除队列，把链表第一个元素取出来
+// 注释：在双向链表头部取出元素；元素移除队列，把链表第一个元素取出来
 func (q *waitq) dequeue() *sudog {
 	for {
 		sgp := q.first
@@ -842,7 +843,7 @@ func (q *waitq) dequeue() *sudog {
 			continue
 		}
 
-		// 注释：返回链表第一个元素（出栈）
+		// 注释：返回链表第一个元素，在双向链表头部取出元素
 		return sgp
 	}
 }

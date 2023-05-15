@@ -418,10 +418,11 @@ type arraytype struct {
 	len   uintptr
 }
 
+// 注释：管道类型
 type chantype struct {
-	typ  _type
-	elem *_type
-	dir  uintptr
+	typ  _type   // 注释：管道的基础类型
+	elem *_type  // 注释：管道元素的类型
+	dir  uintptr // 注释：
 }
 
 // 注释：切片类型
@@ -441,12 +442,14 @@ type ptrtype struct {
 	elem *_type
 }
 
+// 注释：结构体字段的结构体
 type structfield struct {
-	name       name
-	typ        *_type
-	offsetAnon uintptr
+	name       name    // 注释：结构体里字段名
+	typ        *_type  // 注释：结构体字段的类型
+	offsetAnon uintptr // 注释：结构体字段对应的地址（地址是int类型，用uintptr左对齐装地址的话，实际地址的值是：offsetAnon >> 1）
 }
 
+// 注释：获取结构体每个字段的开始内存位置（内存地址），结束地址是：memEnd = f.offset() + f.typ.size
 func (f *structfield) offset() uintptr {
 	return f.offsetAnon >> 1
 }

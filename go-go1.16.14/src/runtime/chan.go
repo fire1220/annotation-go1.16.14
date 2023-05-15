@@ -25,7 +25,7 @@ import (
 
 const (
 	maxAlign  = 8
-	hchanSize = unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1)) // 注释：64位系统：96 = 96+0
+	hchanSize = unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1)) // 注释：64位系统：96字节（96+0）
 	debugChan = false                                                                       // 注释：管道调试debug开关，默认：false
 )
 
@@ -39,8 +39,8 @@ type hchan struct {
 	elemtype *_type         // 注释：元素类型（写入通道的时候用到） // element type
 	sendx    uint           // 注释：记录发送者（写入）在buf中的序号（数组下标） // send index
 	recvx    uint           // 注释：记录接收者（读取）在buf中的序号（数组下标） // receive index
-	recvq    waitq          // 注释：读取的阻塞协程的双向链表 // list of recv waiters
-	sendq    waitq          // 注释：写入的阻塞协程的双向链表 // list of send waiters
+	recvq    waitq          // 注释：读取的阻塞协程队列（双向链表） // list of recv waiters
+	sendq    waitq          // 注释：写入的阻塞协程队列（双向链表） // list of send waiters
 
 	// lock protects all fields in hchan, as well as several
 	// fields in sudogs blocked on this channel.
@@ -51,10 +51,10 @@ type hchan struct {
 	lock mutex // 注释：锁，并发保护
 }
 
-// 注释：阻塞双向链表结构体
+// 注释：阻塞队列（双向链表）结构体
 type waitq struct {
-	first *sudog // 注释：双向链表头部
-	last  *sudog // 注释：双向链表尾部
+	first *sudog // 注释：队列（双向链表）头部
+	last  *sudog // 注释：队列（双向链表）尾部
 }
 
 //go:linkname reflect_makechan reflect.makechan

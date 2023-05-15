@@ -25,11 +25,11 @@ import (
 
 const (
 	maxAlign  = 8
-	hchanSize = unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1))
-	debugChan = false
+	hchanSize = unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1)) // 注释：64位系统：96 = 96+0
+	debugChan = false                                                                       // 注释：管道调试debug开关，默认：false
 )
 
-// 注释：通道的结构体
+// 注释：通道的结构体(64位操作系统：总大小是96字节)
 type hchan struct {
 	qcount   uint           // 注释：通道队列中的数据个数（有效数据个数） // total data in the queue
 	dataqsiz uint           // 注释：通道队列的尺寸（可以容纳的总个数） // size of the circular queue
@@ -71,7 +71,7 @@ func makechan64(t *chantype, size int64) *hchan {
 	return makechan(t, int(size))
 }
 
-// 注释：make管道的主函数；make(chan类型, chan缓冲区大小)
+// 注释：make管道的主函数；make(chan类型, chan缓冲区大小), 如果make没有设置缓冲区大小时，则size为0
 func makechan(t *chantype, size int) *hchan {
 	elem := t.elem
 

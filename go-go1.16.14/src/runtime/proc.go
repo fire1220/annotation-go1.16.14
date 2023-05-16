@@ -353,6 +353,7 @@ func goready(gp *g, traceskip int) {
 	})
 }
 
+// 注释：获取P中的G（当前M对应的P（当前P）中阻塞（等待）的G），如果没有会到全局里G列表中取出一部分
 //go:nosplit
 func acquireSudog() *sudog {
 	// Delicate dance: the semaphore implementation calls
@@ -363,32 +364,37 @@ func acquireSudog() *sudog {
 	// Break the cycle by doing acquirem/releasem around new(sudog).
 	// The acquirem/releasem increments m.locks during new(sudog),
 	// which keeps the garbage collector from being invoked.
-	mp := acquirem() // 注释：获得当前的M（当前G对应的M）
+	mp := acquirem() // 注释：获得当前的M（当前G对应的M）对象
 	pp := mp.p.ptr() // 注释：当前M对应的P指针
+
+	// 注释：如果当前P没有阻塞的G时
 	if len(pp.sudogcache) == 0 {
-		lock(&sched.sudoglock)
+		lock(&sched.sudoglock) // 注释：锁定全局G（sudog）链表
 		// First, try to grab a batch from central cache.
+		// 注释：如果当前P中G列表存在，并且全局G有数据时。(如果当前P中的G数量小于可容纳的总数的一半，并且全局G列表有数据时)
+		// 注释：循环插入本地P中G列表数据，插入总数是G列表的一半
 		for len(pp.sudogcache) < cap(pp.sudogcache)/2 && sched.sudogcache != nil {
-			s := sched.sudogcache
-			sched.sudogcache = s.next
-			s.next = nil
-			pp.sudogcache = append(pp.sudogcache, s)
+			s := sched.sudogcache                    // 注释：取出全局G的头指针
+			sched.sudogcache = s.next                // 注释：把全局G链表的下一个头指针设置为全局G的头指针
+			s.next = nil                             // 注释：取出的G断开链表（形成单独的G）
+			pp.sudogcache = append(pp.sudogcache, s) // 注释：把从全局G链表取出的单个G放到当前P的列表中
 		}
-		unlock(&sched.sudoglock)
+		unlock(&sched.sudoglock) // 注释：释放全局G链表的锁
 		// If the central cache is empty, allocate a new one.
+		// 注释：如果当前P中依然没有G，则实例化一个空的G指针放在P中(后面会取出一个)
 		if len(pp.sudogcache) == 0 {
 			pp.sudogcache = append(pp.sudogcache, new(sudog))
 		}
 	}
-	n := len(pp.sudogcache)
-	s := pp.sudogcache[n-1]
-	pp.sudogcache[n-1] = nil
-	pp.sudogcache = pp.sudogcache[:n-1]
+	n := len(pp.sudogcache)             // 注释：当前P中G的数量
+	s := pp.sudogcache[n-1]             // 注释：取出当前P中最后一个G
+	pp.sudogcache[n-1] = nil            // 注释：把当前P中G列表的最后一个位置的内存释放
+	pp.sudogcache = pp.sudogcache[:n-1] // 注释：重置P中G列表的数据（去掉最有G元素）
 	if s.elem != nil {
 		throw("acquireSudog: found s.elem != nil in cache")
 	}
-	releasem(mp)
-	return s
+	releasem(mp) // 注释：释放当前M对象
+	return s     // 注释：返回等待的G（可能是等待的G可可能是空的G）
 }
 
 //go:nosplit

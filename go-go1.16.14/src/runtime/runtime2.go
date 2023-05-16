@@ -351,7 +351,7 @@ type gobuf struct {
 // releaseSudog to allocate and free them.
 // 注释：sudog是从一个特殊的池中分配的。使用acquireSudog和releaseSudog来分配和释放它们。
 //
-// 注释：等待列表中的G
+// 注释：等待(阻塞)的G（通常是全局G链表或当前P中等待的G列表中的成员），所有要执行的G都是以这个结构体的形式存在
 type sudog struct {
 	// The following fields are protected by the hchan.lock of the
 	// channel this sudog is blocking on. shrinkstack depends on
@@ -640,7 +640,7 @@ type p struct {
 		n int32
 	}
 
-	sudogcache []*sudog // 注释：P中阻塞的G切片
+	sudogcache []*sudog // 注释：P中阻塞的G切片，P中G的列表，如果为空时回到全局G列表里取出一部分
 	sudogbuf   [128]*sudog
 
 	// Cache of mspan objects from the heap.
@@ -792,8 +792,8 @@ type schedt struct {
 	}
 
 	// Central cache of sudog structs.
-	sudoglock  mutex
-	sudogcache *sudog
+	sudoglock  mutex  // 注释：全局阻塞(等待)G的锁，当前P中的G列表为空时会上锁，然后取出一批
+	sudogcache *sudog // 注释：全局阻塞(等待)G链表头指针，当P没有时会到这里取出一批放到当前P中，取之前上锁
 
 	// Central pool of available defer structs of different sizes.
 	deferlock mutex

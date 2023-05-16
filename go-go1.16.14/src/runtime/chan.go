@@ -527,6 +527,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	var t0 int64
+	// 注释：阻塞分析器，默认是0禁用
 	if blockprofilerate > 0 {
 		t0 = cputicks()
 	}
@@ -584,8 +585,8 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 
 	// no sender available: block on this channel.
 	gp := getg()           // 注释：获取当前运行的G
-	mysg := acquireSudog() // 注释：
-	mysg.releasetime = 0
+	mysg := acquireSudog() // 注释：获取等待的G（可能是等待中G也可能是空的G）(如果P中存在则返回尾部的G，如果不存在去全局G链表中取，如果没有取到则返回空的G)
+	mysg.releasetime = 0   // 注释：设置释放时间
 	if t0 != 0 {
 		mysg.releasetime = -1
 	}

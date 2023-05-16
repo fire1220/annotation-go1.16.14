@@ -369,6 +369,11 @@ func mProf_Free(b *bucket, size uintptr) {
 	unlock(&proflock)
 }
 
+// 注释：阻塞分析器(block profile rate)，默认禁用。
+// 注释：值含义
+// 注释：0禁用（默认）1跟踪每个阻塞事件，不论事件的duration是多少。
+// 注释：>=2时是设置纳秒采样率。每一个duration>=rate的事件都能被追踪到。对于duration<rate的事件，分析器将会随机采样duration/ rate的事件。
+// 注释：例如:假设您的事件耗时100ns，rate值设为1000ns，那么事件就有10%的概率被分析器追踪。
 var blockprofilerate uint64 // in CPU ticks
 
 // SetBlockProfileRate controls the fraction of goroutine blocking events
@@ -377,6 +382,7 @@ var blockprofilerate uint64 // in CPU ticks
 //
 // To include every blocking event in the profile, pass rate = 1.
 // To turn off profiling entirely, pass rate <= 0.
+// 注释：设置阻塞分析器(默认禁用)
 func SetBlockProfileRate(rate int) {
 	var r int64
 	if rate <= 0 {

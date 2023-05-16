@@ -875,6 +875,7 @@ TEXT runtime·stackcheck(SB), NOSPLIT, $0-0
 	RET
 
 // func cputicks() int64
+// 注释：CPU时钟周期计数器，高32位存在DX中，低32位存在AX寄存器中
 TEXT runtime·cputicks(SB),NOSPLIT,$0-0
 	CMPB	runtime·lfenceBeforeRdtsc(SB), $1
 	JNE	mfence
@@ -883,11 +884,11 @@ TEXT runtime·cputicks(SB),NOSPLIT,$0-0
 mfence:
 	MFENCE
 done:
-	RDTSC
-	SHLQ	$32, DX
-	ADDQ	DX, AX
-	MOVQ	AX, ret+0(FP)
-	RET
+	RDTSC                   // 获取cpu自从加电以来执行的周期数
+	SHLQ	$32, DX         // 注释：SHLQ指令就是将DX中的高32位值左移32位
+	ADDQ	DX, AX          // 注释：把高32位和低32位叠加起来放到AX中
+	MOVQ	AX, ret+0(FP)   // 注释：把AX放到返回值中
+	RET                     // 注释：汇编函数返回结束
 
 // func memhash(p unsafe.Pointer, h, s uintptr) uintptr
 // hash function using AES hardware instructions

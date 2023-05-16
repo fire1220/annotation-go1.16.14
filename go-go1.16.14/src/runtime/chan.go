@@ -339,7 +339,7 @@ func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	gp.param = unsafe.Pointer(sg) // 注释：唤醒时需要使用的参数
 	sg.success = true             // 注释：设置为因通道唤醒（该字段含义：是否因通道唤醒）
 	if sg.releasetime != 0 {      // 注释：如果存在释放时间
-		sg.releasetime = cputicks() // 注释：设置CPU的频率（每毫秒）为释放时间
+		sg.releasetime = cputicks() // 注释：设置CPU的频率（每毫秒）；blockevent阻塞监听的时间是当前值减去当时的cputicks()值
 	}
 	goready(gp, skip+1) // 注释：把读取阻塞的G拿出来，放到下一个准备执行的G位置上
 }
@@ -529,7 +529,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	var t0 int64
 	// 注释：阻塞分析器，默认是0禁用
 	if blockprofilerate > 0 {
-		t0 = cputicks()
+		t0 = cputicks() // 注释：获取CPU时钟周期计数器
 	}
 
 	// 注释：加锁，后面开始读取管道内容
@@ -585,10 +585,10 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 
 	// no sender available: block on this channel.
 	gp := getg()           // 注释：获取当前运行的G
-	mysg := acquireSudog() // 注释：获取等待的G（可能是等待中G也可能是空的G）(如果P中存在则返回尾部的G，如果不存在去全局G链表中取，如果没有取到则返回空的G)
+	mysg := acquireSudog() // 注释：获取等待的G对象（可能是等待中G也可能是空的G）(如果P中存在则返回尾部的G，如果不存在去全局G链表中取，如果没有取到则返回空的G)
 	mysg.releasetime = 0   // 注释：设置释放时间
 	if t0 != 0 {
-		mysg.releasetime = -1
+		mysg.releasetime = -1 // 注释：设置释放时间，-1表示send的时候再设置时间
 	}
 	// No stack splits between assigning elem and enqueuing mysg
 	// on gp.waiting where copystack can find it.
@@ -599,13 +599,13 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	mysg.isSelect = false
 	mysg.c = c
 	gp.param = nil
-	c.recvq.enqueue(mysg)
+	c.recvq.enqueue(mysg) // 注释：加入等待读取的队列中取（加到尾部）
 	// Signal to anyone trying to shrink our stack that we're about
 	// to park on a channel. The window between when this G's status
 	// changes and when we set gp.activeStackChans is not safe for
 	// stack shrinking.
 	atomic.Store8(&gp.parkingOnChan, 1)
-	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2) // 注释：让渡控制权
 
 	// someone woke us up
 	if mysg != gp.waiting {
@@ -619,7 +619,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	success := mysg.success
 	gp.param = nil
 	mysg.c = nil
-	releaseSudog(mysg)
+	releaseSudog(mysg) // 注释：释放G对象
 	return true, success
 }
 
@@ -803,7 +803,7 @@ func reflect_chanclose(c *hchan) {
 	closechan(c)
 }
 
-// 注释：在双向链表尾部加入元素
+// 注释：把G加入队列尾部（在双向链表尾部加入元素）
 func (q *waitq) enqueue(sgp *sudog) {
 	sgp.next = nil
 	x := q.last
@@ -818,7 +818,7 @@ func (q *waitq) enqueue(sgp *sudog) {
 	q.last = sgp
 }
 
-// 注释：在双向链表头部取出元素；元素移除队列，把链表第一个元素取出来
+// 注释：在队列头部取出G（在双向链表头部取出元素；元素移除队列，把链表第一个元素取出来）
 func (q *waitq) dequeue() *sudog {
 	for {
 		sgp := q.first

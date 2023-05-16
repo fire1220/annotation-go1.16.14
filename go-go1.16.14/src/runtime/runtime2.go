@@ -369,7 +369,7 @@ type sudog struct {
 	// are only accessed when holding a semaRoot lock.
 
 	acquiretime int64 // 注释：初始胡的时间
-	releasetime int64 // 注释：释放时的时间
+	releasetime int64 // 注释：释放时的时间,-1代表send是再设置时间，如果大于0，会把cputicks()设置进来（CPU时钟周期计数器）。启动阻塞事件，blockevent阻塞监听的时间是当前值减去当时cputicks()值
 	ticket      uint32
 
 	// isSelect indicates g is participating in a select, so

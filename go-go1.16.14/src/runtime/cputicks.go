@@ -14,5 +14,5 @@ package runtime
 
 // careful: cputicks is not guaranteed to be monotonic! In particular, we have
 // noticed drift between cpus on certain os/arch combinations. See issue 8976.
-// 注释：CPU时钟周期计数器(随机数也会用到这个方法)，汇编实现方法是：TEXT runtime·cputicks(SB)
+// 注释：CPU时钟周期计数器(cpu自从加电以来执行的周期数)(随机数也会用到这个方法)，汇编实现方法是：TEXT runtime·cputicks(SB)
 func cputicks() int64

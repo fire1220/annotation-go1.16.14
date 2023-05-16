@@ -875,7 +875,7 @@ TEXT runtime·stackcheck(SB), NOSPLIT, $0-0
 	RET
 
 // func cputicks() int64
-// 注释：CPU时钟周期计数器，高32位存在DX中，低32位存在AX寄存器中
+// 注释：CPU时钟周期计数器(cpu自从加电以来执行的周期数)，高32位存在DX中，低32位存在AX寄存器中
 TEXT runtime·cputicks(SB),NOSPLIT,$0-0
 	CMPB	runtime·lfenceBeforeRdtsc(SB), $1
 	JNE	mfence

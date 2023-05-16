@@ -257,7 +257,7 @@ var gcphase uint32
 var writeBarrier struct {
 	enabled bool    // compiler emits a check of this before calling write barrier
 	pad     [3]byte // compiler uses 32-bit load for "enabled" field
-	needed  bool    // whether we need a write barrier for current GC phase
+	needed  bool    // 注释：当前GC阶段是否需要写入屏障 // whether we need a write barrier for current GC phase
 	cgo     bool    // whether we need a write barrier for a cgo check
 	alignme uint64  // guarantee alignment so that compiler can use a 32 or 64-bit load
 }

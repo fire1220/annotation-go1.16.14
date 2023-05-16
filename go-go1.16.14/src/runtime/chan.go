@@ -124,7 +124,7 @@ func makechan(t *chantype, size int) *hchan {
 }
 
 // chanbuf(c, i) is pointer to the i'th slot in the buffer.
-// 注释：返回要插入管道的位置指针（根据管道和要插入位置的坐标c.sendx和c.elemsize每个元素的大小得出要插入的位置的指针）
+// 注释：定位buf的指针；返回要插入/查找管道的位置指针（根据管道和要插入/查找位置的坐标c.sendx/c.recvx和c.elemsize每个元素的大小得出要插入的位置的指针）
 func chanbuf(c *hchan, i uint) unsafe.Pointer {
 	return add(c.buf, uintptr(i)*uintptr(c.elemsize)) // 注释：c.buf是数据头指针，i是要插入的位置(是c.sendx的值),c.elemsize是单个元素的大小
 }
@@ -560,12 +560,12 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	// 注释：有缓冲区管道时
 	if c.qcount > 0 {
 		// Receive directly from queue
-		qp := chanbuf(c, c.recvx)
+		qp := chanbuf(c, c.recvx) // 注释：获取要查询的缓冲区的数据指针
 		if raceenabled {
 			racenotify(c, c.recvx, nil)
 		}
 		if ep != nil {
-			typedmemmove(c.elemtype, ep, qp)
+			typedmemmove(c.elemtype, ep, qp) // 注释：移动数据(把qp移动到ep上)
 		}
 		typedmemclr(c.elemtype, qp)
 		c.recvx++

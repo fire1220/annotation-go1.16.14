@@ -151,7 +151,7 @@ import (
 //
 // TODO: Perfect for go:nosplitrec since we can't have a safe point
 // anywhere in the bulk barrier or memmove.
-//
+// 注释：移动数据（根据typ的类型大小，把src指针的数据移动到dst指针上）
 //go:nosplit
 func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	if dst == src {

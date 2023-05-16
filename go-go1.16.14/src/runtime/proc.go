@@ -354,6 +354,7 @@ func goready(gp *g, traceskip int) {
 }
 
 // 注释：获取P中的G（当前M对应的P（当前P）中阻塞（等待）的G），如果没有会到全局里G列表中取出一部分
+// 注释：获取等待的G（可能是等待的G也可能是空的G）
 //go:nosplit
 func acquireSudog() *sudog {
 	// Delicate dance: the semaphore implementation calls

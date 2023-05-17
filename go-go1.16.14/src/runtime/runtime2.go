@@ -463,11 +463,12 @@ type g struct {
 	// pointing into this goroutine's stack. If true, stack
 	// copying needs to acquire channel locks to protect these
 	// areas of the stack.
-	activeStackChans bool // 注释：表示是否有未加锁定的channel指向到了G栈，如果为true,那么对栈的复制需要channal锁来保护这些区域
+	// 注释：表示是否有未加锁定的channel指向到了G栈，如果为true,那么对栈的复制需要channal锁来保护这些区域
+	activeStackChans bool // 注释：比较是否处于活动的栈里，false表示管道不在活动的栈空间里，已经让渡控制权了（阻塞了）。唤醒时会设置为true，表示管道处于活动的栈空间里，复制栈空间时会有判断
 	// parkingOnChan indicates that the goroutine is about to
 	// park on a chansend or chanrecv. Used to signal an unsafe point
 	// for stack shrinking. It's a boolean value, but is updated atomically.
-	parkingOnChan uint8 // 注释：1表示G放在管道读取队列（c.recvq）或写入队列（c.sendq里）。用于栈的收缩，是一个布尔值，但是原子性更新
+	parkingOnChan uint8 // 注释：1表示G放在管道读取队列（c.recvq）或写入队列（c.sendq）里。用于栈的收缩，是一个布尔值，但是原子性更新
 
 	raceignore     int8     // ignore race detection events
 	sysblocktraced bool     // StartTrace has emitted EvGoInSyscall about this goroutine

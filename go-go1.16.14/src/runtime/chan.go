@@ -275,7 +275,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	// to park on a channel. The window between when this G's status
 	// changes and when we set gp.activeStackChans is not safe for
 	// stack shrinking.
-	atomic.Store8(&gp.parkingOnChan, 1)                                                        // 注释：把&gp.parkingOnChan赋值为1（这个方法是调换两个值的内容）
+	atomic.Store8(&gp.parkingOnChan, 1)                                                        // 注释：值为1时表示当前协成已经放到管道的读取或发送的等待队列里了，唤醒时会设置成0
 	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2) // 注释：阻塞，让渡控制权，保存现场
 	// Ensure the value being sent is kept alive until the
 	// receiver copies it out. The sudog has a pointer to the
@@ -288,7 +288,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		throw("G waiting list is corrupted")
 	}
 	gp.waiting = nil
-	gp.activeStackChans = false
+	gp.activeStackChans = false // 注释：让渡控制权之后，标记false，表示当前管道不在活动的栈空间里了。
 	closed := !mysg.success
 	gp.param = nil
 	if mysg.releasetime > 0 {
@@ -679,6 +679,7 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	goready(gp, skip+1)
 }
 
+// 注释：暂停的管道(管道读取队列（c.recvq）或写入队列（c.sendq里）)被唤醒时执行
 func chanparkcommit(gp *g, chanLock unsafe.Pointer) bool {
 	// There are unlocked sudogs that point into gp's stack. Stack
 	// copying must lock the channels of those sudogs.
@@ -689,7 +690,7 @@ func chanparkcommit(gp *g, chanLock unsafe.Pointer) bool {
 	// Mark that it's safe for stack shrinking to occur now,
 	// because any thread acquiring this G's stack for shrinking
 	// is guaranteed to observe activeStackChans after this store.
-	atomic.Store8(&gp.parkingOnChan, 0)
+	atomic.Store8(&gp.parkingOnChan, 0) // 注释：把是否放到管道读取或写入的表示清空
 	// Make sure we unlock after setting activeStackChans and
 	// unsetting parkingOnChan. The moment we unlock chanLock
 	// we risk gp getting readied by a channel operation and

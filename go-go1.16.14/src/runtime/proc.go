@@ -399,6 +399,7 @@ func acquireSudog() *sudog {
 	return s     // 注释：返回空闲的G
 }
 
+// 注释：释放空闲G，把空闲G放到本地空闲G切片里，如果本地空闲G切片已经满了则拿出一半放到全局空闲G单向链表里（放到链表的头部）
 //go:nosplit
 func releaseSudog(s *sudog) {
 	if s.elem != nil {
@@ -445,7 +446,7 @@ func releaseSudog(s *sudog) {
 		}
 		lock(&sched.sudoglock)       // 注释：中央缓存（全局空闲G单向链表）上锁
 		last.next = sched.sudogcache // 注释：把中央缓存（全局空闲G单向链表）接到临时链表链的尾部
-		sched.sudogcache = first     /// 注释：重置中央缓存（全局空闲G单向链表）的头指针
+		sched.sudogcache = first     // 注释：重置中央缓存（全局空闲G单向链表）的头指针
 		unlock(&sched.sudoglock)     // 注释：释放锁
 	}
 	pp.sudogcache = append(pp.sudogcache, s) // 注释：把空闲G放到本地缓存（P中空闲G切片）的尾部

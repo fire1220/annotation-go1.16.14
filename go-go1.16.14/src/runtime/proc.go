@@ -449,7 +449,7 @@ func releaseSudog(s *sudog) {
 		unlock(&sched.sudoglock)     // 注释：释放锁
 	}
 	pp.sudogcache = append(pp.sudogcache, s) // 注释：把空闲G放到本地缓存（P中空闲G切片）的尾部
-	releasem(mp)
+	releasem(mp)                             // 注释：释放M
 }
 
 // funcPC returns the entry PC of the function f.

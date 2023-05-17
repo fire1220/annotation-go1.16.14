@@ -126,7 +126,7 @@ func makeslice64(et *_type, len64, cap64 int64) unsafe.Pointer {
 // to calculate where to write new values during an append.
 // TODO: When the old backend is gone, reconsider this decision.
 // The SSA backend might prefer the new length or to return only ptr/cap and save stack space.
-// 注释：执行append函数时被调用
+// 注释：扩容切片(执行append函数时被调用)
 func growslice(et *_type, old slice, cap int) slice {
 	// 注释：是否开启race数据竟成
 	if raceenabled {

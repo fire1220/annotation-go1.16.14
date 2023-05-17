@@ -640,7 +640,7 @@ type p struct {
 		n int32
 	}
 
-	sudogcache []*sudog // 注释：P中阻塞的G切片，P中G的列表，如果为空时回到全局G列表里取出一部分
+	sudogcache []*sudog // 注释：P中空闲G的切片（把要释放掉的G会缓存到这里），如果为空时则全局G缓存链表取出当前缓存的一半放进来，如果全局缓存为空，则会新new一个空的G放进来
 	sudogbuf   [128]*sudog
 
 	// Cache of mspan objects from the heap.

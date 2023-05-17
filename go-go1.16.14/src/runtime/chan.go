@@ -35,7 +35,7 @@ type hchan struct {
 	dataqsiz uint           // 注释：通道队列的尺寸（可以容纳的总个数） // size of the circular queue
 	buf      unsafe.Pointer // 注释：存放实际数据的指针 // points to an array of dataqsiz elements
 	elemsize uint16         // 注释：元素类型大小
-	closed   uint32         // 注释：通道是否关闭
+	closed   uint32         // 注释：通道是否关闭0否1是
 	elemtype *_type         // 注释：元素类型（写入通道的时候用到） // element type
 	sendx    uint           // 注释：记录发送者（写入）在buf中的序号（数组下标） // send index
 	recvx    uint           // 注释：记录接收者（读取）在buf中的序号（数组下标） // receive index
@@ -377,43 +377,50 @@ func recvDirect(t *_type, sg *sudog, dst unsafe.Pointer) {
 	memmove(dst, src, t.size)
 }
 
+// 注释：关闭管道
 func closechan(c *hchan) {
 	if c == nil {
 		panic(plainError("close of nil channel"))
 	}
 
-	lock(&c.lock)
+	lock(&c.lock) // 注释：上锁
+	// 注释：判断是否已经关闭了，重复关闭会panic
 	if c.closed != 0 {
 		unlock(&c.lock)
 		panic(plainError("close of closed channel"))
 	}
 
+	// 注释：如果开启数据经常则执行检查是否存在数据竞争
 	if raceenabled {
 		callerpc := getcallerpc()
 		racewritepc(c.raceaddr(), callerpc, funcPC(closechan))
 		racerelease(c.raceaddr())
 	}
 
-	c.closed = 1
+	c.closed = 1 // 注释：设置管道关闭
 
 	var glist gList
 
 	// release all readers
+	// 注释：释放所有读等待的G
 	for {
-		sg := c.recvq.dequeue()
+		sg := c.recvq.dequeue() // 注释：获取一个读等待的G，如果为空直接退出遍历
 		if sg == nil {
 			break
 		}
+		// 注释：如果接受数据指针存在，则释放数据指针里的数据内存，然后设置为nil
 		if sg.elem != nil {
 			typedmemclr(c.elemtype, sg.elem)
 			sg.elem = nil
 		}
+		// 注释：如果存在释放时间，则重置释放时间（提前释放了）
 		if sg.releasetime != 0 {
 			sg.releasetime = cputicks()
 		}
 		gp := sg.g
 		gp.param = unsafe.Pointer(sg)
 		sg.success = false
+		// 注释：检查数据竞争
 		if raceenabled {
 			raceacquireg(gp, c.raceaddr())
 		}

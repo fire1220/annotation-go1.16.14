@@ -10,10 +10,11 @@ import (
 	"unsafe"
 )
 
+// 注释：切片结构体
 type slice struct {
-	array unsafe.Pointer
-	len   int
-	cap   int
+	array unsafe.Pointer // 注释：数据指针，指向底层数据的指针
+	len   int            // 注释：切片的数据数量
+	cap   int            // 注释：切片的可容纳的数量
 }
 
 // A notInHeapSlice is a slice backed by go:notinheap memory.

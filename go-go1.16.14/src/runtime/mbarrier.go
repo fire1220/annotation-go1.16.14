@@ -151,7 +151,7 @@ import (
 //
 // TODO: Perfect for go:nosplitrec since we can't have a safe point
 // anywhere in the bulk barrier or memmove.
-// 注释：移动数据(typed memmove根据类型大小)（根据typ的类型大小，把src指针的数据移动到dst指针上）
+// 注释：复制内存数据(typed memmove根据类型大小)（根据typ的类型大小，把src指针的数据复制到dst指针上）
 //go:nosplit
 func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	if dst == src {
@@ -168,7 +168,7 @@ func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	// other goroutine must also be accompanied by a write
 	// barrier, so at worst we've unnecessarily greyed the old
 	// pointer that was in src.
-	memmove(dst, src, typ.size) // 注释：移动数据
+	memmove(dst, src, typ.size) // 注释：内存复制数据
 	if writeBarrier.cgo {
 		cgoCheckMemmove(typ, dst, src, 0, typ.size)
 	}
@@ -294,7 +294,7 @@ func reflect_typedslicecopy(elemType *_type, dst, src slice) int {
 //
 // If the caller knows that typ has pointers, it can alternatively
 // call memclrHasPointers.
-//
+// 注释：根据类型大小，清除内存数据，(typed memory clears)
 //go:nosplit
 func typedmemclr(typ *_type, ptr unsafe.Pointer) {
 	if writeBarrier.needed && typ.ptrdata != 0 {

@@ -476,7 +476,7 @@ func chanrecv2(c *hchan, elem unsafe.Pointer) (received bool) {
 // Otherwise, if c is closed, zeros *ep and returns (true, false).
 // Otherwise, fills in *ep with an element and returns (true, true).
 // A non-nil ep must point to the heap or the caller's stack.
-// 注释：管道读取内容，接收的数据会写入ep(element pointer)里，block是否阻塞
+// 注释：管道读取内容，接收的数据会写入ep(element pointer)里，block是否阻塞 (x, ok := <-ch；x的指针是ep)
 func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool) {
 	// raceenabled: don't need to check ep, as it is always on the stack
 	// or is new memory allocated by reflect.
@@ -564,16 +564,17 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		if raceenabled {
 			racenotify(c, c.recvx, nil)
 		}
+		// 注释：如果存在接收指针则进行移动数据
 		if ep != nil {
-			typedmemmove(c.elemtype, ep, qp) // 注释：移动数据(根据类型的大小把qp移动到ep上)
+			typedmemmove(c.elemtype, ep, qp) // 注释：复制内存数据(根据类型的大小把qp移动到ep上)
 		}
-		typedmemclr(c.elemtype, qp)
-		c.recvx++
-		if c.recvx == c.dataqsiz {
+		typedmemclr(c.elemtype, qp) // 注释：根据类型大小，清除内存数据，(typed memory clears)
+		c.recvx++                   // 注释：读取的下标加1
+		if c.recvx == c.dataqsiz {  // 注释：判断读取的下标是否到数组的末尾处，如果是则设置为开始处（下标为0处）
 			c.recvx = 0
 		}
-		c.qcount--
-		unlock(&c.lock)
+		c.qcount--      // 注释：管道元素数减去1
+		unlock(&c.lock) // 注释：释放管道锁
 		return true, true
 	}
 

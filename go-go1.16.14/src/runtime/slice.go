@@ -80,7 +80,9 @@ func makeslicecopy(et *_type, tolen int, fromlen int, from unsafe.Pointer) unsaf
 	return to
 }
 
+// 注释：创建切片
 func makeslice(et *_type, len, cap int) unsafe.Pointer {
+	// 注释：申请内存空间，元素的类型*可容纳的总数
 	mem, overflow := math.MulUintptr(et.size, uintptr(cap))
 	if overflow || mem > maxAlloc || len < 0 || len > cap {
 		// NOTE: Produce a 'len out of range' error instead of a
@@ -98,8 +100,10 @@ func makeslice(et *_type, len, cap int) unsafe.Pointer {
 	return mallocgc(mem, et, true)
 }
 
+// 注释：创建切片，切片的最大数量是int的值
 func makeslice64(et *_type, len64, cap64 int64) unsafe.Pointer {
 	len := int(len64)
+	// 注释：切片的最大数量是int的值
 	if int64(len) != len64 {
 		panicmakeslicelen()
 	}

@@ -402,7 +402,7 @@ func closechan(c *hchan) {
 	var glist gList // 注释：声明临时的G队列
 
 	// release all readers
-	// 注释：释放所有读等待的G，把所有读取阻塞队列里的G放到等待执行队列里准备执行
+	// 注释：(获取所有读取阻塞的G)释放所有读等待的G，把所有读取阻塞队列里的G放到等待执行队列里准备执行
 	for {
 		sg := c.recvq.dequeue() // 注释：获取一个读等待的G，如果为空直接退出遍历
 		if sg == nil {
@@ -428,7 +428,7 @@ func closechan(c *hchan) {
 	}
 
 	// release all writers (they will panic)
-	// 注释：释放所有写入阻塞的协成队列（通知已经写入并阻塞的协成队列），把这些协成阻塞的队列放到待执行队列里准备执行
+	// 注释：(获取所有发送阻塞的G)释放所有写入阻塞的协成队列（通知已经写入并阻塞的协成队列），把这些协成阻塞的队列放到待执行队列里准备执行
 	for {
 		sg := c.sendq.dequeue() // 注释：获取一个发送阻塞的G，如果没有获取到则退出循环
 		if sg == nil {
@@ -453,6 +453,7 @@ func closechan(c *hchan) {
 	// Ready all Gs now that we've dropped the channel lock.
 	// 注释：如果临时的G列表不为空，则把临时的G列表里的G断开于全局G链表的链接，并加入到待执行的G列表中，等待执行
 	// 注释：遍历执行所有临时G列表的G
+	// 注释：执行所有阻塞的G（发送阻塞和写入阻塞的管道）
 	for !glist.empty() {
 		gp := glist.pop() // 注释：从临时G列表中取出一个G
 		gp.schedlink = 0  // 注释：断开与全局的G链表的链接

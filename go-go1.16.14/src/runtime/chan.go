@@ -593,20 +593,20 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 	// No stack splits between assigning elem and enqueuing mysg
 	// on gp.waiting where copystack can find it.
-	mysg.elem = ep
+	mysg.elem = ep // 注释：把接收的数据的指针赋值
 	mysg.waitlink = nil
-	gp.waiting = mysg
-	mysg.g = gp
-	mysg.isSelect = false
-	mysg.c = c
-	gp.param = nil
+	gp.waiting = mysg     // 注释：把新建的G赋值到当前G的等待位置
+	mysg.g = gp           // 注释：把当前的G放到新建G的等待位置
+	mysg.isSelect = false // 注释：不参与select
+	mysg.c = c            // 注释：把管道地址赋值
+	gp.param = nil        // 注释：唤醒当前G时不需要参数(清空唤醒当前G时的参数)
 	c.recvq.enqueue(mysg) // 注释：加入等待读取的队列中取（加到尾部）
 	// Signal to anyone trying to shrink our stack that we're about
 	// to park on a channel. The window between when this G's status
 	// changes and when we set gp.activeStackChans is not safe for
 	// stack shrinking.
 	atomic.Store8(&gp.parkingOnChan, 1)
-	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2) // 注释：让渡控制权
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2) // 注释：把当前G阻塞（让渡控制权）
 
 	// someone woke us up
 	if mysg != gp.waiting {

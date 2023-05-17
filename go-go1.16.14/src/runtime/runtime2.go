@@ -361,7 +361,7 @@ type sudog struct {
 
 	next *sudog         // 注释：双向循环链表的下一个指针
 	prev *sudog         // 注释：双向循环链表的上一个指针
-	elem unsafe.Pointer // 注释：数据元素指针（保存或读取的元素数据指针）// data element (may point to stack)
+	elem unsafe.Pointer // 注释：数据元素指针（保存或接收数据的指针）// data element (may point to stack)
 
 	// The following fields are never accessed concurrently.
 	// For channels, waitlink is only accessed by g.
@@ -386,7 +386,7 @@ type sudog struct {
 	parent   *sudog // semaRoot binary tree
 	waitlink *sudog // g.waiting list or semaRoot
 	waittail *sudog // semaRoot
-	c        *hchan // channel   // 注释：所在管道channel的地址
+	c        *hchan // 注释：所在管道channel的地址 // channel
 }
 
 type libcall struct {

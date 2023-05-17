@@ -467,7 +467,7 @@ type g struct {
 	// parkingOnChan indicates that the goroutine is about to
 	// park on a chansend or chanrecv. Used to signal an unsafe point
 	// for stack shrinking. It's a boolean value, but is updated atomically.
-	parkingOnChan uint8 // 注释：表示G是放在chansend还是chanrecv。用于栈的收缩，是一个布尔值，但是原子性更新
+	parkingOnChan uint8 // 注释：1表示G放在管道读取队列（c.recvq）或写入队列（c.sendq里）。用于栈的收缩，是一个布尔值，但是原子性更新
 
 	raceignore     int8     // ignore race detection events
 	sysblocktraced bool     // StartTrace has emitted EvGoInSyscall about this goroutine

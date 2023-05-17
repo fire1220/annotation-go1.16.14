@@ -399,10 +399,10 @@ func closechan(c *hchan) {
 
 	c.closed = 1 // 注释：设置管道关闭
 
-	var glist gList // 注释：待执行的G队列
+	var glist gList // 注释：声明临时的G队列
 
 	// release all readers
-	// 注释：释放所有读等待的G
+	// 注释：释放所有读等待的G，把所有读取阻塞队列里的G放到等待执行队列里准备执行
 	for {
 		sg := c.recvq.dequeue() // 注释：获取一个读等待的G，如果为空直接退出遍历
 		if sg == nil {
@@ -428,30 +428,35 @@ func closechan(c *hchan) {
 	}
 
 	// release all writers (they will panic)
+	// 注释：释放所有写入阻塞的协成队列（通知已经写入并阻塞的协成队列），把这些协成阻塞的队列放到待执行队列里准备执行
 	for {
-		sg := c.sendq.dequeue()
+		sg := c.sendq.dequeue() // 注释：获取一个发送阻塞的G，如果没有获取到则退出循环
 		if sg == nil {
 			break
 		}
 		sg.elem = nil
+		// 注释：如果存在释放时间，则重置释放时间（释放被提前了）
 		if sg.releasetime != 0 {
 			sg.releasetime = cputicks()
 		}
-		gp := sg.g
-		gp.param = unsafe.Pointer(sg)
-		sg.success = false
+		gp := sg.g                    // 注释：新建G，赋值为待执行的G放进来
+		gp.param = unsafe.Pointer(sg) // 注释：新的G的参数是待执行的sudog
+		sg.success = false            // 注释：设置为非管道唤醒
+		// 注释：是否需要检查数据竞争
 		if raceenabled {
 			raceacquireg(gp, c.raceaddr())
 		}
-		glist.push(gp)
+		glist.push(gp) // 注释：把待执行的G放到G待执行列表中
 	}
-	unlock(&c.lock)
+	unlock(&c.lock) // 注释：释放管道锁
 
 	// Ready all Gs now that we've dropped the channel lock.
+	// 注释：如果临时的G列表不为空，则把临时的G列表里的G断开于全局G链表的链接，并加入到待执行的G列表中，等待执行
+	// 注释：遍历执行所有临时G列表的G
 	for !glist.empty() {
-		gp := glist.pop()
-		gp.schedlink = 0
-		goready(gp, 3)
+		gp := glist.pop() // 注释：从临时G列表中取出一个G
+		gp.schedlink = 0  // 注释：断开与全局的G链表的链接
+		goready(gp, 3)    // 注释：准备执行G
 	}
 }
 

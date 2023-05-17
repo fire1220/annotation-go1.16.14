@@ -223,7 +223,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if sg := c.recvq.dequeue(); sg != nil {
 		// Found a waiting receiver. We pass the value we want to send
 		// directly to the receiver, bypassing the channel buffer (if any).
-		send(c, sg, ep, func() { unlock(&c.lock) }, 3) // 注释：直接发送，把写入的数据直接直接发送到阻塞的读取位置，设置系统调用栈，把其放到下一个要执行的G里
+		send(c, sg, ep, func() { unlock(&c.lock) }, 3) // 注释：直接发送，把写入的数据直接发送到阻塞的读取的G位置，设置系统调用栈，把其放到下一个要执行的G里
 		return true
 	}
 
@@ -311,6 +311,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 // Channel c must be empty and locked.  send unlocks c with unlockf.
 // sg must already be dequeued from c.
 // ep must be non-nil and point to the heap or the caller's stack.
+// 注释：直接发送，把写入的数据直接发送到阻塞的读取的G位置，设置系统调用栈，把其放到下一个要执行的G里
 func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	// 注释：如果开启数据竞争则进行标记或提示
 	if raceenabled {

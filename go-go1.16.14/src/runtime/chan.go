@@ -362,11 +362,11 @@ func sendDirect(t *_type, sg *sudog, src unsafe.Pointer) {
 	// Once we read sg.elem out of sg, it will no longer
 	// be updated if the destination's stack gets copied (shrunk).
 	// So make sure that no preemption points can happen between read & use.
-	dst := sg.elem
-	typeBitsBulkBarrier(t, uintptr(dst), uintptr(src), t.size)
+	dst := sg.elem                                             // 注释：获取发送的数据
+	typeBitsBulkBarrier(t, uintptr(dst), uintptr(src), t.size) // 注释：执行写屏障
 	// No need for cgo write barrier checks because dst is always
 	// Go memory.
-	memmove(dst, src, t.size)
+	memmove(dst, src, t.size) // 注释：执行数据内存拷贝
 }
 
 func recvDirect(t *_type, sg *sudog, dst unsafe.Pointer) {

@@ -399,7 +399,7 @@ func closechan(c *hchan) {
 
 	c.closed = 1 // 注释：设置管道关闭
 
-	var glist gList
+	var glist gList // 注释：待执行的G队列
 
 	// release all readers
 	// 注释：释放所有读等待的G
@@ -417,14 +417,14 @@ func closechan(c *hchan) {
 		if sg.releasetime != 0 {
 			sg.releasetime = cputicks()
 		}
-		gp := sg.g
-		gp.param = unsafe.Pointer(sg)
-		sg.success = false
+		gp := sg.g                    // 注释：新建G变量，把等待的G放到该变量上
+		gp.param = unsafe.Pointer(sg) // 注释：设置G的唤醒参数
+		sg.success = false            // 注释：是否是因为管道唤醒的
 		// 注释：检查数据竞争
 		if raceenabled {
 			raceacquireg(gp, c.raceaddr())
 		}
-		glist.push(gp)
+		glist.push(gp) // 注释：把要执行的G放到待执行G队列里
 	}
 
 	// release all writers (they will panic)

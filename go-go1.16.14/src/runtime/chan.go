@@ -236,7 +236,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		if raceenabled {
 			racenotify(c, c.sendx, nil)
 		}
-		typedmemmove(c.elemtype, qp, ep) // 注释：异动数据（c.elemtyep是类型，qp是插入的位置指针，ep是数据指针）
+		typedmemmove(c.elemtype, qp, ep) // 注释：复制内存数据（c.elemtyep是类型，qp是插入的位置指针，ep是数据指针）
 		c.sendx++
 		if c.sendx == c.dataqsiz { // 注释：如果c.sendx到超过数组尾部，则重置为数组的首部，形成一个环形数据结构
 			c.sendx = 0

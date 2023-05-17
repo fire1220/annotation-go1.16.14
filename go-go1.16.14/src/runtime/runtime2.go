@@ -791,9 +791,9 @@ type schedt struct {
 		n       int32
 	}
 
-	// Central cache of sudog structs.
-	sudoglock  mutex  // 注释：全局阻塞(等待)G的锁，当前P中的G列表为空时会上锁，然后取出一批
-	sudogcache *sudog // 注释：全局阻塞(等待)G链表头指针，当P没有时会到这里取出一批放到当前P中，取之前上锁
+	// 注释：中央缓存(空闲G的单向链表) // Central cache of sudog structs.
+	sudoglock  mutex  // 注释：全局空闲G的锁，当前P中的G列表为空时会上锁，然后取出一批
+	sudogcache *sudog // 注释：全局空闲G(中央缓存)链表头指针(单向链表)，获取是当P（本地缓存）没有空闲G时会到这里取出本地缓存的一半；释放时正好相反
 
 	// Central pool of available defer structs of different sizes.
 	deferlock mutex

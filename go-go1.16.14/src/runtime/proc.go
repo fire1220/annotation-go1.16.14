@@ -353,7 +353,7 @@ func goready(gp *g, traceskip int) {
 	})
 }
 
-// 注释：获取一个空闲的G()
+// 注释：获取一个空闲的G
 // 注释：如果当前P中空闲G列表存在，并且全局空闲G有数据时。(去全局空闲G链表中拿出P中的空闲G总数的一半)
 //go:nosplit
 func acquireSudog() *sudog {
@@ -423,29 +423,32 @@ func releaseSudog(s *sudog) {
 	if gp.param != nil {
 		throw("runtime: releaseSudog with non-nil gp.param")
 	}
-	mp := acquirem() // avoid rescheduling to another P
-	pp := mp.p.ptr()
+	mp := acquirem() // 注释：获取当前对应的M(避免重新安排到另一个P) // avoid rescheduling to another P
+	pp := mp.p.ptr() // 注释：获取当前对应P
+	// 注释：如果空前G缓存区已经满了，将一半的本地缓存传输到中央缓存（全局空闲G链表）。
 	if len(pp.sudogcache) == cap(pp.sudogcache) {
 		// Transfer half of local cache to the central cache.
-		var first, last *sudog
+		// 注释： 将一半的本地缓存传输到中央缓存（全局空闲G链表）。
+		var first, last *sudog // 注释：临时的链表结构，把超出一半本地缓存（P）的空闲G放到链表尾部，形成单向链表
 		for len(pp.sudogcache) > cap(pp.sudogcache)/2 {
-			n := len(pp.sudogcache)
-			p := pp.sudogcache[n-1]
-			pp.sudogcache[n-1] = nil
-			pp.sudogcache = pp.sudogcache[:n-1]
+			n := len(pp.sudogcache)             // 注释：P中空闲G的数量
+			p := pp.sudogcache[n-1]             // 注释：获取P中最后一个空闲G
+			pp.sudogcache[n-1] = nil            // 注释：释放P中最后一个空闲G所在位置的内存
+			pp.sudogcache = pp.sudogcache[:n-1] // 注释：缩短P，移除最后一个空闲G
+			// 注释：如果临时链表的头部为空时，头和尾都等于空闲G
 			if first == nil {
 				first = p
 			} else {
-				last.next = p
+				last.next = p // 注释：如果临时链表已经存在，把空闲G放到链表尾部（形成单向链表）
 			}
-			last = p
+			last = p // 注释：重新赋值链表尾部
 		}
-		lock(&sched.sudoglock)
-		last.next = sched.sudogcache
-		sched.sudogcache = first
-		unlock(&sched.sudoglock)
+		lock(&sched.sudoglock)       // 注释：中央缓存（全局空闲G单向链表）上锁
+		last.next = sched.sudogcache // 注释：把中央缓存（全局空闲G单向链表）接到临时链表链的尾部
+		sched.sudogcache = first     /// 注释：重置中央缓存（全局空闲G单向链表）的头指针
+		unlock(&sched.sudoglock)     // 注释：释放锁
 	}
-	pp.sudogcache = append(pp.sudogcache, s)
+	pp.sudogcache = append(pp.sudogcache, s) // 注释：把空闲G放到本地缓存（P中空闲G切片）的尾部
 	releasem(mp)
 }
 

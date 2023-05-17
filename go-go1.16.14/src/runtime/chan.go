@@ -586,7 +586,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 
 	// no sender available: block on this channel.
 	gp := getg()           // 注释：获取当前运行的G
-	mysg := acquireSudog() // 注释：获取等待的G对象（可能是等待中G也可能是空的G）(如果P中存在则返回尾部的G，如果不存在去全局G链表中取，如果没有取到则返回空的G)
+	mysg := acquireSudog() // 注释：获取一个空闲的G
 	mysg.releasetime = 0   // 注释：设置释放时间
 	if t0 != 0 {
 		mysg.releasetime = -1 // 注释：设置释放时间，-1表示send的时候再设置时间

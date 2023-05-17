@@ -97,7 +97,7 @@ func makeslice(et *_type, len, cap int) unsafe.Pointer {
 		panicmakeslicecap()
 	}
 
-	return mallocgc(mem, et, true) // 注释：申请分屏内存空间
+	return mallocgc(mem, et, true) // 注释：申请分配连续的内存空间
 }
 
 // 注释：创建切片，切片的最大数量是int的值

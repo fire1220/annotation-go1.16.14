@@ -157,7 +157,7 @@ func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	if dst == src {
 		return
 	}
-	// 注释：当前GC阶段是否需要写入屏障
+	// 注释：当前GC阶段是否需要写屏障
 	if writeBarrier.needed && typ.ptrdata != 0 {
 		bulkBarrierPreWrite(uintptr(dst), uintptr(src), typ.ptrdata)
 	}
@@ -168,7 +168,7 @@ func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	// other goroutine must also be accompanied by a write
 	// barrier, so at worst we've unnecessarily greyed the old
 	// pointer that was in src.
-	memmove(dst, src, typ.size)
+	memmove(dst, src, typ.size) // 注释：移动数据
 	if writeBarrier.cgo {
 		cgoCheckMemmove(typ, dst, src, 0, typ.size)
 	}

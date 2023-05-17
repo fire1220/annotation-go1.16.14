@@ -565,7 +565,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 			racenotify(c, c.recvx, nil)
 		}
 		if ep != nil {
-			typedmemmove(c.elemtype, ep, qp) // 注释：移动数据(把qp移动到ep上)
+			typedmemmove(c.elemtype, ep, qp) // 注释：移动数据(根据类型的大小把qp移动到ep上)
 		}
 		typedmemclr(c.elemtype, qp)
 		c.recvx++

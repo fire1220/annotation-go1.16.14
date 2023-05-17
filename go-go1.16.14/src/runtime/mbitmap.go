@@ -559,6 +559,7 @@ func bulkBarrierPreWrite(dst, src, size uintptr) {
 	if s := spanOf(dst); s == nil {
 		// If dst is a global, use the data or BSS bitmaps to
 		// execute write barriers.
+		// 注释：执行写屏障
 		for _, datap := range activeModules() {
 			if datap.data <= dst && dst < datap.edata {
 				bulkBarrierBitmap(dst, src, size, dst-datap.data, datap.gcdatamask.bytedata)

@@ -463,11 +463,15 @@ func closechan(c *hchan) {
 
 // empty reports whether a read from c would block (that is, the channel is
 // empty).  It uses a single atomic read of mutable state.
+// 注释：判断是否为空的管道
 func empty(c *hchan) bool {
 	// c.dataqsiz is immutable.
+	// 注释：如果管道是无缓冲区的管道，判断是否有发送阻塞的G
 	if c.dataqsiz == 0 {
+		// 注释：如果发送阻塞的G链表为空则代表管道为空
 		return atomic.Loadp(unsafe.Pointer(&c.sendq.first)) == nil
 	}
+	// 注释：有缓冲区的管道，判断缓冲区元素数量，如果为0表示管道为空
 	return atomic.Loaduint(&c.qcount) == 0
 }
 

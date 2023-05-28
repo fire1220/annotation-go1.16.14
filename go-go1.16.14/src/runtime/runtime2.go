@@ -403,8 +403,8 @@ type libcall struct {
 // with no implicit data structures on either side.
 // 注释：g使用栈的起始和结束位置,g的函数调用栈边界结构体
 type stack struct {
-	lo uintptr // 注释：栈顶，指向内存低地址
-	hi uintptr // 注释：栈底，指向内存高地址
+	lo uintptr // 注释：栈顶，指向内存低地址(栈开始位置地址)
+	hi uintptr // 注释：栈底，指向内存高地址(栈结束位置地址)
 }
 
 // heldLockInfo gives info on a held lock and the rank of that lock
@@ -423,7 +423,7 @@ type g struct {
 	// stackguard1 is the stack pointer compared in the C stack growth prologue.
 	// It is stack.lo+StackGuard on g0 and gsignal stacks.
 	// It is ~0 on other goroutine stacks, to trigger a call to morestackc (and crash).
-	stack stack // offset known to runtime/cgo // 注释：G的函数调用栈的边界(记录该g使用的栈)
+	stack stack // offset known to runtime/cgo // 注释：当前栈（G所在的栈）的边界(对应的开始和结束地址)
 	// 注释：在g结构体中的stackguard0 字段是出现爆栈前的警戒线，通常值是stack.lo+StackGuard也可以存StackPreempt触发抢占。
 	// 注释：stackguard0 的偏移量是16个字节，与当前的真实SP(stack pointer)和爆栈警戒线（stack.lo+StackGuard）比较，如果超出警戒线则表示需要进行栈扩容。
 	// 注释：先调用runtime·morestack_noctxt()进行栈扩容，然后又跳回到函数的开始位置，此时函数的栈已经调整了。

@@ -423,13 +423,15 @@ type g struct {
 	// stackguard1 is the stack pointer compared in the C stack growth prologue.
 	// It is stack.lo+StackGuard on g0 and gsignal stacks.
 	// It is ~0 on other goroutine stacks, to trigger a call to morestackc (and crash).
-	stack stack // offset known to runtime/cgo // 注释：当前栈（G所在的栈）的边界(对应的开始和结束地址)
+	stack stack // offset known to runtime/cgo // 注释：当前栈（G所在的栈）的边界(对应的开始和结束地址)（占用空间时16字节）
 	// 注释：在g结构体中的stackguard0 字段是出现爆栈前的警戒线，通常值是stack.lo+StackGuard也可以存StackPreempt触发抢占。
 	// 注释：stackguard0 的偏移量是16个字节，与当前的真实SP(stack pointer)和爆栈警戒线（stack.lo+StackGuard）比较，如果超出警戒线则表示需要进行栈扩容。
 	// 注释：先调用runtime·morestack_noctxt()进行栈扩容，然后又跳回到函数的开始位置，此时函数的栈已经调整了。
 	// 注释：然后再进行一次栈大小的检测，如果依然不足则继续扩容，直到栈足够大为止。
 	// 注释：下面两个成员用于栈溢出检查，实现栈的自动伸缩，抢占调度也会用到stackguard0
-	stackguard0 uintptr // 注释：Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
+	// 注释：打印对应的汇编会看到：CMPQ SP, 16(CX) 如果小于0则执行 JLS L_MORE_STK 跳转位置执行CALL runtime.morestack_noctxt(SB)进行栈扩容，扩容后跳回L_BEGIN位置重新执行栈空间检查
+	// 注释：如果栈空间大小依然不够则再重复扩容一次，知道栈大小够用为止
+	stackguard0 uintptr // 注释：爆栈前警戒线（所在位置是G偏移16字节）。Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
 	stackguard1 uintptr // 注释：C 代码检查栈空间低于这个值会扩张。 // offset known to liblink
 
 	_panic       *_panic        // 注释：当前G的panic的数据指针(panic的链表，_panic.link 链接) // innermost panic - offset known to liblink

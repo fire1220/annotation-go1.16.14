@@ -1070,7 +1070,7 @@ opswitch:
 			}
 		}
 
-	case OINDEXMAP:
+	case OINDEXMAP: // 注释：以m[k]的方式查找或赋值时执行
 		// Replace m[k] with *map{access1,assign}(maptype, m, &k)
 		n.Left = walkexpr(n.Left, init)
 		n.Right = walkexpr(n.Right, init)
@@ -1085,6 +1085,7 @@ opswitch:
 				// order.expr made sure key is addressable.
 				key = nod(OADDR, key, nil)
 			}
+			// 注释：执行runtime.mapassign
 			n = mkcall1(mapfn(mapassign[fast], t), nil, init, typename(t), map_, key)
 		} else {
 			// m[k] is not the target of an assignment.
@@ -1096,6 +1097,7 @@ opswitch:
 			}
 
 			if w := t.Elem().Width; w <= zeroValSize {
+				// 注释：执行runtime.mapaccess1
 				n = mkcall1(mapfn(mapaccess1[fast], t), types.NewPtr(t.Elem()), init, typename(t), map_, key)
 			} else {
 				z := zeroaddr(w)

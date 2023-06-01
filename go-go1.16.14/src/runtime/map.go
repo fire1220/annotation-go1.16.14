@@ -1430,7 +1430,7 @@ func reflect_mapaccess(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 //go:linkname reflect_mapassign reflect.mapassign
 func reflect_mapassign(t *maptype, h *hmap, key unsafe.Pointer, elem unsafe.Pointer) {
 	p := mapassign(t, h, key)
-	typedmemmove(t.elem, p, elem)
+	typedmemmove(t.elem, p, elem) // 注释：把elem赋值到p中(是把整体的数据拷贝到map对应的value中)（map的value是独立的空间存储的）
 }
 
 //go:linkname reflect_mapdelete reflect.mapdelete

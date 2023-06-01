@@ -1081,8 +1081,8 @@ opswitch:
 			// This m[k] expression is on the left-hand side of an assignment.
 			fast := mapfast(t)
 			if fast == mapslow {
-				// standard version takes key by reference.
-				// order.expr made sure key is addressable.
+				// standard version takes key by reference. // 注释：标准版本通过引用获取密钥。
+				// order.expr made sure key is addressable. // 注释：m[k].expr方式：确保密钥是可寻址的。
 				key = nod(OADDR, key, nil)
 			}
 			// 注释：执行runtime.mapassign

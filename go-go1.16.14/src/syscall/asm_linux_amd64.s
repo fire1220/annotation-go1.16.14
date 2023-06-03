@@ -15,6 +15,7 @@
 // Trap # in AX, args in DI SI DX R10 R8 R9, return in AX DX
 // Note that this differs from "standard" ABI convention, which
 // would pass 4th arg in CX, not R10.
+// 注释：Linux-amd64系统调用的规范:系统调用的前6个参数直接由寄存器DI、SI、DX、R10、R8和R9传输，结果由寄存器AX和DX返回
 
 TEXT ·Syscall(SB),NOSPLIT,$0-56
 	CALL	runtime·entersyscall(SB)

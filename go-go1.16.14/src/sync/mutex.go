@@ -25,7 +25,7 @@ func throw(string) // provided by runtime
 // 注释：互斥锁的结构体
 type Mutex struct {
 	state int32  // 注释：表示当前互斥锁的状态,最低三位分别表示 mutexLocked、mutexWoken 和 mutexStarving,剩下的位置用来表示当前有多少个Goroutine在等待互斥锁的释放
-	sema  uint32 // 注释：用于控制锁状态的信号量
+	sema  uint32 // 注释：用于控制锁状态的信号量semaphore
 }
 
 // A Locker represents an object that can be locked and unlocked.

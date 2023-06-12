@@ -429,7 +429,7 @@ type g struct {
 	// 注释：先调用runtime·morestack_noctxt()进行栈扩容，然后又跳回到函数的开始位置，此时函数的栈已经调整了。
 	// 注释：然后再进行一次栈大小的检测，如果依然不足则继续扩容，直到栈足够大为止。
 	// 注释：下面两个成员用于栈溢出检查，实现栈的自动伸缩，抢占调度也会用到stackguard0
-	// 注释：打印对应的汇编会看到：CMPQ SP, 16(CX) 如果小于0则执行 JLS L_MORE_STK 跳转位置执行CALL runtime.morestack_noctxt(SB)进行栈扩容，扩容后跳回L_BEGIN位置重新执行栈空间检查
+	// 注释：打印对应的汇编会看到：CMPQ	SP, 16(CX) 如果小于0则执行 JLS L_MORE_STK 跳转位置执行CALL runtime.morestack_noctxt(SB)进行栈扩容，扩容后跳回L_BEGIN位置重新执行栈空间检查
 	// 注释：如果栈空间大小依然不够则再重复扩容一次，知道栈大小够用为止
 	stackguard0 uintptr // 注释：爆栈前警戒线（所在位置是G偏移16字节）。Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
 	stackguard1 uintptr // 注释：C 代码检查栈空间低于这个值会扩张。 // offset known to liblink

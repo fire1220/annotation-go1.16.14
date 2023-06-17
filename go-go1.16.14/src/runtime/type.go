@@ -372,7 +372,7 @@ type imethod struct {
 // 注释：接口本身的类型
 type interfacetype struct {
 	typ     _type
-	pkgpath name      // 注释：接口所在的包名
+	pkgpath name      // 注释：接口所在的路径包名
 	mhdr    []imethod // 注释：接口中暴露的方法在最终可执行文件中的名字和类型的偏移量
 }
 

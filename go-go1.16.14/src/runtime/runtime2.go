@@ -203,7 +203,7 @@ type funcval struct {
 // 注释：带方法签名的接口在运行时的具体结构体
 type iface struct {
 	tab  *itab          // 注释：存储了接口的类型、接口中的动态数据类型、动态数据类型的函数指针等
-	data unsafe.Pointer // 注释：动态类型的函数指针
+	data unsafe.Pointer // 注释：动态类型的值
 }
 
 // 注释：空接口的接头体(empyt interface)

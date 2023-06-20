@@ -266,6 +266,7 @@ func (gp guintptr) ptr() *g { return (*g)(unsafe.Pointer(gp)) }
 //go:nosplit
 func (gp *guintptr) set(g *g) { *gp = guintptr(unsafe.Pointer(g)) }
 
+// 注释：(Compare And Swap)比较赋值，如果prt==old,则赋值ptr=new，返回TRUE否则返回FALSE
 //go:nosplit
 func (gp *guintptr) cas(old, new guintptr) bool {
 	return atomic.Casuintptr((*uintptr)(unsafe.Pointer(gp)), uintptr(old), uintptr(new))

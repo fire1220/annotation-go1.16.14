@@ -3560,16 +3560,17 @@ func goexit0(gp *g) {
 // save must not have write barriers because invoking a write barrier
 // can clobber getg().sched.
 //
+// 注释：保存现场，把当前G对应的PC和SP放到当前G结构体里
 //go:nosplit
 //go:nowritebarrierrec
 func save(pc, sp uintptr) {
 	_g_ := getg()
 
-	_g_.sched.pc = pc
-	_g_.sched.sp = sp
+	_g_.sched.pc = pc // 注释：PC寄存器
+	_g_.sched.sp = sp // 注释：SP寄存器
 	_g_.sched.lr = 0
 	_g_.sched.ret = 0
-	_g_.sched.g = guintptr(unsafe.Pointer(_g_))
+	_g_.sched.g = guintptr(unsafe.Pointer(_g_)) // 注释：保存现场是所在的G
 	// We need to ensure ctxt is zero, but can't have a write
 	// barrier here. However, it should always already be zero.
 	// Assert that.

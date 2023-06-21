@@ -524,7 +524,7 @@ type m struct {
 	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的g结构体对象,要确定g是在用户堆栈还是系统堆栈上运行，可以使用if getg() == getg().m.curg {用户态堆栈} else {系统堆栈}
 	caughtsig     guintptr // goroutine running during fatal signal
 	p             puintptr // 注释：记录与当前工作线程绑定的p结构体对象 // attached p for executing go code (nil if not executing go code)
-	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定)
+	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定),其他M把P抢走后会设置这个字段告诉当前M如果执行时应该绑定其他的P
 	oldp          puintptr // the p that was attached before executing a syscall
 	id            int64
 	mallocing     int32
@@ -550,7 +550,7 @@ type m struct {
 	park          note                          // 注释：没有g需要运行时，工作线程M睡眠在这个park成员上，其它线程通过这个park唤醒该工作线程
 	alllink       *m                            // 注释：记录所有工作线程m的一个链表 // on allm
 	schedlink     muintptr                      // 注释：空闲的m链表（由sched.midle指向）
-	lockedg       guintptr                      // 注释：m下指定执行的g(m里锁定的g)
+	lockedg       guintptr                      // 注释：m下指定执行的g(m里锁定的g),lockedg有值说明m绑定的p被别的m抢走了，如果lockedg有值就要执行这里的g
 	createstack   [32]uintptr                   // stack that created this thread.
 	lockedExt     uint32                        // tracking for external LockOSThread
 	lockedInt     uint32                        // tracking for internal lockOSThread

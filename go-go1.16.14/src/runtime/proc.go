@@ -1318,7 +1318,7 @@ func mstart1() {
 	// for terminating the thread.
 	// We're never coming back to mstart1 after we call schedule,
 	// so other calls can reuse the current frame.
-	save(getcallerpc(), getcallersp()) // 注释：保存现场：保存PC和SP到G结构体上
+	save(getcallerpc(), getcallersp()) // 注释：把g0保存现场：保存PC和SP到G结构体上
 	asminit()                          // 注释：汇编初始化，AMD64没有代码执行(位置：TEXT runtime·asminit(SB),NOSPLIT,$0-0)
 	minit()                            // 注释：初始化m，主要是设置线程的备用信号堆栈和信号掩码
 
@@ -1338,7 +1338,7 @@ func mstart1() {
 		acquirep(_g_.m.nextp.ptr()) // 注释：把m里的nextp的p和m相互绑定(nextp是其他m给付的值，当m启动的时候会第一时间执行nextp)
 		_g_.m.nextp = 0             // 注释：清空m里的nextp
 	}
-	schedule() // 注释：执行调度循环程序
+	schedule() // 注释：mstart1：进入执行调度循环程序
 }
 
 // mstartm0 implements part of mstart1 that only runs on the m0.
@@ -2550,7 +2550,7 @@ func stoplockedm() {
 		throw("stoplockedm: not runnable")
 	}
 	acquirep(_g_.m.nextp.ptr()) // 注释：把m.nextp上的p和m相互绑定
-	_g_.m.nextp = 0             // 注释：情况m.nextp上的p指针
+	_g_.m.nextp = 0             // 注释：清空m.nextp上的p指针
 }
 
 // Schedules the locked m to run the locked gp.
@@ -3164,7 +3164,8 @@ func schedule() {
 		throw("schedule: holding locks")
 	}
 
-	// 注释：g.m.lockedg有值说明m绑定的p别的m抢走了，如果lockedg有值就要执行这里的g
+	// 注释：判断当前的P是否被其他M抢走
+	// 注释：g.m.lockedg有值说明m绑定的p被别的m抢走了，如果lockedg有值就要执行这里的g
 	if _g_.m.lockedg != 0 {
 		stoplockedm()                       // 注释：m和p解除绑定,m重新绑定m.nextp
 		execute(_g_.m.lockedg.ptr(), false) // Never returns. // 注释：并且执行锁定的g
@@ -3247,6 +3248,7 @@ top:
 	// This thread is going to run a goroutine and is not spinning anymore,
 	// so if it was marked as spinning we need to reset it now and potentially
 	// start a new spinning M.
+	// 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g
 	if _g_.m.spinning {
 		resetspinning()
 	}

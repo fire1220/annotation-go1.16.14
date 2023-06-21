@@ -5499,7 +5499,7 @@ func preemptall() bool {
 // The actual preemption will happen at some point in the future
 // and will be indicated by the gp->status no longer being
 // Grunning
-// 注释：设置一个P对应的M为可抢占
+// 注释：设置一个P对应的M里对应的G为可抢占,或P中所有的G设置为异步可抢占
 func preemptone(_p_ *p) bool {
 	mp := _p_.m.ptr() // 注释：P对应M
 	// 注释：如果M为空表示M已经被别的P抢占了
@@ -5524,7 +5524,7 @@ func preemptone(_p_ *p) bool {
 
 	// Request an async preemption of this P.
 	if preemptMSupported && debug.asyncpreemptoff == 0 {
-		_p_.preempt = true
+		_p_.preempt = true // 注释：把P上的抢占标记设置为True是表示P上的所有G异步可抢占
 		preemptM(mp)
 	}
 

@@ -639,7 +639,7 @@ type p struct {
 	runnext guintptr // 注释：g队列里的下一个指针
 
 	// Available G's (status == Gdead)
-	gFree struct {
+	gFree struct { // 注释：G空闲列表
 		gList
 		n int32
 	}
@@ -736,7 +736,7 @@ type p struct {
 
 	// preempt is set to indicate that this P should be enter the
 	// scheduler ASAP (regardless of what G is running on it).
-	preempt bool // 注释：标记P上的M可以被抢占
+	preempt bool // 注释：标记P上的G是异步抢占
 
 	pad cpu.CacheLinePad
 }

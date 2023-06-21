@@ -607,7 +607,7 @@ type p struct {
 	id          int32
 	status      uint32     // one of pidle/prunning/...
 	link        puintptr   // 注释：空闲p链表的下一个p指针
-	schedtick   uint32     // incremented on every scheduler call
+	schedtick   uint32     // 注释：调度计数器，每次调度的时候递增 // incremented on every scheduler call
 	syscalltick uint32     // incremented on every system call
 	sysmontick  sysmontick // last tick observed by sysmon
 	m           muintptr   // back-link to associated m (nil if idle)

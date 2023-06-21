@@ -2617,14 +2617,14 @@ func execute(gp *g, inheritTime bool) {
 
 	// Assign gp.m before entering _Grunning so running Gs have an
 	// M.
-	_g_.m.curg = gp
-	gp.m = _g_.m
-	casgstatus(gp, _Grunnable, _Grunning)
+	_g_.m.curg = gp                       // 注释：把要执行的G绑定到当前G的M对应的当前G上
+	gp.m = _g_.m                          // 注释：把要执行的G对应的M绑定到当前已经存在的G对应的M上
+	casgstatus(gp, _Grunnable, _Grunning) // 注释：更新G的状态为运行中
 	gp.waitsince = 0
-	gp.preempt = false
-	gp.stackguard0 = gp.stack.lo + _StackGuard
+	gp.preempt = false                         // 注释：禁止抢占
+	gp.stackguard0 = gp.stack.lo + _StackGuard // 注释：设置爆栈警告
 	if !inheritTime {
-		_g_.m.p.ptr().schedtick++
+		_g_.m.p.ptr().schedtick++ // 注释：调度计数器递增
 	}
 
 	// Check whether the profiler needs to be turned on or off.

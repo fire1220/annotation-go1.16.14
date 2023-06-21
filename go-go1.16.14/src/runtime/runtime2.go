@@ -736,7 +736,7 @@ type p struct {
 
 	// preempt is set to indicate that this P should be enter the
 	// scheduler ASAP (regardless of what G is running on it).
-	preempt bool
+	preempt bool // 注释：标记P上的M可以被抢占
 
 	pad cpu.CacheLinePad
 }

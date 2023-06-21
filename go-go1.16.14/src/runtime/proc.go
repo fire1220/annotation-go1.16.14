@@ -3169,7 +3169,7 @@ func schedule() {
 	// 注释：g.m.lockedg有值说明m绑定的p被别的m抢走了，如果lockedg有值就要执行这里的g
 	if _g_.m.lockedg != 0 {
 		stoplockedm()                       // 注释：m和p解除绑定,m重新绑定m.nextp
-		execute(_g_.m.lockedg.ptr(), false) // Never returns. // 注释：并且执行锁定的g
+		execute(_g_.m.lockedg.ptr(), false) // Never returns. // 注释：执行锁定的g
 	}
 
 	// We should not schedule away from a g that is executing a cgo call,
@@ -5475,13 +5475,14 @@ func retake(now int64) uint32 {
 // processor just started running it.
 // No locks need to be held.
 // Returns true if preemption request was issued to at least one goroutine.
+// 注释：把所有全局运行中的P设置为可抢占，只要有一个成功则返回成功
 func preemptall() bool {
 	res := false
-	for _, _p_ := range allp {
-		if _p_.status != _Prunning {
+	for _, _p_ := range allp { // 注释：循环全局P
+		if _p_.status != _Prunning { // 注释：非运行中的P跳过
 			continue
 		}
-		if preemptone(_p_) {
+		if preemptone(_p_) { // 注释：设置一个P对应的M为可抢占
 			res = true
 		}
 	}
@@ -5498,23 +5499,28 @@ func preemptall() bool {
 // The actual preemption will happen at some point in the future
 // and will be indicated by the gp->status no longer being
 // Grunning
+// 注释：设置一个P对应的M为可抢占
 func preemptone(_p_ *p) bool {
-	mp := _p_.m.ptr()
+	mp := _p_.m.ptr() // 注释：P对应M
+	// 注释：如果M为空表示M已经被别的P抢占了
+	// 注释：如果M等于当前的G对应的M时表示已经抢占过来了
 	if mp == nil || mp == getg().m {
 		return false
 	}
-	gp := mp.curg
+	gp := mp.curg // 注释：获取M上要执行的G
+	// 注释：如果G不存在表M上没有要执行的G
+	// 注释：如果G是G0则跳过，G0不能被抢占
 	if gp == nil || gp == mp.g0 {
 		return false
 	}
 
-	gp.preempt = true
+	gp.preempt = true // 注释：标记P的M可以被抢占
 
 	// Every call in a go routine checks for stack overflow by
 	// comparing the current stack pointer to gp->stackguard0.
 	// Setting gp->stackguard0 to StackPreempt folds
 	// preemption into the normal stack overflow check.
-	gp.stackguard0 = stackPreempt
+	gp.stackguard0 = stackPreempt // 注释：爆栈警告，标记P的M可以被抢占；意味着当前g发出了抢占请求
 
 	// Request an async preemption of this P.
 	if preemptMSupported && debug.asyncpreemptoff == 0 {

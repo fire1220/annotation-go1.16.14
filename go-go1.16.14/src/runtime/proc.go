@@ -1338,7 +1338,7 @@ func mstart1() {
 		acquirep(_g_.m.nextp.ptr()) // 注释：把m里的nextp的p和m相互绑定(nextp是其他m给付的值，当m启动的时候会第一时间执行nextp)
 		_g_.m.nextp = 0             // 注释：清空m里的nextp
 	}
-	schedule() // 注释：执行调度程序，而且不会在返回
+	schedule() // 注释：执行调度循环程序
 }
 
 // mstartm0 implements part of mstart1 that only runs on the m0.
@@ -3158,7 +3158,7 @@ func injectglist(glist *gList) {
 // 注释：永不返回
 // 注释：每一轮调度的开始方法
 func schedule() {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前G，（TLS指针数据就是G的指针）
 
 	if _g_.m.locks != 0 {
 		throw("schedule: holding locks")

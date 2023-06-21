@@ -1318,7 +1318,7 @@ func mstart1() {
 	// for terminating the thread.
 	// We're never coming back to mstart1 after we call schedule,
 	// so other calls can reuse the current frame.
-	save(getcallerpc(), getcallersp()) // 注释：保存PC和SP到G结构体上
+	save(getcallerpc(), getcallersp()) // 注释：保存现场：保存PC和SP到G结构体上
 	asminit()
 	minit() // 注释：初始化m，主要是设置线程的备用信号堆栈和信号掩码
 

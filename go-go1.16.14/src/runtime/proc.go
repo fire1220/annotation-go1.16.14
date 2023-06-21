@@ -2633,6 +2633,7 @@ func execute(gp *g, inheritTime bool) {
 		setThreadCPUProfiler(hz)
 	}
 
+	// 注释：是否开启追踪
 	if trace.enabled {
 		// GoSysExit has to happen when we have a P, but before GoStart.
 		// So we emit it here.
@@ -2642,7 +2643,7 @@ func execute(gp *g, inheritTime bool) {
 		traceGoStart()
 	}
 
-	gogo(&gp.sched)
+	gogo(&gp.sched) // 注释：真正执行G里的指令(在G休眠的时候会保存现场，保存现场就是保存到&gp.sched里，所以唤醒后执行这里的指令)
 }
 
 // Finds a runnable goroutine to execute.

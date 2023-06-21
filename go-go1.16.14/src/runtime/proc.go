@@ -3566,8 +3566,8 @@ func goexit0(gp *g) {
 func save(pc, sp uintptr) {
 	_g_ := getg()
 
-	_g_.sched.pc = pc // 注释：PC寄存器
-	_g_.sched.sp = sp // 注释：SP寄存器
+	_g_.sched.pc = pc // 注释：保存伪PC寄存器(硬件IP指令计数器寄存器)
+	_g_.sched.sp = sp // 注释：保存伪SP寄存器(硬件BP栈基地址寄存器)
 	_g_.sched.lr = 0
 	_g_.sched.ret = 0
 	_g_.sched.g = guintptr(unsafe.Pointer(_g_)) // 注释：保存现场是所在的G

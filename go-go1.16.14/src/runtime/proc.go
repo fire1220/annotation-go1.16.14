@@ -1268,7 +1268,7 @@ func mStackIsSystemAllocated() bool {
 //go:nosplit
 //go:nowritebarrierrec
 func mstart() {
-	_g_ := getg() // 注释：这里获取的g是g0，在系统堆栈
+	_g_ := getg() // 注释：这里获取的g是g0，在系统堆栈(是从TLS里获取的G指针)
 
 	osStack := _g_.stack.lo == 0
 	// 注释：判断栈低地址是否有值

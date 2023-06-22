@@ -203,16 +203,16 @@ ok:
     // 注释：将该线程保存在m0
     // 注释：tls: Thread Local Storage
 	// set the per-goroutine and per-mach "registers"
-	get_tls(BX)
-	LEAQ	runtime·g0(SB), CX
-	MOVQ	CX, g(BX)
-	LEAQ	runtime·m0(SB), AX
+	get_tls(BX) // 注释：获取TLS数据，里面存储的是G的指针
+	LEAQ	runtime·g0(SB), CX // 注释：把g0指针放到CX寄存器里
+	MOVQ	CX, g(BX)          // 注释：（把g0放到当前运行的G里）把g0放到TLS（线程运行的G上面）里
+	LEAQ	runtime·m0(SB), AX // 注释：把m0放到AX寄存器里
 
     // 注释：m0和g0互相绑定
 	// save m->g0 = g0
-	MOVQ	CX, m_g0(AX)
+	MOVQ	CX, m_g0(AX) // 注释：m0.g0 = g0（g0绑定到m0上）
 	// save m0 to g0->m
-	MOVQ	AX, g_m(CX)
+	MOVQ	AX, g_m(CX)  // 注释：g0.m = m0（m0绑定到g0上）
 
 	CLD				// convention is D is always left cleared
 	CALL	runtime·check(SB)
@@ -227,9 +227,9 @@ ok:
 
     // 注释：创建一个goroutine，然后开启执行程序
 	// create a new goroutine to start program
-	MOVQ	$runtime·mainPC(SB), AX		// entry
-	PUSHQ	AX
-	PUSHQ	$0			// arg size
+	MOVQ	$runtime·mainPC(SB), AX	 // 注释：访问全局变量runtime·mainPC，内容是runtime.main函数指针	// entry
+	PUSHQ	AX                  // 注释：入栈，把AX作为下个函数第2个参数，相当于subq $8,SP；movq AX,SP
+	PUSHQ	$0                  // 注释：入栈，把0作为下个函数第1个参数，相当于subq $8,SP；movq $0,SP		// arg size
 	CALL	runtime·newproc(SB) // 注释：新建一个g，也叫main goroutine，它的任务函数是runtime.main函数，建好后插入m0绑定的p的本地队列
 	POPQ	AX
 	POPQ	AX
@@ -248,7 +248,7 @@ ok:
 // mainPC is a function value for runtime.main, to be passed to newproc.
 // The reference to runtime.main is made via ABIInternal, since the
 // actual function (not the ABI0 wrapper) is needed by newproc.
-DATA	runtime·mainPC+0(SB)/8,$runtime·main<ABIInternal>(SB)
+DATA	runtime·mainPC+0(SB)/8,$runtime·main<ABIInternal>(SB) // 注释：runtime·mainPC是runtime.main的函数指针【mainPC=fn(){runtime.main}】
 GLOBL	runtime·mainPC(SB),RODATA,$8
 
 TEXT runtime·breakpoint(SB),NOSPLIT,$0-0
@@ -277,11 +277,11 @@ TEXT runtime·gosave(SB), NOSPLIT, $0-8
 	// Assert ctxt is zero. See func save.
 	MOVQ	gobuf_ctxt(AX), BX
 	TESTQ	BX, BX // 注释：比较；逻辑与（&）运算，TEMP等于0时设置ZF为1；不等于0时设置ZF为0（ZF是条件寄存器）
-	JZ	2(PC)
-	CALL	runtime·badctxt(SB)
-	get_tls(CX)
-	MOVQ	g(CX), BX
-	MOVQ	BX, gobuf_g(AX)
+	JZ	2(PC)      // 注释：如果相等则跳转2(PC)执行指令
+	CALL	runtime·badctxt(SB) // 注释：调用函数runtime·badctxt
+	get_tls(CX)                 // 注释：获取TLS（*g）
+	MOVQ	g(CX), BX           // 注释：把G指针放到寄存器BX里
+	MOVQ	BX, gobuf_g(AX)     // 注释：(保存G指针)把G指针存储到gobuf.g里
 	RET
 
 // func gogo(buf *gobuf)

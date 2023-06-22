@@ -3169,7 +3169,7 @@ func schedule() {
 	// 注释：g.m.lockedg有值说明m绑定的p被别的m抢走了，如果lockedg有值就要执行这里的g
 	if _g_.m.lockedg != 0 {
 		stoplockedm()                       // 注释：m和p解除绑定,m重新绑定m.nextp
-		execute(_g_.m.lockedg.ptr(), false) // Never returns. // 注释：执行锁定的g
+		execute(_g_.m.lockedg.ptr(), false) // 注释：schedule:执行锁定的g // Never returns.
 	}
 
 	// We should not schedule away from a g that is executing a cgo call,

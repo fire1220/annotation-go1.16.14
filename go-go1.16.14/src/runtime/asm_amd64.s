@@ -285,22 +285,23 @@ TEXT runtime·gosave(SB), NOSPLIT, $0-8
 
 // func gogo(buf *gobuf)
 // restore state from Gobuf; longjmp
+// 注释：执行gogo函数指令，执行gobuf（之前保存现场的位置）中的数据
 TEXT runtime·gogo(SB), NOSPLIT, $16-8
-	MOVQ	buf+0(FP), BX		// gobuf
-	MOVQ	gobuf_g(BX), DX
-	MOVQ	0(DX), CX		// make sure g != nil
-	get_tls(CX)
-	MOVQ	DX, g(CX)
-	MOVQ	gobuf_sp(BX), SP	// restore SP
-	MOVQ	gobuf_ret(BX), AX
-	MOVQ	gobuf_ctxt(BX), DX
-	MOVQ	gobuf_bp(BX), BP
-	MOVQ	$0, gobuf_sp(BX)	// clear to help garbage collector
-	MOVQ	$0, gobuf_ret(BX)
-	MOVQ	$0, gobuf_ctxt(BX)
-	MOVQ	$0, gobuf_bp(BX)
-	MOVQ	gobuf_pc(BX), BX
-	JMP	BX
+	MOVQ	buf+0(FP), BX		// 注释：获取入参的gobuf结构体放到BX寄存器中 // gobuf
+	MOVQ	gobuf_g(BX), DX     // 注释：取出G放到DX寄存器中
+	MOVQ	0(DX), CX		    // 注释：初始化CX寄存器（DX数据放到寄存器CX中） // make sure g != nil
+	get_tls(CX) // 注释：取出TLS中的数据放到CX寄存器中，TLS存放了G的指针。定义位置：#define	get_tls(r)	MOVQ TLS, r
+	MOVQ	DX, g(CX)           // 注释：把G放到TLS的G指针中（getg函数请求的就是TLS中的G指针）
+	MOVQ	gobuf_sp(BX), SP	// 注释：恢复gobuf.sp到SP寄存器中 // restore SP
+	MOVQ	gobuf_ret(BX), AX   // 注释：恢复gobuf.ret返回值位置到寄存器AX中
+	MOVQ	gobuf_ctxt(BX), DX  // 注释：恢复gobuf.ctxt到DX中
+	MOVQ	gobuf_bp(BX), BP    // 注释：恢复gobuf.bp到寄存器BP中
+	MOVQ	$0, gobuf_sp(BX)	// 注释：清空gobuf.sp数据 // clear to help garbage collector
+	MOVQ	$0, gobuf_ret(BX)   // 注释：清空gobuf.ret数据
+	MOVQ	$0, gobuf_ctxt(BX)  // 注释：清空gobuf.ctxt数据
+	MOVQ	$0, gobuf_bp(BX)    // 注释：清空gobuf.bp数据
+	MOVQ	gobuf_pc(BX), BX    // 注释：恢复gobuf.pc到BX中(指令计数器)
+	JMP	BX                      // 注释：执行BX中位置指令
 
 // func mcall(fn func(*g))
 // Switch to m->g0's stack, call fn(g).

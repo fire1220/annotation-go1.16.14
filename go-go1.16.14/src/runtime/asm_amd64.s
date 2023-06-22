@@ -265,17 +265,18 @@ TEXT runtime·asminit(SB),NOSPLIT,$0-0
 
 // func gosave(buf *gobuf)
 // save state in Gobuf; setjmp
+// 注释：gosave保存现场，把寄存器里的数据保存的g.sched里，类型是gobuf
 TEXT runtime·gosave(SB), NOSPLIT, $0-8
-	MOVQ	buf+0(FP), AX		// gobuf
-	LEAQ	buf+0(FP), BX		// caller's SP
-	MOVQ	BX, gobuf_sp(AX)
-	MOVQ	0(SP), BX		// caller's PC
-	MOVQ	BX, gobuf_pc(AX)
-	MOVQ	$0, gobuf_ret(AX)
-	MOVQ	BP, gobuf_bp(AX)
+	MOVQ	buf+0(FP), AX		// 注释：获取入参*gobuf到寄存器AX里 // gobuf
+	LEAQ	buf+0(FP), BX		// 注释：获取SP:存放入参的地址（就是当前函数的FP，调用放函数的SP）址放到BX寄存器里 // caller's SP
+	MOVQ	BX, gobuf_sp(AX)    // 注释：(保存SP)把SP（FP的存放地址）的值放到gobuf.sp里
+	MOVQ	0(SP), BX		    // 注释：获取PC:把SP（基站地址，程序开始位置，PC指令计数器存放下次要执行的指令）存放到临时寄存器BX里 // caller's PC
+	MOVQ	BX, gobuf_pc(AX)    // 注释：(保存PC)把PC指令寄存器保存到gobuf.pc里
+	MOVQ	$0, gobuf_ret(AX)   // 注释：初始化返回值，清空返回值位置gobuf.ret
+	MOVQ	BP, gobuf_bp(AX)    // 注释：(保存BP)把BP保存到gobuf.bp里
 	// Assert ctxt is zero. See func save.
 	MOVQ	gobuf_ctxt(AX), BX
-	TESTQ	BX, BX
+	TESTQ	BX, BX // 注释：比较；逻辑与（&）运算，TEMP等于0时设置ZF为1；不等于0时设置ZF为0（ZF是条件寄存器）
 	JZ	2(PC)
 	CALL	runtime·badctxt(SB)
 	get_tls(CX)

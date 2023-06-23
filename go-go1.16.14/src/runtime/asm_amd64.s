@@ -248,7 +248,7 @@ ok:
 // mainPC is a function value for runtime.main, to be passed to newproc.
 // The reference to runtime.main is made via ABIInternal, since the
 // actual function (not the ABI0 wrapper) is needed by newproc.
-DATA	runtime·mainPC+0(SB)/8,$runtime·main<ABIInternal>(SB) // 注释：runtime·mainPC是runtime.main的函数指针【mainPC=fn(){runtime.main}】
+DATA	runtime·mainPC+0(SB)/8,$runtime·main<ABIInternal>(SB) // 注释：runtime·mainPC是runtime.main的函数指针【mainPC=&fn{fn:runtime.main}】
 GLOBL	runtime·mainPC(SB),RODATA,$8
 
 TEXT runtime·breakpoint(SB),NOSPLIT,$0-0

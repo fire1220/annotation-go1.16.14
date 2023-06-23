@@ -4094,6 +4094,7 @@ func malg(stacksize int32) *g {
 // untypedasm_amd64.s arguments in newproc's argument frame. Stack copies won't
 // be able to adjust them and stack splits won't be able to copy them.
 // 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
+// 注释：fn.fn是runtime.main函数指针
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：用fn + PtrSize 获取第一个参数的地址，也就是argp
@@ -4120,6 +4121,7 @@ func newproc(siz int32, fn *funcval) {
 // This must run on the system stack because it's the continuation of
 // newproc, which cannot split the stack.
 //
+// 注释：fn.fn是runtime.main函数指针
 //go:systemstack
 func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerpc uintptr) *g {
 	_g_ := getg()

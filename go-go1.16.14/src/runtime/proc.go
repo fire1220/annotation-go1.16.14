@@ -4260,43 +4260,47 @@ func saveAncestors(callergp *g) *[]ancestorInfo {
 
 // Put on gfree list.
 // If local list is too long, transfer a batch to the global list.
+// 注释：空G放到本地P空G队列里，如果到达64个时，拿出一半放到全局空G队列里
 func gfput(_p_ *p, gp *g) {
 	if readgstatus(gp) != _Gdead {
 		throw("gfput: bad status (not Gdead)")
 	}
 
-	stksize := gp.stack.hi - gp.stack.lo
+	stksize := gp.stack.hi - gp.stack.lo // 注释：G使用的堆大小
 
+	// 注释：如果G使用的堆大小不等于固定大小时清空(非标准堆栈大小-释放它)
 	if stksize != _FixedStack {
 		// non-standard stack size - free it.
-		stackfree(gp.stack)
-		gp.stack.lo = 0
-		gp.stack.hi = 0
-		gp.stackguard0 = 0
+		stackfree(gp.stack) // 注释：释放栈空间
+		gp.stack.lo = 0     // 注释：空G栈顶设置为0
+		gp.stack.hi = 0     // 注释：空G栈低设置为0
+		gp.stackguard0 = 0  // 注释：爆栈将设置为0
 	}
 
-	_p_.gFree.push(gp)
-	_p_.gFree.n++
-	if _p_.gFree.n >= 64 {
-		lock(&sched.gFree.lock)
-		for _p_.gFree.n >= 32 {
-			_p_.gFree.n--
-			gp = _p_.gFree.pop()
-			if gp.stack.lo == 0 {
+	_p_.gFree.push(gp)     // 注释：把空G放到本地空队列里
+	_p_.gFree.n++          // 注释：本地空队列计数加1
+	if _p_.gFree.n >= 64 { // 注释：如果本地队列个数到达64个时，拿出一半放到全局空队列里
+		lock(&sched.gFree.lock) // 注释：锁定全局空G队列
+		for _p_.gFree.n >= 32 { // 注释：拿出32个放到全局空G队列里
+			_p_.gFree.n--         // 注释：本地空G个数减1
+			gp = _p_.gFree.pop()  // 注释：在本地空G队列中拿出一个空G
+			if gp.stack.lo == 0 { // 注释：如果G没有栈顶（没有栈空间）则放到全局空G队列sched.gFree.noStack里
 				sched.gFree.noStack.push(gp)
 			} else {
-				sched.gFree.stack.push(gp)
+				sched.gFree.stack.push(gp) // 注释：如果G有栈顶（有栈空间）则放到全局空G队列sched.gFree.stack里
 			}
-			sched.gFree.n++
+			sched.gFree.n++ // 注释：全局空G队列个数加1
 		}
-		unlock(&sched.gFree.lock)
+		unlock(&sched.gFree.lock) // 注释：全局空G队列解锁
 	}
 }
 
 // Get from gfree list.
 // If local list is empty, grab a batch from global list.
+// 注释：获取空G：从gfree列表中获取。如果本地列表为空，从全局列表中获取一批
 func gfget(_p_ *p) *g {
 retry:
+	// 注释：判断本地P空G队列是否有值，如果为空并且全局空G队里里有值时，把全局空G队列里的空G拿出一半(32个)放到本地P空G队列里，然后跳到retry处重新执行
 	if _p_.gFree.empty() && (!sched.gFree.stack.empty() || !sched.gFree.noStack.empty()) {
 		lock(&sched.gFree.lock)
 		// Move a batch of free Gs to the P.
@@ -4339,19 +4343,20 @@ retry:
 }
 
 // Purge all cached G's from gfree list to the global list.
+// 注释：把本地P上空G放到全局空G的链表里，把有栈空间的空G放到sched.gFree.stack里，把没有栈空间的空G放到sched.gFree.noStack里
 func gfpurge(_p_ *p) {
-	lock(&sched.gFree.lock)
-	for !_p_.gFree.empty() {
-		gp := _p_.gFree.pop()
-		_p_.gFree.n--
-		if gp.stack.lo == 0 {
-			sched.gFree.noStack.push(gp)
+	lock(&sched.gFree.lock)  // 注释：全局空G链表锁：修改前上锁
+	for !_p_.gFree.empty() { // 注释：如果局部空G有数据时
+		gp := _p_.gFree.pop() // 注释：移除一个空G
+		_p_.gFree.n--         // 注释：计数减1
+		if gp.stack.lo == 0 { // 注释：判断是否有栈空间
+			sched.gFree.noStack.push(gp) // 注释：如果没有栈空间则放到全局空G队列的sched.gFree.noStack里
 		} else {
-			sched.gFree.stack.push(gp)
+			sched.gFree.stack.push(gp) // 注释：如果有栈空间，则放到全局空G队列的sched.gFree.stack里
 		}
-		sched.gFree.n++
+		sched.gFree.n++ // 注释：全局空G链表计数加1
 	}
-	unlock(&sched.gFree.lock)
+	unlock(&sched.gFree.lock) // 注释：全局空G链表锁：解锁
 }
 
 // Breakpoint executes a breakpoint trap.

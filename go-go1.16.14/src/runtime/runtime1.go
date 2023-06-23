@@ -467,7 +467,7 @@ func timediv(v int64, div int32, rem *int32) int32 {
 //go:nosplit
 func acquirem() *m {
 	_g_ := getg() // 注释：获取当前运行的g
-	_g_.m.locks++ // 注释：加锁（线程使用数加一），说明这个g有被使用
+	_g_.m.locks++ // 注释：(禁止抢占)加锁（线程使用数加一），说明这个g有被使用
 	return _g_.m  // 注释：返回g对应的m
 }
 

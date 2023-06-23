@@ -639,9 +639,12 @@ type p struct {
 	runnext guintptr // 注释：g队列里的下一个指针
 
 	// Available G's (status == Gdead)
-	gFree struct { // 注释：G空闲列表
-		gList
-		n int32
+	// 注释：本地空G队列
+	// 注释：如果n>=64则会把本地P空G拿出一半（32个）放到全局空闲队列里,执行方法是：func gfput(_p_ *p, gp *g) {}
+	// 注释：如果n==0则会到全局空闲列表里拿回32个,执行方法是：func gfget(_p_ *p) *g {}
+	gFree struct { // 注释：空G队列
+		gList       // 注释：空G的头指针
+		n     int32 // 注释：空G的个数，最大是64程序控制。
 	}
 
 	sudogcache []*sudog // 注释：P中空闲G的切片（把要释放掉的G会缓存到这里），如果为空时则全局G缓存链表取出当前缓存的一半放进来，如果全局缓存为空，则会新new一个空的G放进来
@@ -787,12 +790,14 @@ type schedt struct {
 	}
 
 	// Global cache of dead G's.
-	// 注释：gFree是所有已经退出的goroutine对应的g结构体对象组成的链表，用于缓存g结构体对象，避免每次创建goroutine时都重新分配内存
+	// 注释：（全局空G队列）gFree是所有已经退出的goroutine对应的g结构体对象组成的链表，用于缓存g结构体对象，避免每次创建goroutine时都重新分配内存
+	// 注释：获取的时候先到stack里拿，如果stack没有则去noStack里拿，拿成功后n减1
+	// 注释：把本地P上空G放到全局空G的链表里,函数是：func gfpurge(_p_ *p) { }
 	gFree struct {
-		lock    mutex
-		stack   gList // Gs with stacks
-		noStack gList // Gs without stacks
-		n       int32
+		lock    mutex // 注释：变更是加锁
+		stack   gList // 注释：有占空间的空G(栈顶指针为空gp.stack.lo != 0) // Gs with stacks
+		noStack gList // 注释：没有栈空间的空G(栈顶指针为空gp.stack.lo == 0) // Gs without stacks
+		n       int32 // 注释：stack和noStack链表里空G的数量
 	}
 
 	// 注释：中央缓存(空闲G的单向链表) // Central cache of sudog structs.

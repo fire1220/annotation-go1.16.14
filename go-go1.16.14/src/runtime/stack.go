@@ -324,6 +324,7 @@ func stackcache_clear(c *mcache) {
 // stackalloc must run on the system stack because it uses per-P
 // resources and must not split the stack.
 //
+// 注释：申请栈空间
 //go:systemstack
 func stackalloc(n uint32) stack {
 	// Stackalloc must be called on scheduler stack, so that we
@@ -424,6 +425,7 @@ func stackalloc(n uint32) stack {
 // stackfree must run on the system stack because it uses per-P
 // resources and must not split the stack.
 //
+// 注释：释放栈空间
 //go:systemstack
 func stackfree(stk stack) {
 	gp := getg()

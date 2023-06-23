@@ -4302,35 +4302,35 @@ func gfget(_p_ *p) *g {
 retry:
 	// 注释：判断本地P空G队列是否有值，如果为空并且全局空G队里里有值时，把全局空G队列里的空G拿出一半(32个)放到本地P空G队列里，然后跳到retry处重新执行
 	if _p_.gFree.empty() && (!sched.gFree.stack.empty() || !sched.gFree.noStack.empty()) {
-		lock(&sched.gFree.lock)
+		lock(&sched.gFree.lock) // 注释：锁定全局G链表
 		// Move a batch of free Gs to the P.
-		for _p_.gFree.n < 32 {
+		for _p_.gFree.n < 32 { // 注释：如果本地空G数量到达一半(32个)时，跳出循环，跳到retry处重新执行
 			// Prefer Gs with stacks.
-			gp := sched.gFree.stack.pop()
+			gp := sched.gFree.stack.pop() // 注释：先到sched.gFree.stack里取空G
 			if gp == nil {
-				gp = sched.gFree.noStack.pop()
-				if gp == nil {
+				gp = sched.gFree.noStack.pop() // 注释：如果stack里没有取到，则到sched.gFree.noStack里取
+				if gp == nil {                 // 注释：如果没有取到则跳出循环
 					break
 				}
 			}
-			sched.gFree.n--
-			_p_.gFree.push(gp)
-			_p_.gFree.n++
+			sched.gFree.n--    // 注释：全局空G计数减1
+			_p_.gFree.push(gp) // 注释：放到本地空队列里
+			_p_.gFree.n++      // 注释：本地队列计数加1
 		}
-		unlock(&sched.gFree.lock)
-		goto retry
+		unlock(&sched.gFree.lock) // 注释：全局空G解锁
+		goto retry                // 注释：跳到retry从新执行
 	}
-	gp := _p_.gFree.pop()
+	gp := _p_.gFree.pop() // 注释：到本地P中取出一个空G，如果没有取到则退出
 	if gp == nil {
 		return nil
 	}
-	_p_.gFree.n--
-	if gp.stack.lo == 0 {
+	_p_.gFree.n--         // 注释：本地空G计数减1
+	if gp.stack.lo == 0 { // 注释：如果空G栈空间为空时
 		// Stack was deallocated in gfput. Allocate a new one.
 		systemstack(func() {
-			gp.stack = stackalloc(_FixedStack)
+			gp.stack = stackalloc(_FixedStack) // 注释：申请栈空间
 		})
-		gp.stackguard0 = gp.stack.lo + _StackGuard
+		gp.stackguard0 = gp.stack.lo + _StackGuard // 注释：设置爆栈警戒线
 	} else {
 		if raceenabled {
 			racemalloc(unsafe.Pointer(gp.stack.lo), gp.stack.hi-gp.stack.lo)
@@ -4339,7 +4339,7 @@ retry:
 			msanmalloc(unsafe.Pointer(gp.stack.lo), gp.stack.hi-gp.stack.lo)
 		}
 	}
-	return gp
+	return gp // 注释：返回一个空G
 }
 
 // Purge all cached G's from gfree list to the global list.

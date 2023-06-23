@@ -519,8 +519,9 @@ type m struct {
 	gsignal    *g           // signal-handling g                        // 注释：运行中的g(信号处理)
 	goSigStack gsignalStack // Go-allocated signal handling stack
 	sigmask    sigset       // storage for saved signal mask
-	tls        [6]uintptr   // thread-local storage (for x86 extern register) // 注释：通过TLS实现m结构体对象与工作线程之间的绑定,第一个元素是g(程序当前运行的g)
-	mstartfn   func()       // 注释：(起始函数)启动m（mstart）时执行的函数，如果不等于nil就执行
+	// 注释：go在新建M时候设置FS寄存器的值为M.tls的地址，运行中每个M的FS寄存器都会指向对应的M.tls，内核调度线程时FS寄存器会跟着线程一起切换，这样go代码只需要访问FS寄存器就可以获取到线程本地的数据
+	tls      [6]uintptr // 注释：通过TLS实现m结构体对象与工作线程之间的绑定,第一个元素是g(程序当前运行的g) // thread-local storage (for x86 extern register)
+	mstartfn func()     // 注释：(起始函数)启动m（mstart）时执行的函数，如果不等于nil就执行
 
 	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的g结构体对象,要确定g是在用户堆栈还是系统堆栈上运行，可以使用if getg() == getg().m.curg {用户态堆栈} else {系统堆栈}
 	caughtsig     guintptr // goroutine running during fatal signal

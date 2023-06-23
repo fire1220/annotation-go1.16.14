@@ -403,6 +403,7 @@ type libcall struct {
 // The bounds of the stack are exactly [lo, hi),
 // with no implicit data structures on either side.
 // 注释：g使用栈的起始和结束位置,g的函数调用栈边界结构体
+// 注释：用于判断空G是否有栈空间(判断lo是否等于0)
 type stack struct {
 	lo uintptr // 注释：栈顶，指向内存低地址(栈开始位置地址)
 	hi uintptr // 注释：栈底，指向内存高地址(栈结束位置地址)

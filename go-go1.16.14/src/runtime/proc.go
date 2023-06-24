@@ -2728,8 +2728,8 @@ top:
 		goto stop
 	}
 	// 注释：设置状态准备窃取（偷）
-	if !_g_.m.spinning {
-		_g_.m.spinning = true             // 注释：变更状态为true，说明自己已经空闲了打算去窃取（偷）其他的线程M本地的G了
+	if !_g_.m.spinning { // 注释：如果M为非自旋，则设置为自旋状态
+		_g_.m.spinning = true             // 注释：设置为自旋，变更状态为true，说明自己已经空闲了打算去窃取（偷）其他的线程M本地的G了
 		atomic.Xadd(&sched.nmspinning, 1) // 注释：自旋（空闲）数加1
 	}
 	const stealTries = 4 // 注释：尝试窃取（偷）的数量
@@ -2875,14 +2875,15 @@ stop:
 	// the system is fully loaded so no spinning threads are required.
 	// Also see "Worker thread parking/unparking" comment at the top of the file.
 	wasSpinning := _g_.m.spinning
-	if _g_.m.spinning {
-		_g_.m.spinning = false
-		if int32(atomic.Xadd(&sched.nmspinning, -1)) < 0 {
+	if _g_.m.spinning { // 注释：如果M是自旋状态，则取消自旋
+		_g_.m.spinning = false                             // 注释：取消自旋
+		if int32(atomic.Xadd(&sched.nmspinning, -1)) < 0 { // 注释：自旋M个数减1
 			throw("findrunnable: negative nmspinning")
 		}
 	}
 
 	// check all runqueues once again
+	// 注释：再次检查所有的P，看看有没有可以运行的G
 	for id, _p_ := range allpSnapshot {
 		if !idlepMaskSnapshot.read(uint32(id)) && !runqempty(_p_) {
 			lock(&sched.lock)

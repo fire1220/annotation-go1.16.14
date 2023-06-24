@@ -451,7 +451,7 @@ type g struct {
 	waitsince    int64          // 注释：g被阻塞的时间 // approx time when the g become blocked
 	waitreason   waitReason     // 注释：g被阻塞的原因 // if status==Gwaiting
 	// 注释：每个G都有三个与抢占有关的字段，分别为preempt、preemptStop和premptShrink
-	preempt       bool // 注释：标记是否可抢占，其值为 true 执行 stackguard0 = stackpreempt。(抢占调度标志，如果需要抢占调度，设置preempt为true) // preemption signal, duplicates stackguard0 = stackpreempt
+	preempt       bool // 注释：标记是否可抢占,其值为true执行 stackguard0 = stackpreempt。(抢占调度标志，如果需要抢占调度，设置preempt为true) // preemption signal, duplicates stackguard0 = stackpreempt
 	preemptStop   bool // 注释：将抢占标记修改为_Gpreedmpted，如果修改失败则取消 // transition to _Gpreempted on preemption; otherwise, just deschedule
 	preemptShrink bool // 注释：在同步安全点收缩栈 // shrink stack at synchronous safe point
 

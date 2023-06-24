@@ -313,7 +313,7 @@ func setMNoWB(mp **m, new *m) {
 	(*muintptr)(unsafe.Pointer(mp)).set(new)
 }
 
-// 注释：协程执行现场存储在g.gobuf结构体（协成切换时保存寄存器数据）(保存g的调度信息)
+// 注释：协成执行现场数据(调度信息)，G状态(g.atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据
 type gobuf struct {
 	// The offsets of sp, pc, and g are known to (hard-coded in) libmach.
 	// 注释：寄存器 sp, pc 和 g 的偏移量，硬编码在 libmach
@@ -439,7 +439,7 @@ type g struct {
 	_panic       *_panic        // 注释：当前G的panic的数据指针(panic的链表，_panic.link 链接) // innermost panic - offset known to liblink
 	_defer       *_defer        // 注释：当前G的延迟调用的数据指针(单向链表，deferreturn会获取链表数据) // innermost defer
 	m            *m             // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行） // current m; offset known to arm liblink
-	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据，存储当前G调度相关的数据
+	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据
 	syscallsp    uintptr        // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间 // if status==Gsyscall, syscallsp = sched.sp to use during gc
 	syscallpc    uintptr        // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间 // if status==Gsyscall, syscallpc = sched.pc to use during gc
 	stktopsp     uintptr        // 注释：期望sp位于栈顶，用于回源跟踪 // expected sp at top of stack, to check in traceback

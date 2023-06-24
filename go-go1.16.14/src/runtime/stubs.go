@@ -17,6 +17,10 @@ func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
 // that fetch the g directly (from TLS or from the dedicated register).
 // 注释：从TLS（Thread-local Storage线程本地存储）或从专用寄存器里拿数
 // 注释：获取当前运行的g；执行位置是case ssa.OpAMD64LoweredGetG:
+// 注释：getg返回指向当前g的指针。编译器将对此函数的调用重写为直接获取g的指令（来自TLS或来自专用寄存器）。
+// 注释：要获取当前用户堆栈的g，可以使用getg().m.curg。
+// 注释：getg()返回当前g，但是当在系统或信号堆栈上执行时，这将分别返回当前m的g0或gsignal。
+// 注释：要确定g是在用户堆栈还是系统堆栈上运行，可以使用getg() == getg().m.curg，相等表示在用户态堆栈，不相等表示在系统堆栈。
 func getg() *g
 
 // mcall switches from the g to the g0 stack and invokes fn(g),

@@ -446,7 +446,7 @@ type g struct {
 	param        unsafe.Pointer // 注释：wakeup唤醒时候传递的参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready() // passed parameter on wakeup
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
 	stackLock    uint32         // 注释：栈锁 // sigprof/scang lock; TODO: fold in to atomicstatus
-	goid         int64          // 注释：当前G的唯一标识，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
+	goid         int64          // 注释：当前G的唯一标识goroutine的ID，对开发者不可见，一般不使用此字段，Go开发团队未向外开放访问此字段
 	schedlink    guintptr       // 注释：指向全局运行队列中的下一个g（全局行队列中的g是个链表）
 	waitsince    int64          // 注释：g被阻塞的时间 // approx time when the g become blocked
 	waitreason   waitReason     // 注释：g被阻塞的原因 // if status==Gwaiting
@@ -515,15 +515,15 @@ type m struct {
 	divmod  uint32 // div/mod denominator for arm - known to liblink
 
 	// Fields not known to debuggers.
-	procid     uint64       // for debuggers, but offset not hard-coded // 注释：p的ID,用来调试时使用,一般是协成ID，初始化m时是线程ID
-	gsignal    *g           // signal-handling g                        // 注释：运行中的g(信号处理)
+	procid     uint64       // 注释：p的ID,用来调试时使用,一般是协成ID，初始化m时是线程ID // for debuggers, but offset not hard-coded
+	gsignal    *g           // 注释：运行中的g(信号处理) // signal-handling g
 	goSigStack gsignalStack // Go-allocated signal handling stack
 	sigmask    sigset       // storage for saved signal mask
 	// 注释：go在新建M时候设置FS寄存器的值为M.tls的地址，运行中每个M的FS寄存器都会指向对应的M.tls，内核调度线程时FS寄存器会跟着线程一起切换，这样go代码只需要访问FS寄存器就可以获取到线程本地的数据
 	tls      [6]uintptr // 注释：通过TLS实现m结构体对象与工作线程之间的绑定,第一个元素是g(程序当前运行的g) // thread-local storage (for x86 extern register)
 	mstartfn func()     // 注释：(起始函数)启动m（mstart）时执行的函数，如果不等于nil就执行
 
-	curg          *g       // current running goroutine // 注释：指向工作线程m正在运行的g结构体对象,要确定g是在用户堆栈还是系统堆栈上运行，可以使用if getg() == getg().m.curg {用户态堆栈} else {系统堆栈}
+	curg          *g       // 注释：指向工作线程m正在运行的g结构体对象,要确定g是在用户堆栈还是系统堆栈上运行，可以使用if getg() == getg().m.curg {用户态堆栈} else {系统堆栈} // current running goroutine
 	caughtsig     guintptr // goroutine running during fatal signal
 	p             puintptr // 注释：记录与当前工作线程绑定的p结构体对象 // attached p for executing go code (nil if not executing go code)
 	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定),其他M把P抢走后会设置这个字段告诉当前M如果执行时应该绑定其他的P
@@ -535,17 +535,17 @@ type m struct {
 	locks         int32  // 注释：大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
-	spinning      bool // 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work
-	blocked       bool // m is blocked on a note
+	spinning      bool // 注释：是否自旋，自旋就表示M正在找G来运行，表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work
+	blocked       bool // 注释：m是否被阻塞 // m is blocked on a note
 	newSigstack   bool // minit on C thread called sigaltstack
 	printlock     int8
-	incgo         bool   // m is executing a cgo call
+	incgo         bool   // 注释： m在执行cgo吗 // m is executing a cgo call
 	freeWait      uint32 // if == 0, safe to free g0 and delete m (atomic)
 	fastrand      [2]uint32
 	needextram    bool
 	traceback     uint8
-	ncgocall      uint64                        // number of cgo calls in total
-	ncgo          int32                         // number of cgo calls currently in progress
+	ncgocall      uint64                        // 注释：cgo调用的总数 // number of cgo calls in total
+	ncgo          int32                         // 注释：当前cgo调用的数目 // number of cgo calls currently in progress
 	cgoCallersUse uint32                        // if non-zero, cgoCallers in use temporarily
 	cgoCallers    *cgoCallers                   // cgo traceback if crashing in cgo call
 	doesPark      bool                          // 注释：是否使用park // non-P running threads: sysmon and newmHandoff never use .park
@@ -606,13 +606,13 @@ type m struct {
 
 // 注释：p结构体用于保存工作线程m执行go代码时所必需的资源，比如goroutine的运行队列，内存分配用到的缓存等等
 type p struct {
-	id          int32
+	id          int32      // 注释：id也是allp的数组下标
 	status      uint32     // one of pidle/prunning/...
 	link        puintptr   // 注释：空闲p链表的下一个p指针
-	schedtick   uint32     // 注释：调度计数器，每次调度的时候递增 // incremented on every scheduler call
-	syscalltick uint32     // incremented on every system call
+	schedtick   uint32     // 注释：用户调度计数器，每次调度的时候加1 // incremented on every scheduler call
+	syscalltick uint32     // 注释：系统调度计数器，每一次系统调用加1 // incremented on every system call
 	sysmontick  sysmontick // last tick observed by sysmon
-	m           muintptr   // back-link to associated m (nil if idle)
+	m           muintptr   // 回链到关联的m // back-link to associated m (nil if idle)
 	mcache      *mcache
 	pcache      pageCache
 	raceprocctx uintptr
@@ -638,7 +638,7 @@ type p struct {
 	// unit and eliminates the (potentially large) scheduling
 	// latency that otherwise arises from adding the ready'd
 	// goroutines to the end of the run queue.
-	runnext guintptr // 注释：g队列里的下一个指针
+	runnext guintptr // 注释：g队列里的下一个指针，下一个运行的g，优先级最高
 
 	// Available G's (status == Gdead)
 	// 注释：本地空G队列

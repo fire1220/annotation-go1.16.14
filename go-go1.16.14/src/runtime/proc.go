@@ -3277,9 +3277,9 @@ top:
 	// If about to schedule a not-normal goroutine (a GCworker or tracereader),
 	// wake a P if there is one.
 	if tryWakeP {
-		wakep()
+		wakep() // 注释：尝试再添加一个P以执行G
 	}
-	if gp.lockedm != 0 {
+	if gp.lockedm != 0 { // 注释：g被锁定,只在这个m上运行
 		// Hands off own p to the locked m,
 		// then blocks waiting for a new p.
 		startlockedm(gp)

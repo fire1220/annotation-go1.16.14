@@ -173,6 +173,8 @@ func noescape(p unsafe.Pointer) unsafe.Pointer {
 // This in turn calls cgocallbackg, which is where we'll find
 // pointer-declared arguments.
 func cgocallback(fn, frame, ctxt uintptr)
+
+// 注释：调用汇编函数：TEXT runtime·gogo(SB), NOSPLIT, $16-8
 func gogo(buf *gobuf)
 func gosave(buf *gobuf)
 

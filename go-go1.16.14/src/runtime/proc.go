@@ -1318,6 +1318,8 @@ func mstart1() {
 	// for terminating the thread.
 	// We're never coming back to mstart1 after we call schedule,
 	// so other calls can reuse the current frame.
+	// 注释getcallerpc()获取mstart1执行完的返回地址(返回的是mstart调用mstart1时被call指令压栈的返回地址)
+	// 注释：getcallersp()获取调用mstart1时的栈顶地址(函数返回的是调用mstart1函数之前mstart函数的栈顶地址)
 	save(getcallerpc(), getcallersp()) // 注释：把g0保存现场：保存PC和SP到G结构体上
 	asminit()                          // 注释：汇编初始化，AMD64没有代码执行(位置：TEXT runtime·asminit(SB),NOSPLIT,$0-0)
 	minit()                            // 注释：初始化m，主要是设置线程的备用信号堆栈和信号掩码

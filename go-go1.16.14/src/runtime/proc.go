@@ -2744,8 +2744,8 @@ top:
 			if sched.gcwaiting != 0 {
 				goto top
 			}
-			p2 := allp[enum.position()] // 注释：从所有的P数组中拿出一个P
-			if _p_ == p2 {              // 注释：判读是否是当前的P，跳过当前的P
+			p2 := allp[enum.position()] // 注释：所有的P数组中随机拿出一个P
+			if _p_ == p2 {              // 注释：如果拿出的P是当前P则跳过；判读是否是当前的P，跳过当前的P
 				continue
 			}
 
@@ -2797,6 +2797,7 @@ top:
 		goto top
 	}
 
+	// 注释： 实在找不到G，那就休眠(此时的M一定不是自旋状态)
 stop:
 
 	// We have nothing to do. If we're in the GC mark phase, can

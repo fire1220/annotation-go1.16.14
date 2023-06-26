@@ -100,6 +100,7 @@ func Store8(ptr *uint8, val uint8) // 注释：把val赋值给ptr（函数含义
 //go:noescape
 func Store64(ptr *uint64, val uint64)
 
+// 注释：原子操作，把val赋值到ptr指针对应的值里
 //go:noescape
 func StoreRel(ptr *uint32, val uint32)
 

@@ -4099,6 +4099,7 @@ func malg(stacksize int32) *g {
 // be able to adjust them and stack splits won't be able to copy them.
 // 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
 // 注释：fn.fn是runtime.main函数指针
+// 注释：新建G然后把G放到当前P里
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：用fn + PtrSize 获取第一个参数的地址，也就是argp
@@ -5911,32 +5912,35 @@ const randomizeScheduler = raceenabled
 // 注释：如果运行队列已满，runnext会将g放入全局队列
 // Executed only by the owner P.
 // 注释：仅提供P的所有者执行
+//
 // 注释：把全局的gp放到本地队列_p_里
+// 注释：把G放到P队列里，next表示是否下一个就马上处理gp
 func runqput(_p_ *p, gp *g, next bool) {
 	if randomizeScheduler && next && fastrand()%2 == 0 {
 		next = false
 	}
 
-	if next {
+	if next { // 注释：是否需要处理p.runnext字段
 	retryNext:
-		oldnext := _p_.runnext
-		if !_p_.runnext.cas(oldnext, guintptr(unsafe.Pointer(gp))) {
+		oldnext := _p_.runnext                                       // 注释：获取P的runnext值,旧值拿出来
+		if !_p_.runnext.cas(oldnext, guintptr(unsafe.Pointer(gp))) { // 注释：把gp放到下一个要处理的位置，（交换失败重试）原子比较交换数据(如果数据被串改则重试)
 			goto retryNext
 		}
-		if oldnext == 0 {
+		if oldnext == 0 { // 注释：如果之前(旧)下一个要处理的位置为空则直接返回。（如果G被执行的时候就会直接执行这里的gp）
 			return
 		}
 		// Kick the old runnext out to the regular run queue.
-		gp = oldnext.ptr()
+		gp = oldnext.ptr() // 注释：把之前(旧)的要处理的位置的G放到P队列尾部(新的要处理的G把旧的要处理的G挤掉，就的G会放到P队列里)
 	}
 
 retry:
-	h := atomic.LoadAcq(&_p_.runqhead) // load-acquire, synchronize with consumers
-	t := _p_.runqtail
+	// 注释：下面操作就是G放到本地P队列中，如果本地P队列满了就会放到全局P队列里，放本地P队列成功后返回，否则会把本地P的一半放到全局队列后，再把G放到本地P中
+	h := atomic.LoadAcq(&_p_.runqhead) // 注释：返回P队列头部下标（原子操作） // load-acquire, synchronize with consumers
+	t := _p_.runqtail // 注释：获取P队列尾部下标
 	// 注释：G的个数小于本地队列时（t-h代表本地的G个数），如果等于本地队列则需要把本地队列的G一半放到全局队列中去
-	if t-h < uint32(len(_p_.runq)) {
-		_p_.runq[t%uint32(len(_p_.runq))].set(gp) // 注释：取出队列尾下标指向的G（这里是用数组实现的队列）
-		atomic.StoreRel(&_p_.runqtail, t+1)       // store-release, makes the item available for consumption // 注释：尾加一（原子的）&_p_.runqtail++
+	if t-h < uint32(len(_p_.runq)) { // 注释：如果G个数小于数组容量，就直接更改尾部下标对应的为gp，然后移动尾部下标指向下一个空位置（len(数组)返回数组的容量）
+		_p_.runq[t%uint32(len(_p_.runq))].set(gp) // 注释：把尾部的下标位置设置为gp
+		atomic.StoreRel(&_p_.runqtail, t+1)       // 注释：（尾部永远指向下一个空位置）修改值为t+1（原子操作） // store-release, makes the item available for consumption
 		return
 	}
 	// 注释：将g和本地可运行队列中的一批工作放到全局队列中。

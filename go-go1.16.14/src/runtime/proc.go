@@ -757,9 +757,9 @@ func mcommoninit(mp *m, id int64) {
 		mp.id = mReserveID()
 	}
 
-	mp.fastrand[0] = uint32(int64Hash(uint64(mp.id), fastrandseed))
-	mp.fastrand[1] = uint32(int64Hash(uint64(cputicks()), ^fastrandseed))
-	if mp.fastrand[0]|mp.fastrand[1] == 0 {
+	mp.fastrand[0] = uint32(int64Hash(uint64(mp.id), fastrandseed))       // 注释：计算第一个随机数(利用M的ID和随机种子做的哈希)
+	mp.fastrand[1] = uint32(int64Hash(uint64(cputicks()), ^fastrandseed)) // 注释：计算第二个随机数(利用CPU时钟周期计数器和随机种子的按位取反做的哈希)
+	if mp.fastrand[0]|mp.fastrand[1] == 0 {                               // 注释：两个值都为0时，把第二个值设置为1
 		mp.fastrand[1] = 1
 	}
 
@@ -5973,6 +5973,7 @@ func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 	}
 	batch[n] = gp // 注释：把gp放在数组尾部(gp是要从本地队列迁移到全局队列的G)（这里的意思是如果把本地队列的一半放到全局队列的同时要把gp放到最后一位）
 
+	// 注释：开启数据竞争检测
 	if randomizeScheduler {
 		for i := uint32(1); i <= n; i++ {
 			j := fastrandn(i + 1)
@@ -5989,9 +5990,9 @@ func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 	q.tail.set(batch[n]) // 注释：链表的尾
 
 	// Now put the batch on global queue.
-	lock(&sched.lock)
-	globrunqputbatch(&q, int32(n+1)) // 注释：把链表加入到全局链表中，并设置全局链表的数量
-	unlock(&sched.lock)
+	lock(&sched.lock)                // 注释：加锁(全局调度器)
+	globrunqputbatch(&q, int32(n+1)) // 注释：把链表加入到全局链表中(全局调度器)，并设置全局链表的数量
+	unlock(&sched.lock)              // 注释：解锁(全局调度器)
 	return true
 }
 

@@ -32,12 +32,13 @@ const (
 	kindStruct
 	kindUnsafePointer
 
-	kindDirectIface = 1 << 5
+	kindDirectIface = 1 << 5 // 注释：标记接口 eface.data 存储的是值
 	kindGCProg      = 1 << 6
-	kindMask        = (1 << 5) - 1
+	kindMask        = (1 << 5) - 1 // 注释：类型掩码
 )
 
 // isDirectIface reports whether t is stored directly in an interface value.
+// 注释：判断接口类型的数据是否存储的是值(eface.data 是指针时返回false,是值时返回true)
 func isDirectIface(t *_type) bool {
 	return t.kind&kindDirectIface != 0
 }

@@ -5740,23 +5740,23 @@ func globrunqget(_p_ *p, max int32) *g {
 	}
 
 	// 注释：n代表从全局队列中拿去多少个G；全局G平均每个核数的数量
-	n := sched.runqsize/gomaxprocs + 1
-	if n > sched.runqsize {
+	n := sched.runqsize/gomaxprocs + 1 // 注释：计算单个核应该拿到的G的数量
+	if n > sched.runqsize {            // 注释：如果拿出的数量超过全局P队列的G的数据时，设置要拿的G的数据为全局P的数量
 		n = sched.runqsize
 	}
-	if max > 0 && n > max {
+	if max > 0 && n > max { // 注释：如果传入的自定义拿去的最大数量，如果全局P的G数据大于该设置时，设置拿去的数量为自定义的数量
 		n = max
 	}
-	// 注释：如果n大于本地队列的一半的时候
+	// 注释：如果n大于本地队列容量的一半的时候
 	if n > int32(len(_p_.runq))/2 {
-		n = int32(len(_p_.runq)) / 2 // 注释：拿走本地队列一半的数量
+		n = int32(len(_p_.runq)) / 2 // 注释：设置拿走G的数量为本地队列一半
 	}
 
-	sched.runqsize -= n // 注释：全局队列个数减少n
+	sched.runqsize -= n // 注释：(设置全局P队列数量为拿走之后的数据)全局队列个数减少n
 
-	gp := sched.runq.pop() // 注释：全局G队列出栈1个（准备执行，其余的放到本地队列里面）
+	gp := sched.runq.pop() // 注释：全局G队列出栈1个(取出第一个G，后面有返回该数据)（准备执行，其余的放到本地队列里面）
 	n--
-	for ; n > 0; n-- {
+	for ; n > 0; n-- { // 注释：剩下的放到本地P队列里
 		gp1 := sched.runq.pop()  // 注释：全局G队列循环出栈
 		runqput(_p_, gp1, false) // 注释：把其余的G放到本地P队列中
 	}
@@ -6199,7 +6199,7 @@ func (q *gQueue) pushBackAll(q2 gQueue) {
 
 // pop removes and returns the head of queue q. It returns nil if
 // q is empty.
-// 注释：G队列出栈，返回出栈的指针
+// 注释：G队列出栈(取出第一个G)，返回出栈的指针
 func (q *gQueue) pop() *g {
 	gp := q.head.ptr() // 注释：G队列的头指针
 	if gp != nil {

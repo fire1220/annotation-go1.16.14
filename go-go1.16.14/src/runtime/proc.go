@@ -1327,7 +1327,7 @@ func mstart1() {
 	// Install signal handlers; after minit so that minit can
 	// prepare the thread to be able to handle the signals.
 	if _g_.m == &m0 { // 注释：判断是否是第一个m（m0）,如果是则走特殊流程,m0也是正常的m，只是创建流程不一样
-		mstartm0()
+		mstartm0() // 注释：第一次M0的时候执行
 	}
 
 	// 注释：判断是否有起始任务函数；如果有m的起始任务函数，则执行，比如sysmon函数。对于m0来说，是没有mstartfn的
@@ -1348,6 +1348,7 @@ func mstart1() {
 // Write barriers are allowed here because we know the GC can't be
 // running yet, so they'll be no-ops.
 //
+// 注释：第一次M0的时候执行
 //go:yeswritebarrierrec
 func mstartm0() {
 	// Create an extra M for callbacks on threads not created by Go.
@@ -1357,7 +1358,7 @@ func mstartm0() {
 		cgoHasExtraM = true
 		newextram()
 	}
-	initsig(false)
+	initsig(false) // 注释：初始化信号
 }
 
 // mPark causes a thread to park itself - temporarily waking for

@@ -106,6 +106,7 @@ var signalsOK bool
 
 // Initialize signals.
 // Called by libpreinit so runtime may not be initialized.
+// 注释：初始化信号
 //go:nosplit
 //go:nowritebarrierrec
 func initsig(preinit bool) {

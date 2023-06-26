@@ -5943,18 +5943,19 @@ retry:
 		atomic.StoreRel(&_p_.runqtail, t+1)       // 注释：（尾部永远指向下一个空位置）修改值为t+1（原子操作） // store-release, makes the item available for consumption
 		return
 	}
-	// 注释：将g和本地可运行队列中的一批工作放到全局队列中。
+	// 注释：(把G放到全局队列尾部)（把G放到本地P队列一半的后面然后一起放到全局P尾部）将G和本地P队列的一半放到全局队列中，
 	if runqputslow(_p_, gp, h, t) {
 		return
 	}
 	// the queue is not full, now the put above must succeed
+	// 注释：如果把本地P队列数据放到全局队列失败的时候重试
 	goto retry
 }
 
 // Put g and a batch of work from local runnable queue on global queue.
 // 注释：将g和本地可运行队列中的一批工作放到全局队列中。
 // Executed only by the owner P.
-// 注释：把本地队列中的一半和gp一起放到全局队列中
+// 注释：把本地队列中的一半和gp一起放到全局队列尾部，gp放到队列最尾部
 func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 	var batch [len(_p_.runq)/2 + 1]*g // 注释：声明数组，本地队列的一半
 

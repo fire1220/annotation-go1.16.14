@@ -6038,21 +6038,22 @@ func runqputbatch(pp *p, q *gQueue, qsize int) {
 // 注释：在本地P中获取G，gp就是本地队列的首指针（第一个G的地址）
 func runqget(_p_ *p) (gp *g, inheritTime bool) {
 	// If there's a runnext, it's the next G to run.
+	// 注释：如果下一个要执行的G位置有数据就直接返回该G
 	for {
-		next := _p_.runnext
-		if next == 0 {
+		next := _p_.runnext // 注释：获取下一个要执行的G
+		if next == 0 {      // 注释：没有下一个要执行的G时跳出循环
 			break
 		}
 		// 注释：如果_p_指针等于next指针则把_p_设置为0,并返回next指针
 		if _p_.runnext.cas(next, 0) {
-			return next.ptr(), true
+			return next.ptr(), true // 注释：直接返回下一要执行的G
 		}
 	}
 
 	for {
 		// 注释：本地队列中的头,这里返回的时候指针(&_p_.runqhead)对应的值，（值是_p_.runq的数组下标）
-		h := atomic.LoadAcq(&_p_.runqhead) // load-acquire, synchronize with other consumers
-		t := _p_.runqtail                  // 注释：本地队列中的尾
+		h := atomic.LoadAcq(&_p_.runqhead) // 注释：取本地队列头下标值 // load-acquire, synchronize with other consumers
+		t := _p_.runqtail                  // 注释：取本地队列尾下标值
 		// 注释：如果头和尾相等，则说明本地队列里没有数据了
 		if t == h {
 			return nil, false

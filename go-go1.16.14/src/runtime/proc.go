@@ -6059,9 +6059,9 @@ func runqget(_p_ *p) (gp *g, inheritTime bool) {
 			return nil, false
 		}
 		// 注释：把h对应的下标赋值给gp,最终返回的是gp;"[h%uint32(len(_p_.runq))]" 是为了防止数组越界
-		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr() // 注释：出栈，更改头指针
+		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr() // 注释：(取出第一个)出栈
 		// 注释：_p_.runqhead 加 1
-		if atomic.CasRel(&_p_.runqhead, h, h+1) { // cas-release, commits consume
+		if atomic.CasRel(&_p_.runqhead, h, h+1) { // 注释：(头下标加1)更改本地队列头下标值 // cas-release, commits consume
 			return gp, false
 		}
 	}

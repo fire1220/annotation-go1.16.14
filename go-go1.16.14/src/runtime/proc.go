@@ -760,7 +760,7 @@ func mcommoninit(mp *m, id int64) {
 	mp.fastrand[0] = uint32(int64Hash(uint64(mp.id), fastrandseed))       // 注释：计算第一个随机数(利用M的ID和随机种子做的哈希)
 	mp.fastrand[1] = uint32(int64Hash(uint64(cputicks()), ^fastrandseed)) // 注释：计算第二个随机数(利用CPU时钟周期计数器和随机种子的按位取反做的哈希)
 	if mp.fastrand[0]|mp.fastrand[1] == 0 {                               // 注释：两个值都为0时，把第二个值设置为1
-		mp.fastrand[1] = 1
+		mp.fastrand[1] = 1 // 注释：两个都为0时，这个设置为1
 	}
 
 	mpreinit(mp)
@@ -5900,7 +5900,7 @@ func runqempty(_p_ *p) bool {
 // With the randomness here, as long as the tests pass
 // consistently with -race, they shouldn't have latent scheduling
 // assumptions.
-const randomizeScheduler = raceenabled
+const randomizeScheduler = raceenabled // 注释：随机打乱P队列的G位置
 
 // runqput tries to put g on the local runnable queue.
 // 注释：runqput尝试将g放入本地可运行队列
@@ -5973,11 +5973,11 @@ func runqputslow(_p_ *p, gp *g, h, t uint32) bool {
 	}
 	batch[n] = gp // 注释：把gp放在数组尾部(gp是要从本地队列迁移到全局队列的G)（这里的意思是如果把本地队列的一半放到全局队列的同时要把gp放到最后一位）
 
-	// 注释：开启数据竞争检测
+	// 注释：随机打乱P队列里G的位置（开启数据竞争检测时执行）
 	if randomizeScheduler {
 		for i := uint32(1); i <= n; i++ {
-			j := fastrandn(i + 1)
-			batch[i], batch[j] = batch[j], batch[i]
+			j := fastrandn(i + 1)                   // 注释：随机数
+			batch[i], batch[j] = batch[j], batch[i] // 注释：打乱数据位置
 		}
 	}
 

@@ -542,7 +542,7 @@ type m struct {
 	printlock     int8
 	incgo         bool      // 注释： m在执行cgo吗 // m is executing a cgo call
 	freeWait      uint32    // if == 0, safe to free g0 and delete m (atomic)
-	fastrand      [2]uint32 // 注释：快速随机数的基础数，程序初始化（schedinit）或创建M（allocm）时设置，随机数是基于这两个数计算出来的，计算完成后重新回填到这两个数里
+	fastrand      [2]uint32 // 注释：(快速随机数时使用)快速随机数的基础数，程序初始化（schedinit）或创建M（allocm）时设置，随机数是基于这两个数计算出来的，计算完成后重新回填到这两个数里
 	needextram    bool
 	traceback     uint8
 	ncgocall      uint64                        // 注释：cgo调用的总数 // number of cgo calls in total

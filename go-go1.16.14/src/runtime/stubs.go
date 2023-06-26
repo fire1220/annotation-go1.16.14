@@ -120,6 +120,7 @@ func reflect_memmove(to, from unsafe.Pointer, n uintptr) {
 // exported value for testing
 var hashLoad = float32(loadFactorNum) / float32(loadFactorDen)
 
+// 注释：快速返回随机数
 //go:nosplit
 func fastrand() uint32 {
 	mp := getg().m
@@ -128,11 +129,11 @@ func fastrand() uint32 {
 	// Xorshift paper: https://www.jstatsoft.org/article/view/v008i14/xorshift.pdf
 	// This generator passes the SmallCrush suite, part of TestU01 framework:
 	// http://simul.iro.umontreal.ca/testu01/tu01.html
-	s1, s0 := mp.fastrand[0], mp.fastrand[1]
-	s1 ^= s1 << 17
-	s1 = s1 ^ s0 ^ s1>>7 ^ s0>>16
-	mp.fastrand[0], mp.fastrand[1] = s0, s1
-	return s0 + s1
+	s1, s0 := mp.fastrand[0], mp.fastrand[1] // 注释：获取两个值
+	s1 ^= s1 << 17                           // 注释：向右移动17位之后亦或(扩大，利用亦或加密)
+	s1 = s1 ^ s0 ^ s1>>7 ^ s0>>16            // 注释：多次亦或处理（缩小，利用亦或加密）
+	mp.fastrand[0], mp.fastrand[1] = s0, s1  // 注释：重新定义这两个值
+	return s0 + s1                           // 注释：返回两个数的和
 }
 
 //go:nosplit

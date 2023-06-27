@@ -57,6 +57,7 @@ func mcall(fn func(*g))
 //	})
 //	... use x ...
 //
+// 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G），汇编位置：TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 //go:noescape
 func systemstack(fn func())
 
@@ -256,9 +257,11 @@ func publicationBarrier()
 // A general rule is that the result of getcallersp should be used
 // immediately and can only be passed to nosplit functions.
 
+// 注释：返回对所在函数的调用，上面案例中有解释
 //go:noescape
 func getcallerpc() uintptr
 
+// 注释：返回对所在函数的返回，上面案例中有解释
 //go:noescape
 func getcallersp() uintptr // implemented as an intrinsic on all platforms
 

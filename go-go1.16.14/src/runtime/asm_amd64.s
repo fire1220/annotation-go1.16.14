@@ -350,62 +350,63 @@ TEXT runtime·systemstack_switch(SB), NOSPLIT, $0-0
 	RET
 
 // func systemstack(fn func())
+// 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G）
 TEXT runtime·systemstack(SB), NOSPLIT, $0-8
-	MOVQ	fn+0(FP), DI	// DI = fn  // 注释：获取一个入参（闭包函数）
-	get_tls(CX) // 注释：获取m的tls数据（线程的本地私有数据）(第一个元素就是g)(程序当前运行的g)
-	MOVQ	g(CX), AX	// AX = g // 注释：获取g
-	MOVQ	g_m(AX), BX	// BX = m // 注释：获取g里的m
+	MOVQ	fn+0(FP), DI	                    // 注释：获取一个入参（闭包函数的地址） // DI = fn
+	get_tls(CX)                                 // 注释：获取m的tls数据（线程的本地私有数据）(第一个元素就是存放G的地址)(程序当前运行的g会到这里找)
+	MOVQ	g(CX), AX	                        // 注释：(G)获取g结构体 // AX = g
+	MOVQ	g_m(AX), BX	                        // 注释：(M)获取g.m // BX = m
 
-	CMPQ	AX, m_gsignal(BX) // 注释：比较g和m.gsignal,如果相等不切换
-	JEQ	noswitch
+	CMPQ	AX, m_gsignal(BX)                   // 注释：比较g和m.gsignal
+	JEQ	noswitch                                // 注释：如果相等跳转(执行)noswitch，不触发系统切换
 
-	MOVQ	m_g0(BX), DX	// DX = g0
-	CMPQ	AX, DX // 注释：比较g和m.g0，如果相等不切换
-	JEQ	noswitch
+	MOVQ	m_g0(BX), DX	                    // 注释：(g0)把m.g0 复制到DX里 // DX = g0
+	CMPQ	AX, DX                              // 注释：比较g和m.g0
+	JEQ	noswitch                                // 注释：如果相等跳转(执行)noswitch，不触发系统切换
 
-	CMPQ	AX, m_curg(BX) // 注释：(g是非g0的情况下)比较g和m.curg(当前的g)，不相等时异常
-	JNE	bad
+	CMPQ	AX, m_curg(BX)                      // 注释：比较g和m.curg(当前的g)
+	JNE	bad                                     // 注释：如果不相等跳转(执行)bad，异常
 
 	// switch stacks
 	// save our state in g->sched. Pretend to
 	// be systemstack_switch if the G stack is scanned.
-	MOVQ	$runtime·systemstack_switch(SB), SI // 注释：栈切换
-	MOVQ	SI, (g_sched+gobuf_pc)(AX) // 注释：栈切换,备份数据到g.sched.pc(gobuf里的pc)
-	MOVQ	SP, (g_sched+gobuf_sp)(AX) // 注释：栈切换,备份数据到g.sched.sp(gobuf里的sp)
-	MOVQ	AX, (g_sched+gobuf_g)(AX)  // 注释：栈切换,备份数据到g.sched.g(gobuf里的g)(当前运行的g地址)
-	MOVQ	BP, (g_sched+gobuf_bp)(AX) // 注释：栈切换,备份数据到g.sched.bp(gobuf里的bp)
+	MOVQ	$runtime·systemstack_switch(SB), SI // 注释：开始保存现场
+	MOVQ	SI, (g_sched+gobuf_pc)(AX)          // 注释：备份数据到g.sched.pc(gobuf里的pc)(指令计数器)
+	MOVQ	SP, (g_sched+gobuf_sp)(AX)          // 注释：备份数据到g.sched.sp(gobuf里的sp)(SP存放函数参数访问头位置(基指针，栈低))
+	MOVQ	AX, (g_sched+gobuf_g)(AX)           // 注释：备份数据到g.sched.g(gobuf里的g)(当前运行的g地址)
+	MOVQ	BP, (g_sched+gobuf_bp)(AX)          // 注释：备份数据到g.sched.bp(gobuf里的bp)
 
-	// switch to g0
-	MOVQ	DX, g(CX) // 注释：把g0切换到当前g上
-	MOVQ	(g_sched+gobuf_sp)(DX), BX
-	// make it look like mstart called systemstack on g0, to stop traceback // 注释：用汇编模拟函数调用
-	SUBQ	$8, BX                  // 注释：g0预扩容(扩容还没有被执行)
-	MOVQ	$runtime·mstart(SB), DX // 注释：把运行的mstart指针赋值给寄存器DX
-	MOVQ	DX, 0(BX)               // 注释：把mstart变成栈顶
-	MOVQ	BX, SP                  // 注释：赋给栈上
+	// switch to g0                             // 注释：下面是把g0切换到g上
+	MOVQ	DX, g(CX)                           // 注释：把g0切换到当前g上(上面已经把G保存到g.sched里了（保存现场）)
+	MOVQ	(g_sched+gobuf_sp)(DX), BX          // 注释：复制g0的参数到BX（SP存放函数参数访问头位置(基指针，栈低)）
+	// make it look like mstart called systemstack on g0, to stop traceback // 注释：下面是用汇编模拟函数调用
+	SUBQ	$8, BX                              // 注释：g0的栈(SP)扩容(扩容还没有被执行);BX -= 8; 结果是SP-=8
+	MOVQ	$runtime·mstart(SB), DX             // 注释：把运行的mstart指针赋值给寄存器DX
+	MOVQ	DX, 0(BX)                           // 注释：把mstart放到0(SP)位置（扩容后0(SP)是空指针;8(SP)是g0.gobuf_sp的指针）
+	MOVQ	BX, SP                              // 注释：g0.gobuf_sp切换到栈上，后面可以执行该栈(模拟函数调用)
 
-	// call target function
-	MOVQ	DI, DX    // 注释：DI是闭包函数赋值给寄存器DX
-	MOVQ	0(DI), DI // 注释：0(DI)是寄存器PC的指令
-	CALL	DI        // 注释：调用PC指令(相当于调用闭包里的函数)
+	// call target function                     // 注释：下面是调用闭包指令
+	MOVQ	DI, DX                              // 注释：闭包函数地址(DI)赋值给DX寄存器
+	MOVQ	0(DI), DI                           // 注释：闭包函数体指令PC(0(DI))赋值到DI上（就是把闭包体的指令提取出来）
+	CALL	DI                                  // 注释：调用闭包体指令（调用PC指令(相当于调用闭包里的函数)）
 
-	// switch back to g
-	get_tls(CX)
-	MOVQ	g(CX), AX                  // 注释：获取当前g（是g0）
-	MOVQ	g_m(AX), BX                // 注释：取g0.m
-	MOVQ	m_curg(BX), AX             // 注释：取m.curg(这里是业务的g)
-	MOVQ	AX, g(CX)                  // 注释：切换到业务的g
-	MOVQ	(g_sched+gobuf_sp)(AX), SP // 注释：回复SP （把业务的sp放回来）
-	MOVQ	$0, (g_sched+gobuf_sp)(AX) // 注释：清除业务g备份的sp
-	RET
+	// switch back to g                         // 注释：下面是把g切换回来
+	get_tls(CX)                                 // 注释：(g0)获取TLS数据(FS寄存器)（里面存储着G的指针）到CX寄存器里
+	MOVQ	g(CX), AX                           // 注释：把G结构体（g0）赋值到AX里
+	MOVQ	g_m(AX), BX                         // 注释：(M)取g0.m
+	MOVQ	m_curg(BX), AX                      // 注释：取m.curg(这里是业务的g)（上面有判断m.curg一定等于业务，否则bad）
+	MOVQ	AX, g(CX)                           // 注释：切换到业务的g
+	MOVQ	(g_sched+gobuf_sp)(AX), SP          // 注释：恢复SP （把业务的sp放回来）(业务G的参数赋值到栈的SP上)(SP存放函数参数访问头位置（基指针，栈低）)
+	MOVQ	$0, (g_sched+gobuf_sp)(AX)          // 注释：清除业务g备份的sp
+	RET                                         // 注释：返回到上层函数继续执行
 
-noswitch:
+noswitch:                              // 注释：不发生系统切换，直接执行闭包函数
 	// already on m stack; tail call the function
 	// Using a tail call here cleans up tracebacks since we won't stop
 	// at an intermediate systemstack.
-	MOVQ	DI, DX
-	MOVQ	0(DI), DI
-	JMP	DI
+	MOVQ	DI, DX                     // 注释：把闭包函数指针赋值给寄存器DX
+	MOVQ	0(DI), DI                  // 注释：闭包函数体的执行PC指令放到DI里，等待执行
+	JMP	DI                             // 注释：执行闭包函数体的指令
 
 bad:
 	// Bad: g is not gsignal, not g0, not curg. What is it?

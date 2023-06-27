@@ -4100,14 +4100,14 @@ func malg(stacksize int32) *g {
 // be able to adjust them and stack splits won't be able to copy them.
 // 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
 // 注释：fn.fn是runtime.main函数指针
-// 注释：(new procedure)新建G然后把G放到当前P里(所有G的起点都在这里)
+// 注释：(new procedure)新建G然后把G放到当前P里
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
-	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：用fn + PtrSize 获取第一个参数的地址，也就是argp
-	gp := getg()                                  // 注释：获取当前运行的g
-	pc := getcallerpc()                           // 注释：用siz - 8 获取pc地址
+	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：fn向后扩大一个指针大小，存放P时使用（用fn + PtrSize 获取第一个参数的地址，也就是argp）
+	gp := getg()                                  // 注释：获取当前TLS数据位置指针（用来存储G的指针的）
+	pc := getcallerpc()                           // 注释：调用当前函数(newproc)的地址(PC)
 	// 注释：用g0的栈创建G对象
-	systemstack(func() { // 注释：切换到系统堆栈（系统堆栈指的就是g0）
+	systemstack(func() { // 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G）
 		newg := newproc1(fn, argp, siz, gp, pc) // 注释：用g0的栈创建G对象
 
 		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址
@@ -4127,18 +4127,19 @@ func newproc(siz int32, fn *funcval) {
 // This must run on the system stack because it's the continuation of
 // newproc, which cannot split the stack.
 //
-// 注释：fn.fn是runtime.main函数指针
+// 注释：建立一个G(所有新建G都是从这里出去的)
+// 注释：参数fn.fn是runtime.main函数指针；argp是P的指针；narg是参数argp的大小，可以设置为0；
 //go:systemstack
 func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerpc uintptr) *g {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取tls(FS寄存器的值)里的G的地址
 
 	if fn == nil {
 		_g_.m.throwing = -1 // do not dump full stacks
 		throw("go of nil func value")
 	}
-	acquirem() // disable preemption because it can be holding p in a local var
+	acquirem() // 注释：获取M并加锁，这里没有用到返回值，所以是单纯的加锁，禁止被抢占 // disable preemption because it can be holding p in a local var
 	siz := narg
-	siz = (siz + 7) &^ 7
+	siz = (siz + 7) &^ 7 // 注释：内存对齐，8位向上取整（最小单位是8位）
 
 	// We could allocate a larger initial stack if necessary.
 	// Not worth it: this is almost always an error.

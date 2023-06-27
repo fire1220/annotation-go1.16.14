@@ -198,6 +198,7 @@ type note struct {
 type funcval struct {
 	fn uintptr
 	// variable-size, fn-specific data here
+	// 注释：这里在newproc中定义了一个指针的大小用来存储P指针
 }
 
 // 注释：带方法签名的接口在运行时的具体结构体

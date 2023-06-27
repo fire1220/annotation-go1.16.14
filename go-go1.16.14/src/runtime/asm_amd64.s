@@ -371,10 +371,10 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	// save our state in g->sched. Pretend to
 	// be systemstack_switch if the G stack is scanned.
 	MOVQ	$runtime·systemstack_switch(SB), SI // 注释：开始保存现场
-	MOVQ	SI, (g_sched+gobuf_pc)(AX)          // 注释：备份数据到g.sched.pc(gobuf里的pc)(指令计数器)
-	MOVQ	SP, (g_sched+gobuf_sp)(AX)          // 注释：备份数据到g.sched.sp(gobuf里的sp)(SP存放函数参数访问头位置(基指针，栈低))
-	MOVQ	AX, (g_sched+gobuf_g)(AX)           // 注释：备份数据到g.sched.g(gobuf里的g)(当前运行的g地址)
-	MOVQ	BP, (g_sched+gobuf_bp)(AX)          // 注释：备份数据到g.sched.bp(gobuf里的bp)
+	MOVQ	SI, (g_sched+gobuf_pc)(AX)          // 注释：备份数据到g.sched.pc(g.gobuf_pc)(指令计数器)
+	MOVQ	SP, (g_sched+gobuf_sp)(AX)          // 注释：备份数据到g.sched.sp(g.gobuf_sp)(SP存放函数参数访问头位置(基指针，栈低))
+	MOVQ	AX, (g_sched+gobuf_g)(AX)           // 注释：备份数据到g.sched.g(g.gobuf_g)(当前运行的g地址)
+	MOVQ	BP, (g_sched+gobuf_bp)(AX)          // 注释：备份数据到g.sched.bp(g.gobuf_bp)
 
 	// switch to g0                             // 注释：下面是把g0切换到g上
 	MOVQ	DX, g(CX)                           // 注释：把g0切换到当前g上(上面已经把G保存到g.sched里了（保存现场）)

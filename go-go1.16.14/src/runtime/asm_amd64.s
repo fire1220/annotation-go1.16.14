@@ -11,6 +11,7 @@
 // internal linking. This is the entry point for the program from the
 // kernel for an ordinary -buildmode=exe program. The stack holds the
 // number of arguments and the C-style argv.
+// 注释：程序真正的入口
 TEXT _rt0_amd64(SB),NOSPLIT,$-8
 	MOVQ	0(SP), DI	// argc
 	LEAQ	8(SP), SI	// argv
@@ -228,8 +229,8 @@ ok:
     // 注释：创建一个goroutine，然后开启执行程序
 	// create a new goroutine to start program
 	MOVQ	$runtime·mainPC(SB), AX	 // 注释：(runtime.main函数指针放到AX里)访问全局变量runtime·mainPC，内容是runtime.main函数指针	// entry
-	PUSHQ	AX                       // 注释：入栈，把AX作为下个函数第2个参数，相当于subq $8,SP；movq AX,SP
-	PUSHQ	$0                       // 注释：入栈，把0作为下个函数第1个参数，相当于subq $8,SP；movq $0,SP		// arg size
+	PUSHQ	AX                       // 注释：参数2入栈(值是&runtime.main)，把AX作为下个函数第2个参数，相当于subq $8,SP；movq AX,SP
+	PUSHQ	$0                       // 注释：参数1入栈，把0作为下个函数第1个参数，相当于subq $8,SP；movq $0,SP		// arg size
 	CALL	runtime·newproc(SB)      // 注释：新建一个g，也叫main goroutine，它的任务函数是runtime.main函数，建好后插入m0绑定的p的本地队列
 	POPQ	AX
 	POPQ	AX

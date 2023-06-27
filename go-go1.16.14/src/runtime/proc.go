@@ -4100,7 +4100,7 @@ func malg(stacksize int32) *g {
 // be able to adjust them and stack splits won't be able to copy them.
 // 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
 // 注释：fn.fn是runtime.main函数指针
-// 注释：新建G然后把G放到当前P里
+// 注释：(new procedure)新建G然后把G放到当前P里(所有G的起点都在这里)
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：用fn + PtrSize 获取第一个参数的地址，也就是argp

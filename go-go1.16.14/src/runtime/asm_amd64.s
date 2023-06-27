@@ -376,7 +376,7 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	MOVQ	AX, (g_sched+gobuf_g)(AX)           // 注释：备份数据到g.sched.g(g.gobuf_g)(当前运行的g地址)
 	MOVQ	BP, (g_sched+gobuf_bp)(AX)          // 注释：备份数据到g.sched.bp(g.gobuf_bp)
 
-	// switch to g0                             // 注释：下面是把g0切换到g上
+	// switch to g0                             // 注释：下面是把g0切换到g上(g0的备份的栈SP切换到当前运行的栈SP)
 	MOVQ	DX, g(CX)                           // 注释：把g0切换到当前g上(上面已经把G保存到g.sched里了（保存现场）)
 	MOVQ	(g_sched+gobuf_sp)(DX), BX          // 注释：复制g0的参数到BX（SP存放函数参数访问头位置(基指针，栈低)）
 	// make it look like mstart called systemstack on g0, to stop traceback // 注释：下面是用汇编模拟函数调用

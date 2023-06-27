@@ -4139,7 +4139,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	}
 	acquirem() // 注释：获取M并加锁，这里没有用到返回值，所以是单纯的加锁，禁止被抢占 // disable preemption because it can be holding p in a local var
 	siz := narg
-	siz = (siz + 7) &^ 7 // 注释：内存对齐，8位向上取整（最小单位是8位）
+	siz = (siz + 7) &^ 7 // 注释：(永远保证是8的倍数)内存对齐，8位向上取整（最小单位是8位）
 
 	// We could allocate a larger initial stack if necessary.
 	// Not worth it: this is almost always an error.

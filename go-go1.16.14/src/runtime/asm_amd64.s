@@ -392,7 +392,7 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 
 	// switch back to g                         // 注释：下面是把g切换回来
 	get_tls(CX)                                 // 注释：(g.m.g0)获取TLS数据(FS寄存器)（里面存储着G的指针）到CX寄存器里(这里只是存放G的一个指针)
-	MOVQ	g(CX), AX                           // 注释：把G结构体（g0）赋值到AX里
+	MOVQ	g(CX), AX                           // 注释：(g0)把g0结构体赋值到AX里
 	MOVQ	g_m(AX), BX                         // 注释：(M)取g.m.g0.m
 	MOVQ	m_curg(BX), AX                      // 注释：取g.m.g0.m.curg(这里是业务的g)（上面有判断m.curg一定等于业务，否则bad）
 	MOVQ	AX, g(CX)                           // 注释：把G切换到TLS(FS)对应的指针里

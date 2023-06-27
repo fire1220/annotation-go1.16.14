@@ -383,7 +383,7 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	SUBQ	$8, BX                              // 注释：g0的栈(SP)扩容(扩容还没有被执行);BX -= 8; 结果是SP-=8
 	MOVQ	$runtime·mstart(SB), DX             // 注释：把运行的mstart指针赋值给寄存器DX
 	MOVQ	DX, 0(BX)                           // 注释：把mstart放到0(SP)位置（扩容后0(SP)是空指针;8(SP)是g0.gobuf_sp的指针）(下面会启动线程，并且启动调度系统)
-	MOVQ	BX, SP                              // 注释：g0.gobuf_sp切换到栈上，后面可以执行该栈(模拟函数调用)(下面启动线程，并且启动调度系统)
+	MOVQ	BX, SP                              // 注释：（把g0的SP替换当前SP）g0.gobuf_sp切换到栈上，后面可以执行该栈(模拟函数调用)(下面启动线程，并且启动调度系统)
 
 	// call target function                     // 注释：下面是调用闭包指令
 	MOVQ	DI, DX                              // 注释：闭包函数地址(DI)赋值给DX寄存器

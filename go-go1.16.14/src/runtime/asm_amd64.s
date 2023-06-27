@@ -398,7 +398,7 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	MOVQ	AX, g(CX)                           // 注释：切换到业务的g
 	MOVQ	(g_sched+gobuf_sp)(AX), SP          // 注释：恢复SP （把业务的sp放回来）(业务G的参数赋值到栈的SP上)(SP存放函数参数访问头位置（基指针，栈低）)
 	MOVQ	$0, (g_sched+gobuf_sp)(AX)          // 注释：清除业务g备份的sp
-	RET                                         // 注释：返回到上层函数继续执行
+	RET                                         // 注释：返回
 
 noswitch:                              // 注释：不发生系统切换，直接执行闭包函数
 	// already on m stack; tail call the function

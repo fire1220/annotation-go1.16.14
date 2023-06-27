@@ -357,10 +357,10 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	MOVQ	g(CX), AX	                        // 注释：(G)获取g结构体 // AX = g
 	MOVQ	g_m(AX), BX	                        // 注释：(M)获取g.m // BX = m
 
-	CMPQ	AX, m_gsignal(BX)                   // 注释：比较g和m.gsignal
+	CMPQ	AX, m_gsignal(BX)                   // 注释：比较g和g.m.gsignal
 	JEQ	noswitch                                // 注释：如果相等跳转(执行)noswitch，不触发系统切换
 
-	MOVQ	m_g0(BX), DX	                    // 注释：(g0)把m.g0 复制到DX里 // DX = g0
+	MOVQ	m_g0(BX), DX	                    // 注释：(g0)把g.m.g0 复制到DX里 // DX = g0
 	CMPQ	AX, DX                              // 注释：比较g和g.m.g0
 	JEQ	noswitch                                // 注释：如果相等跳转(执行)noswitch，不触发系统切换
 
@@ -394,7 +394,7 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	get_tls(CX)                                 // 注释：(g.m.g0)获取TLS数据(FS寄存器)（里面存储着G的指针）到CX寄存器里(这里只是存放G的一个指针)
 	MOVQ	g(CX), AX                           // 注释：把G结构体（g0）赋值到AX里
 	MOVQ	g_m(AX), BX                         // 注释：(M)取g.m.g0.m
-	MOVQ	m_curg(BX), AX                      // 注释：取g0.m.curg(这里是业务的g)（上面有判断m.curg一定等于业务，否则bad）
+	MOVQ	m_curg(BX), AX                      // 注释：取g.m.g0.m.curg(这里是业务的g)（上面有判断m.curg一定等于业务，否则bad）
 	MOVQ	AX, g(CX)                           // 注释：把G切换到TLS(FS)对应的指针里
 	MOVQ	(g_sched+gobuf_sp)(AX), SP          // 注释：恢复SP （把业务的sp放回来）(业务G的参数赋值到栈的SP上)(SP存放函数参数访问头位置（基指针，栈低）)
 	MOVQ	$0, (g_sched+gobuf_sp)(AX)          // 注释：清除业务g备份的sp

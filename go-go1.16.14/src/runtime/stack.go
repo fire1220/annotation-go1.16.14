@@ -67,10 +67,10 @@ const (
 	// to each stack below the usual guard area for OS-specific
 	// purposes like signal handling. Used on Windows, Plan 9,
 	// and iOS because they do not use a separate stack.
-	_StackSystem = sys.GoosWindows*512*sys.PtrSize + sys.GoosPlan9*512 + sys.GoosIos*sys.GoarchArm64*1024
+	_StackSystem = sys.GoosWindows*512*sys.PtrSize + sys.GoosPlan9*512 + sys.GoosIos*sys.GoarchArm64*1024 // 注释：额外的系统栈空间大小，每个操作系统大小不同
 
 	// The minimum size of stack used by Go code
-	_StackMin = 2048
+	_StackMin = 2048 // 注释：栈最小空间大小。（G的空间大小是 round2(_StackSystem + _StackMin)二进制最小容纳(_StackSystem+_StackMin)的2次幂对应的值）
 
 	// The minimum stack size to allocate.
 	// The hackery here rounds FixedStack0 up to a power of 2.
@@ -92,7 +92,7 @@ const (
 
 	// The stack guard is a pointer this many bytes above the
 	// bottom of the stack.
-	_StackGuard = 928*sys.StackGuardMultiplier + _StackSystem
+	_StackGuard = 928*sys.StackGuardMultiplier + _StackSystem // 注释：G栈保护的额为空间，用来确定爆栈警告的栈指针时使用
 
 	// After a stack split check the SP is allowed to be this
 	// many bytes below the stack guard. This saves an instruction
@@ -918,6 +918,7 @@ func copystack(gp *g, newsize uintptr) {
 }
 
 // round x up to a power of 2.
+// 注释：二进制最小容纳x的2次幂对应的值
 func round2(x int32) int32 {
 	s := uint(0)
 	for 1<<s < x {

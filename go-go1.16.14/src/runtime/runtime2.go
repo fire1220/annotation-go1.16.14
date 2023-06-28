@@ -436,7 +436,7 @@ type g struct {
 	// 注释：打印对应的汇编会看到：CMPQ	SP, 16(CX) 如果小于0则执行 JLS L_MORE_STK 跳转位置执行CALL runtime.morestack_noctxt(SB)进行栈扩容，扩容后跳回L_BEGIN位置重新执行栈空间检查
 	// 注释：如果栈空间大小依然不够则再重复扩容一次，知道栈大小够用为止
 	stackguard0 uintptr // 注释：爆栈前警戒线（所在位置是G偏移16字节）。Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
-	stackguard1 uintptr // 注释：C 代码检查栈空间低于这个值会扩张。 // offset known to liblink
+	stackguard1 uintptr // 注释：C代码检查栈空间低于这个值会扩张。 // offset known to liblink
 
 	_panic       *_panic        // 注释：当前G的panic的数据指针(panic的链表，_panic.link 链接) // innermost panic - offset known to liblink
 	_defer       *_defer        // 注释：当前G的延迟调用的数据指针(单向链表，deferreturn会获取链表数据) // innermost defer

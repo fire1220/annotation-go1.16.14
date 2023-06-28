@@ -4069,20 +4069,21 @@ func syscall_runtime_AfterExec() {
 }
 
 // Allocate a new g, with a stack big enough for stacksize bytes.
+// 注释：获取一个G，并且开辟内存空间，开辟内存空间时切换到g0系统栈上开辟的
 func malg(stacksize int32) *g {
-	newg := new(g)
+	newg := new(g) // 注释：获取一个G结构的指针
 	if stacksize >= 0 {
-		stacksize = round2(_StackSystem + stacksize)
+		stacksize = round2(_StackSystem + stacksize) // 注释：二进制最小容纳_StackSystem + stacksize的值
 		systemstack(func() {
-			newg.stack = stackalloc(uint32(stacksize))
+			newg.stack = stackalloc(uint32(stacksize)) // 注释：创建G栈的头和尾指针
 		})
-		newg.stackguard0 = newg.stack.lo + _StackGuard
-		newg.stackguard1 = ^uintptr(0)
+		newg.stackguard0 = newg.stack.lo + _StackGuard // 注释：确定爆栈警告指针地址
+		newg.stackguard1 = ^uintptr(0)                 // 注释：指针最大值
 		// Clear the bottom word of the stack. We record g
 		// there on gsignal stack during VDSO on ARM and ARM64.
-		*(*uintptr)(unsafe.Pointer(newg.stack.lo)) = 0
+		*(*uintptr)(unsafe.Pointer(newg.stack.lo)) = 0 // 注释：低地址存储的值清空
 	}
-	return newg
+	return newg // 注释：返回存在栈空间的G
 }
 
 // Create a new g running fn with siz bytes of arguments.
@@ -4142,8 +4143,8 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		_g_.m.throwing = -1 // do not dump full stacks
 		throw("go of nil func value")
 	}
-	acquirem() // 注释：获取M并加锁，这里没有用到返回值，所以是单纯的加锁，禁止被抢占 // disable preemption because it can be holding p in a local var
-	siz := narg
+	acquirem()           // 注释：获取M并加锁，这里没有用到返回值，所以是单纯的加锁，禁止被抢占 // disable preemption because it can be holding p in a local var
+	siz := narg          // 注释：初始堆栈大小，一般情况下是0；
 	siz = (siz + 7) &^ 7 // 注释：(永远保证是8的倍数)内存对齐，8位向上取整（最小单位是8位）
 
 	// We could allocate a larger initial stack if necessary.
@@ -4154,9 +4155,9 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		throw("newproc: function arguments too large for new goroutine")
 	}
 
-	_p_ := _g_.m.p.ptr()
-	newg := gfget(_p_)
-	if newg == nil {
+	_p_ := _g_.m.p.ptr() // 注释：获取当前G对应的P
+	newg := gfget(_p_)   // 注释：获取一个空的G
+	if newg == nil {     // 注释：如果没有取到，则创建一个
 		newg = malg(_StackMin)
 		casgstatus(newg, _Gidle, _Gdead)
 		allgadd(newg) // publishes with a g->status of Gdead so GC scanner doesn't look at uninitialized stack.

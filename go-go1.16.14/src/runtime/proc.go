@@ -513,8 +513,8 @@ var (
 	// Access via the slice is protected by allglock or stop-the-world.
 	// Readers that cannot take the lock may (carefully!) use the atomic
 	// variables below.
-	allglock mutex
-	allgs    []*g // 注释：保存所有的g的数组
+	allglock mutex // 注释：全局G的切片的锁
+	allgs    []*g  // 注释：保存所有的g的切片
 
 	// allglen and allgptr are atomic variables that contain len(allg) and
 	// &allg[0] respectively. Proper ordering depends on totally-ordered
@@ -528,22 +528,23 @@ var (
 	// allgptr copies should always be stored as a concrete type or
 	// unsafe.Pointer, not uintptr, to ensure that GC can still reach it
 	// even if it points to a stale array.
-	allglen uintptr
-	allgptr **g
+	allglen uintptr // 注释：全局G切片个数
+	allgptr **g     // 注释：全局G切片第一个元素的指针
 )
 
+// 注释：把G放到全局G切片里
 func allgadd(gp *g) {
-	if readgstatus(gp) == _Gidle {
+	if readgstatus(gp) == _Gidle { // 注释：读取状态并和_Gidle比较
 		throw("allgadd: bad status Gidle")
 	}
 
-	lock(&allglock)
-	allgs = append(allgs, gp)
-	if &allgs[0] != allgptr {
-		atomicstorep(unsafe.Pointer(&allgptr), unsafe.Pointer(&allgs[0]))
+	lock(&allglock)           // 注释：全局G切片加锁
+	allgs = append(allgs, gp) // 注释：把G放到全局G链表里
+	if &allgs[0] != allgptr { // 注释：如果全局G切片的第一个元素地址不等于allgptr(全局G第一个元素的指针)时
+		atomicstorep(unsafe.Pointer(&allgptr), unsafe.Pointer(&allgs[0])) // 注释：设置allgptr(全局G第一个元素的指针)为全局G切片第一个元素的指针
 	}
-	atomic.Storeuintptr(&allglen, uintptr(len(allgs)))
-	unlock(&allglock)
+	atomic.Storeuintptr(&allglen, uintptr(len(allgs))) // 注释：设置全局G切面的个数
+	unlock(&allglock)                                  // 注释：全局G切片解锁
 }
 
 // atomicAllG returns &allgs[0] and len(allgs) for use with atomicAllGIndex.
@@ -847,6 +848,7 @@ func freezetheworld() {
 
 // All reads and writes of g's status go through readgstatus, casgstatus
 // castogscanstatus, casfrom_Gscanstatus.
+// 注释：原子获取G的当前状态
 //go:nosplit
 func readgstatus(gp *g) uint32 {
 	return atomic.Load(&gp.atomicstatus)
@@ -909,6 +911,7 @@ func castogscanstatus(gp *g, oldval, newval uint32) bool {
 // casgstatus will loop if the g->atomicstatus is in a Gscan status until the routine that
 // put it in the Gscan state is finished.
 // 注释：if gp.atomicstatus == oldval { gp = newval}
+// 注释：修改状态，把状态为oldval的更改为newval
 //go:nosplit
 func casgstatus(gp *g, oldval, newval uint32) {
 	if (oldval&_Gscan != 0) || (newval&_Gscan != 0) || oldval == newval {
@@ -927,7 +930,7 @@ func casgstatus(gp *g, oldval, newval uint32) {
 
 	// loop if gp->atomicstatus is in a scan state giving
 	// GC time to finish and change the state to oldval.
-	for i := 0; !atomic.Cas(&gp.atomicstatus, oldval, newval); i++ {
+	for i := 0; !atomic.Cas(&gp.atomicstatus, oldval, newval); i++ { // 注释：修改状态，把状态oldval修改成newval
 		if oldval == _Gwaiting && gp.atomicstatus == _Grunnable {
 			throw("casgstatus: waiting for Gwaiting but is Grunnable")
 		}
@@ -4158,25 +4161,25 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	_p_ := _g_.m.p.ptr() // 注释：获取当前G对应的P
 	newg := gfget(_p_)   // 注释：获取一个空的G
 	if newg == nil {     // 注释：如果没有取到，则创建一个
-		newg = malg(_StackMin)
-		casgstatus(newg, _Gidle, _Gdead)
-		allgadd(newg) // publishes with a g->status of Gdead so GC scanner doesn't look at uninitialized stack.
+		newg = malg(_StackMin)           // 注释：给G开辟栈空间并设置栈顶和栈低
+		casgstatus(newg, _Gidle, _Gdead) // 注释：设置状态为_Gdead
+		allgadd(newg)                    // 注释：把G放到全局G切片里 // publishes with a g->status of Gdead so GC scanner doesn't look at uninitialized stack.
 	}
-	if newg.stack.hi == 0 {
+	if newg.stack.hi == 0 { // 注释：如果G栈底为空时报错
 		throw("newproc1: newg missing stack")
 	}
 
-	if readgstatus(newg) != _Gdead {
+	if readgstatus(newg) != _Gdead { // 注释：如果G的状态不是_Gdead报错
 		throw("newproc1: new g is not Gdead")
 	}
 
-	totalSize := 4*sys.RegSize + uintptr(siz) + sys.MinFrameSize // extra space in case of reads slightly beyond frame
-	totalSize += -totalSize & (sys.SpAlign - 1)                  // align to spAlign
-	sp := newg.stack.hi - totalSize
+	totalSize := 4*sys.RegSize + uintptr(siz) + sys.MinFrameSize // 注释：扩展的空间 // extra space in case of reads slightly beyond frame
+	totalSize += -totalSize & (sys.SpAlign - 1)                  // 注释：内存数据对齐 // align to spAlign
+	sp := newg.stack.hi - totalSize                              // 注释：获取SP（存放数据的栈针基地址，用于存放变量、调用其他函数的参数和返回值）
 	spArg := sp
-	if usesLR {
+	if usesLR { // 注释：存放LR位置（调用指令返回的PC最终位于堆栈帧之上。PC通常被称为LR）
 		// caller's LR
-		*(*uintptr)(unsafe.Pointer(sp)) = 0
+		*(*uintptr)(unsafe.Pointer(sp)) = 0 // 注释：把LR的位置清空，后面有返回值的时候填充该位置
 		prepGoExitFrame(sp)
 		spArg += sys.MinFrameSize
 	}

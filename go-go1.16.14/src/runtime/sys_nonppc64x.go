@@ -6,5 +6,6 @@
 
 package runtime
 
+// 注释：非PPC架构是执行,这是个空方法，就是什么都不做
 func prepGoExitFrame(sp uintptr) {
 }

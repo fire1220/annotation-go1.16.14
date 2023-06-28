@@ -19,4 +19,5 @@ func gostartcall(buf *gobuf, fn, ctxt unsafe.Pointer) {
 	buf.ctxt = ctxt
 }
 
+// 注释：如果是PPC架构是执行
 func prepGoExitFrame(sp uintptr)

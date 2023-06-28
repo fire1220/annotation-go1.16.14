@@ -34,7 +34,7 @@ import (
 // usesLR is defined below in terms of minFrameSize, which is defined in
 // arch_$GOARCH.go. ptrSize and regSize are defined in stubs.go.
 
-const usesLR = sys.MinFrameSize > 0
+const usesLR = sys.MinFrameSize > 0 // 注释：存放LR位置（调用指令返回的PC最终位于堆栈帧之上。PC通常被称为LR）
 
 // Traceback over the deferred function calls.
 // Report them like calls that have been invoked but not started executing yet.

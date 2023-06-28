@@ -865,19 +865,21 @@ TEXT _cgo_topofstack(SB),NOSPLIT|NOFRAME,$0
 // pointer in the correct place).
 // goexit+_PCQuantum is halfway through the usual global entry point prologue
 // that derives r2 from r12 which is a bit silly, but not harmful.
+// 注释：(PPC64架构)G调用完成后调用的退出函数
 TEXT runtime·goexit(SB),NOSPLIT|NOFRAME|TOPFRAME,$0-0
-	MOVD	24(R1), R2
-	BL	runtime·goexit1(SB)	// does not return
+	MOVD	24(R1), R2      // 注释：(PPC64架构)把返回值位置的指令地址放到R2里，在 runtime·prepGoExitFrame 中有获取(这里是用R2寄存器保存返回值指令的)
+	BL	runtime·goexit1(SB) // 注释：(PPC64架构)有返回值跳转执行runtime.goexit1（后面没有处理返回值，直接扔掉了）（返回值需要单独用MOVQ LR, PC执行） // does not return
 	// traceback from goexit1 must hit code range of goexit
-	MOVD	R0, R0	// NOP
+	MOVD	R0, R0          // 注释：(PPC64架构)啥都没做	// NOP
 
 // prepGoExitFrame saves the current TOC pointer (i.e. the TOC pointer for the
 // module containing runtime) to the frame that goexit will execute in when
 // the goroutine exits. It's implemented in assembly mainly because that's the
 // easiest way to get access to R2.
+// 注释：(PPC64架构)把R2寄存器(存放调用函数返回后下一个要执行的指令通常放到LR寄存器里,这里用R2做中转)里的数据放到栈上
 TEXT runtime·prepGoExitFrame(SB),NOSPLIT,$0-8
-	MOVD    sp+0(FP), R3
-	MOVD    R2, 24(R3)
+	MOVD    sp+0(FP), R3 // 注释：(PPC64架构)第一个参数（存放函数返回后下一个要执行的指令地址位置）赋值到R3里
+	MOVD    R2, 24(R3)   // 注释：(PPC64架构)函数返回后下一个要执行的指令地址放到对应返回指令向上偏移24的位置（存放函数返回后下一个要执行的指令地址位置里的指针向上偏移24位）
 	RET
 
 TEXT runtime·addmoduledata(SB),NOSPLIT|NOFRAME,$0-0

@@ -1381,6 +1381,7 @@ TEXT _cgo_topofstack(SB),NOSPLIT,$0
 // so as to make it identifiable to traceback (this
 // function it used as a sentinel; traceback wants to
 // see the func PC, not a wrapper PC).
+// 注释：G调用完成后调用的退出函数
 TEXT runtime·goexit<ABIInternal>(SB),NOSPLIT,$0-0
 	BYTE	$0x90	// NOP
 	CALL	runtime·goexit1(SB)	// does not return

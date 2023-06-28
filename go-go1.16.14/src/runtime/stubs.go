@@ -110,6 +110,7 @@ func reflect_memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) {
 //
 // Implementations are in memmove_*.s.
 //
+// 注释：将n个字节从“from”复制到“to”
 //go:noescape
 func memmove(to, from unsafe.Pointer, n uintptr)
 

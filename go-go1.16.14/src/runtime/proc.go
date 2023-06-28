@@ -4184,7 +4184,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		spArg += sys.MinFrameSize           // 注释：栈基地址参数向上移动，去掉扩展里最小尺寸
 	}
 	if narg > 0 {
-		memmove(unsafe.Pointer(spArg), argp, uintptr(narg))
+		memmove(unsafe.Pointer(spArg), argp, uintptr(narg)) // 注释：复制narg个字节,把argp复制到spArg里
 		// This is a stack-to-stack copy. If write barriers
 		// are enabled and the source stack is grey (the
 		// destination is always black), then perform a

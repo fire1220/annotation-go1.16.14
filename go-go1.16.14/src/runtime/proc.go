@@ -4098,9 +4098,9 @@ func malg(stacksize int32) *g {
 // This must be nosplit because this stack layout means there are
 // untypedasm_amd64.s arguments in newproc's argument frame. Stack copies won't
 // be able to adjust them and stack splits won't be able to copy them.
-// 注释：新建一个goroutine，用fn + PtrSize 获取第一个参数的地址，也就是argp，用siz - 8 获取pc地址
-// 注释：fn.fn是runtime.main函数指针
-// 注释：(new procedure)新建G然后把G放到当前P里
+// 注释：参数：fn.fn是runtime.main函数指针
+// 注释：参数：siz是初始堆栈大小，一般情况下是0
+// 注释：(new procedure)新建G然后把G放到当前P里(所有新建G都是从这里出去的)
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：fn向后扩大一个指针大小，存放P时使用（用fn + PtrSize 获取第一个参数的地址，也就是argp）
@@ -4108,7 +4108,7 @@ func newproc(siz int32, fn *funcval) {
 	pc := getcallerpc()                           // 注释：调用当前函数(newproc)的地址(PC)
 	// 注释：用g0的栈创建G对象
 	systemstack(func() { // 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G）
-		newg := newproc1(fn, argp, siz, gp, pc) // 注释：用g0的栈创建G对象
+		newg := newproc1(fn, argp, siz, gp, pc) // 注释：用g0的栈创建G对象（此时已经切换g为g0）
 
 		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址
 		runqput(_p_, newg, true) // 注释：把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
@@ -4127,10 +4127,15 @@ func newproc(siz int32, fn *funcval) {
 // This must run on the system stack because it's the continuation of
 // newproc, which cannot split the stack.
 //
-// 注释：建立一个G(所有新建G都是从这里出去的)
-// 注释：参数fn.fn是runtime.main函数指针；argp是P的指针；narg是参数argp的大小，可以设置为0；
+// 注释：参数：fn.fn是runtime.main函数指针；
+// 注释：参数：argp是P的指针；narg是初始堆栈大小，一般情况下是0；
+// 注释：参数：narg是初始堆栈大小，一般情况下是0；
+// 注释：参数：callergp是调用者的G
+// 注释：参数：callerpc是调用者的PC指令
+// 注释：建立一个G
 //go:systemstack
 func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerpc uintptr) *g {
+	// 注释：参数:narg是初始堆栈大小，一般情况下是0；
 	_g_ := getg() // 注释：获取tls(FS寄存器的值)里的G的地址
 
 	if fn == nil {

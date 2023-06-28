@@ -4180,8 +4180,8 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	if usesLR { // 注释：存放LR位置（调用指令返回的PC最终位于堆栈帧之上。PC通常被称为LR）
 		// caller's LR
 		*(*uintptr)(unsafe.Pointer(sp)) = 0 // 注释：把LR的位置清空，后面有返回值的时候填充该位置
-		prepGoExitFrame(sp)
-		spArg += sys.MinFrameSize
+		prepGoExitFrame(sp)                 // 注释：AMD64架构什么都没有做，只有PPC64架构才触发汇编代码(PPC64架构就是处理LR,因为这个架构没有LR寄存器所以用R2寄存器代用）
+		spArg += sys.MinFrameSize           // 注释：栈基地址参数向上移动，去掉扩展里最小尺寸
 	}
 	if narg > 0 {
 		memmove(unsafe.Pointer(spArg), argp, uintptr(narg))

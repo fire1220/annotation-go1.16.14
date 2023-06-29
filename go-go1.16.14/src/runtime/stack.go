@@ -1094,6 +1094,7 @@ func nilfunc() {
 
 // adjust Gobuf as if it executed a call to fn
 // and then did an immediate gosave.
+// 注释：记录调用链，fv是调用方的PC（方法指针）值，会存放到上下文gobuf.ctxt里
 func gostartcallfn(gobuf *gobuf, fv *funcval) {
 	var fn unsafe.Pointer
 	if fv != nil {

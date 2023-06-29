@@ -13,6 +13,7 @@ import (
 
 // adjust Gobuf as if it executed a call to fn with context ctxt
 // and then did an immediate gosave.
+// 注释：保存现场，保存:SP栈基地址、PC指令计数器、ctxt上下文（调用方函数指针，用来链路追踪）
 func gostartcall(buf *gobuf, fn, ctxt unsafe.Pointer) {
 	sp := buf.sp
 	if sys.RegSize > sys.PtrSize {
@@ -22,6 +23,6 @@ func gostartcall(buf *gobuf, fn, ctxt unsafe.Pointer) {
 	sp -= sys.PtrSize
 	*(*uintptr)(unsafe.Pointer(sp)) = buf.pc
 	buf.sp = sp
-	buf.pc = uintptr(fn)
-	buf.ctxt = ctxt
+	buf.pc = uintptr(fn) // 注释：PC指令计数器(如果ctxt存在值则该值为ctxt)
+	buf.ctxt = ctxt      // 注释：ctxt上下文（调用方函数指针，用来链路追踪）
 }

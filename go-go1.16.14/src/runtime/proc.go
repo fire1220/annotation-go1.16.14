@@ -4173,11 +4173,11 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		throw("newproc1: new g is not Gdead")
 	}
 
-	totalSize := 4*sys.RegSize + uintptr(siz) + sys.MinFrameSize // 注释：扩展的空间 // extra space in case of reads slightly beyond frame
+	totalSize := 4*sys.RegSize + uintptr(siz) + sys.MinFrameSize // 注释：扩展的空间(存放数据的空间，就是SP对应的空间大小) // extra space in case of reads slightly beyond frame
 	totalSize += -totalSize & (sys.SpAlign - 1)                  // 注释：内存数据对齐 // align to spAlign
-	sp := newg.stack.hi - totalSize                              // 注释：获取SP（存放数据的栈针基地址，用于存放变量、调用其他函数的参数和返回值）
-	spArg := sp
-	if usesLR { // 注释：存放LR位置（调用指令返回的PC最终位于堆栈帧之上。PC通常被称为LR）
+	sp := newg.stack.hi - totalSize                              // 注释：确定SP指针地址（存放数据的栈针基地址，用于存放变量、调用其他函数的参数和返回值）
+	spArg := sp                                                  // 注释：SP指针地址（参数的开始地址）
+	if usesLR {                                                  // 注释：存放LR位置（调用指令返回的PC最终位于堆栈帧之上。PC通常被称为LR）
 		// caller's LR
 		*(*uintptr)(unsafe.Pointer(sp)) = 0 // 注释：把LR的位置清空，后面有返回值的时候填充该位置
 		prepGoExitFrame(sp)                 // 注释：AMD64架构什么都没有做，只有PPC64架构才触发汇编代码(PPC64架构就是处理LR,因为这个架构没有LR寄存器所以用R2寄存器代用）
@@ -4203,11 +4203,12 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		}
 	}
 
-	memclrNoHeapPointers(unsafe.Pointer(&newg.sched), unsafe.Sizeof(newg.sched))
-	newg.sched.sp = sp
-	newg.stktopsp = sp
-	newg.sched.pc = funcPC(goexit) + sys.PCQuantum // +PCQuantum so that previous instruction is in same function
-	newg.sched.g = guintptr(unsafe.Pointer(newg))
+	// 注释：&newg.sched向后清空newg.sched个字节
+	memclrNoHeapPointers(unsafe.Pointer(&newg.sched), unsafe.Sizeof(newg.sched)) // 注释：清空newg.sched内存数据
+	newg.sched.sp = sp                                                           // 注释：(保存现场)保存SP寄存器地址（参数的开始地址）
+	newg.stktopsp = sp                                                           // 注释：(保存现场)录栈基地址，用于追溯
+	newg.sched.pc = funcPC(goexit) + sys.PCQuantum                               // 注释：(保存现场)存PC指令地址 // +PCQuantum so that previous instruction is in same function
+	newg.sched.g = guintptr(unsafe.Pointer(newg))                                // 注释：(保存现场)存当前的G地址
 	gostartcallfn(&newg.sched, fn)
 	newg.gopc = callerpc
 	newg.ancestors = saveAncestors(callergp)

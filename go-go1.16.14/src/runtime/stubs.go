@@ -90,6 +90,7 @@ func badsystemstack() {
 //
 // The (CPU-specific) implementations of this function are in memclr_*.s.
 //
+// 注释：ptr指针向后删除n个字节
 //go:noescape
 func memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr)
 

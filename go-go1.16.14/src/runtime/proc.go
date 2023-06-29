@@ -4209,7 +4209,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	newg.stktopsp = sp                                                           // 注释：(保存现场)录栈基地址，用于追溯
 	newg.sched.pc = funcPC(goexit) + sys.PCQuantum                               // 注释：(保存现场)存PC指令地址 // +PCQuantum so that previous instruction is in same function
 	newg.sched.g = guintptr(unsafe.Pointer(newg))                                // 注释：(保存现场)存当前的G地址
-	gostartcallfn(&newg.sched, fn)                                               // 注释：(保存现场)记录调用链,fn是调用方的方法指针（PC），会存放到上下文ctxt里
+	gostartcallfn(&newg.sched, fn)                                               // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
 	newg.gopc = callerpc
 	newg.ancestors = saveAncestors(callergp)
 	newg.startpc = fn.fn

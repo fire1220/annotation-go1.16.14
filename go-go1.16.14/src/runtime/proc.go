@@ -4134,8 +4134,8 @@ func newproc(siz int32, fn *funcval) {
 // 注释：参数：fn.fn初始是runtime.main函数指针，后面表示调用方的PC值（例如：方法A里使用go指令生成新的G时，该参数为A方法的地址PC值）
 // 注释：参数：argp是P的指针；narg是初始堆栈大小，一般情况下是0；
 // 注释：参数：narg是初始堆栈大小，一般情况下是0；
-// 注释：参数：callergp是调用者的G,例如：A调用B然后执行go指令，此时callerpc是A，fn是B，callergp是A对应的G
-// 注释：参数：callerpc是调用者的PC指令,例如：A调用B然后执行go指令，此时callerpc是A，fn是B，callergp是A对应的G
+// 注释：参数：callergp是调用者的G,例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn是B的PC值，callergp是A对应的G
+// 注释：参数：callerpc是调用者的PC指令,例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn是B的PC值，callergp是A对应的G
 // 注释：建立一个G
 //go:systemstack
 func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerpc uintptr) *g {

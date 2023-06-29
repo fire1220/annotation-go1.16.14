@@ -487,7 +487,7 @@ type g struct {
 	sigcode0       uintptr
 	sigcode1       uintptr
 	sigpc          uintptr
-	gopc           uintptr         // 注释：创建当前G的PC(调用者的PC(rip)) // pc of go statement that created this goroutine
+	gopc           uintptr         // 注释：创建当前G的PC(调用者的PC(rip)) 例如：A调用B然后执行go指令，此时gopc是A的PC值 // pc of go statement that created this goroutine
 	ancestors      *[]ancestorInfo // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
 	startpc        uintptr         // 注释：任务函数(go函数对应的pc值) // pc of goroutine function
 	racectx        uintptr

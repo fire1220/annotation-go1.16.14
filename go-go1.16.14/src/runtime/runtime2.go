@@ -606,14 +606,14 @@ type m struct {
 	locksHeld    [10]heldLockInfo
 }
 
-// 注释：p结构体用于保存工作线程m执行go代码时所必需的资源，比如goroutine的运行队列，内存分配用到的缓存等等
+// 注释：P(处理器)结构体用于保存工作线程m执行go代码时所必需的资源，比如goroutine的运行队列，内存分配用到的缓存等等
 type p struct {
 	id          int32      // 注释：id也是allp的数组下标
 	status      uint32     // one of pidle/prunning/...
 	link        puintptr   // 注释：空闲p链表的下一个p指针
 	schedtick   uint32     // 注释：用户调度计数器，每次调度的时候加1 // incremented on every scheduler call
 	syscalltick uint32     // 注释：系统调度计数器，每一次系统调用加1 // incremented on every system call
-	sysmontick  sysmontick // last tick observed by sysmon
+	sysmontick  sysmontick // 注释：系统监控 // last tick observed by sysmon
 	m           muintptr   // 回链到关联的m // back-link to associated m (nil if idle)
 	mcache      *mcache
 	pcache      pageCache

@@ -5260,6 +5260,7 @@ var forcegcperiod int64 = 2 * 60 * 1e9
 
 // Always runs without a P, so write barriers are not allowed.
 //
+// 注释：系统监控（system monitor）
 //go:nowritebarrierrec
 func sysmon() {
 	lock(&sched.lock)
@@ -5414,11 +5415,12 @@ func sysmon() {
 	}
 }
 
+// 注释：系统监控
 type sysmontick struct {
-	schedtick   uint32
-	schedwhen   int64
-	syscalltick uint32
-	syscallwhen int64
+	schedtick   uint32 // 注释：处理器P调度此时
+	schedwhen   int64  // 注释：处理器P上次调度时间
+	syscalltick uint32 // 注释：系统调度次数
+	syscallwhen int64  // 注释：系统调度时间
 }
 
 // forcePreemptNS is the time slice given to a G before it is

@@ -99,7 +99,7 @@ TEXT runtime·rt0_go<ABIInternal>(SB),NOSPLIT,$0
 
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
-	MOVQ	$runtime·g0(SB), DI
+	MOVQ	$runtime·g0(SB), DI // 注释：
 	LEAQ	(-64*1024+104)(SP), BX
 	MOVQ	BX, g_stackguard0(DI)
 	MOVQ	BX, g_stackguard1(DI)

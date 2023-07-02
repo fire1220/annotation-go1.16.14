@@ -90,28 +90,29 @@ GLOBL _rt0_amd64_lib_argv<>(SB),NOPTR, $8
 // 注释：程序入口函数
 TEXT runtime·rt0_go<ABIInternal>(SB),NOSPLIT,$0
 	// copy arguments forward on an even stack
-	MOVQ	DI, AX		// argc
-	MOVQ	SI, BX		// argv
-	SUBQ	$(4*8+7), SP		// 2args 2auto
-	ANDQ	$~15, SP
-	MOVQ	AX, 16(SP)
-	MOVQ	BX, 24(SP)
+	// 注释：AMD64使用rdi和rsi传入参数，rid:argc, rsi:argv
+	MOVQ	DI, AX		    // 注释：DI寄存器传入参数argc // argc
+	MOVQ	SI, BX		    // 注释：SI寄存器传入参数argv // argv
+	SUBQ	$(4*8+7), SP	// 注释：开辟参数的空间	// 2args 2auto
+	ANDQ	$~15, SP        // 注释：参数空间内存对齐，(~15&SP）清空后4位，16位对齐
+	MOVQ	AX, 16(SP)      // 注释：把参数argc放到栈上
+	MOVQ	BX, 24(SP)      // 注释：把参数agrv放到栈上
 
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
-	MOVQ	$runtime·g0(SB), DI // 注释：
-	LEAQ	(-64*1024+104)(SP), BX
-	MOVQ	BX, g_stackguard0(DI)
-	MOVQ	BX, g_stackguard1(DI)
-	MOVQ	BX, (g_stack+stack_lo)(DI)
-	MOVQ	SP, (g_stack+stack_hi)(DI)
+	MOVQ	$runtime·g0(SB), DI         // 注释：把g0放到DI寄存器里
+	LEAQ	(-64*1024+104)(SP), BX      // 注释：设置栈顶；开辟空间空间大小是（64*1024-104）,就是(64k-104字节)
+	MOVQ	BX, g_stackguard0(DI)       // 注释：(设置爆栈警戒线)栈顶地址就是爆栈警戒的地址
+	MOVQ	BX, g_stackguard1(DI)       // 注释：(设置C语言的爆栈警戒线)
+	MOVQ	BX, (g_stack+stack_lo)(DI)  // 注释：设置栈顶位置（g.stack.lo）底地址
+	MOVQ	SP, (g_stack+stack_hi)(DI)  // 注释：设置栈底位置（g.stack.hi）高地址
 
 	// find out information about the processor we're on
-	MOVL	$0, AX
-	CPUID
-	MOVL	AX, SI
-	CMPL	AX, $0
-	JE	nocpuinfo
+	MOVL	$0, AX // 注释：清空寄存器AX
+	CPUID          // 注释：获取CPU的ID，放到AX寄存器里
+	MOVL	AX, SI // 注释：把CPU的ID放到SI寄存器里
+	CMPL	AX, $0 // 注释：比较AX是否等于零
+	JE	nocpuinfo  // 注释：如果AX（CPU的ID）如果等于0说明没有获取到CUP的ID，则跳转到nocpuinfo
 
 	// Figure out how to serialize RDTSC.
 	// On Intel processors LFENCE is enough. AMD requires MFENCE.
@@ -131,7 +132,7 @@ notintel:
 	CPUID
 	MOVL	AX, runtime·processorVersionInfo(SB)
 
-nocpuinfo:
+nocpuinfo: // 注释：没有获取到CPU的ID是执行
 	// if there is an _cgo_init, call it.
 	MOVQ	_cgo_init(SB), AX
 	TESTQ	AX, AX

@@ -219,10 +219,10 @@ ok:
 	CLD				// convention is D is always left cleared
 	CALL	runtime·check(SB)
 
-	MOVL	16(SP), AX		// copy argc
-	MOVL	AX, 0(SP)
-	MOVQ	24(SP), AX		// copy argv
-	MOVQ	AX, 8(SP)
+	MOVL	16(SP), AX		      // 注释：(复制数据argc)这里是吧16SP位置数据（argc）放到AX寄存器上 // copy argc
+	MOVL	AX, 0(SP)             // 注释：(复制数据argc)把argc数据放到0SP位置上
+	MOVQ	24(SP), AX		      // 注释：(复制数据argv)把24SP数据（argv）放到AX寄存器上 // copy argv
+	MOVQ	AX, 8(SP)             // 注释：(复制数据argv)把argv数据放到8SP位置上
 	CALL	runtime·args(SB)      // 注释：处理args
 	CALL	runtime·osinit(SB)    // 注释：os初始化(os_linux.go)
 	CALL	runtime·schedinit(SB) // 注释：调度系统初始化(proc.go)(会进行p的初始化，也会把m0和某个p绑定)
@@ -233,11 +233,11 @@ ok:
 	PUSHQ	AX                       // 注释：参数2入栈(值是&runtime.main)，把AX作为下个函数第2个参数，相当于subq $8,SP；movq AX,SP
 	PUSHQ	$0                       // 注释：参数1入栈，把0作为下个函数第1个参数，相当于subq $8,SP；movq $0,SP		// arg size
 	CALL	runtime·newproc(SB)      // 注释：新建一个g，也叫main goroutine，它的任务函数是runtime.main函数，建好后插入m0绑定的p的本地队列
-	POPQ	AX
-	POPQ	AX
+	POPQ	AX                       // 注释：出栈，去除上面的参数位置
+	POPQ	AX                       // 注释：出栈，去除上面的参数位置
 
 	// start this M
-	CALL	runtime·mstart(SB) // 注释：启动线程m，进入启动调度系统
+	CALL	runtime·mstart(SB)       // 注释：启动线程m，进入启动调度系统
 
 	CALL	runtime·abort(SB)	// mstart should never return
 	RET

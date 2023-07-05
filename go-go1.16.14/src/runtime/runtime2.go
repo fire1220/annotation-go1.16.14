@@ -488,7 +488,7 @@ type g struct {
 	sigcode1       uintptr
 	sigpc          uintptr
 	gopc           uintptr         // 注释：创建当前G的PC(调用者的PC(rip)) 例如：A调用B然后执行go指令，此时gopc是A的PC值 // pc of go statement that created this goroutine
-	ancestors      *[]ancestorInfo // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
+	ancestors      *[]ancestorInfo // 注释：创建此g的祖先信息g仅在debug.traceback祖先时使用 // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
 	startpc        uintptr         // 注释：任务函数(go函数对应的pc值) // pc of goroutine function
 	racectx        uintptr
 	waiting        *sudog         // 注释：等待的sudog链表头指针  // sudog structures this g is waiting on (that have a valid elem ptr); in lock order

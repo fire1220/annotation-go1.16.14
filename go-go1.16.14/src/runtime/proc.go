@@ -4214,7 +4214,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	newg.ancestors = saveAncestors(callergp)                                     // 注释：把当前的G的信息保存到调用链上，用于debug追溯时使用
 	newg.startpc = fn.fn
 	if _g_.m.curg != nil {
-		newg.labels = _g_.m.curg.labels
+		newg.labels = _g_.m.curg.labels // 注释：如果线程M正在运行G存在时，同步探测器标签
 	}
 	if isSystemGoroutine(newg, false) {
 		atomic.Xadd(&sched.ngsys, +1)

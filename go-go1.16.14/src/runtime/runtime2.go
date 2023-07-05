@@ -493,7 +493,7 @@ type g struct {
 	racectx        uintptr
 	waiting        *sudog         // 注释：等待的sudog链表头指针  // sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt        []uintptr      // cgo traceback context
-	labels         unsafe.Pointer // profiler labels
+	labels         unsafe.Pointer // 注释：探测器标签，用于pprof使用 // profiler labels
 	timer          *timer         // 注释：通过time.Sleep缓存timer // cached timer for time.Sleep
 	selectDone     uint32         // are we participating in a select and did someone win the race?
 

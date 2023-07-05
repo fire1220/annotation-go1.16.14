@@ -657,6 +657,7 @@ func findmoduledatap(pc uintptr) *moduledata {
 	return nil
 }
 
+// 注释：函数方法的详细信息
 type funcInfo struct {
 	*_func
 	datap *moduledata

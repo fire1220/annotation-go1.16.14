@@ -337,7 +337,7 @@ type gobuf struct {
 	ctxt unsafe.Pointer // 注释：ctxt上下文（调用方函数指针，用来链路追踪）
 	ret  sys.Uintreg    // 注释：系统调用的结果(保存系统调用的返回值，因为从系统调用返回之后如果p被其它工作线程抢占，则这个g会被放入全局运行队列被其它工作线程调度，其它线程需要知道系统调用的返回值)
 	lr   uintptr
-	bp   uintptr // for framepointer-enabled architectures // 注释：(保存CPU的rip寄存器的值)
+	bp   uintptr // for framepointer-enabled architectures // 注释：(保存CPU的硬件BP寄存器的值)
 }
 
 // sudog represents a g in a wait list, such as for sending/receiving

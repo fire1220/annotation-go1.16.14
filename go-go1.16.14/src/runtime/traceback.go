@@ -1026,7 +1026,7 @@ func topofstack(f funcInfo, g0 bool) bool {
 // goroutine.
 func isSystemGoroutine(gp *g, fixed bool) bool {
 	// Keep this in sync with cmd/trace/trace.go:isSystemGoroutine.
-	f := findfunc(gp.startpc)
+	f := findfunc(gp.startpc) // 注释：获取方法的详细信息
 	if !f.valid() {
 		return false
 	}

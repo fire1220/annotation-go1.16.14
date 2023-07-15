@@ -2654,7 +2654,7 @@ func execute(gp *g, inheritTime bool) {
 
 // Finds a runnable goroutine to execute.
 // Tries to steal from other P's, get g from local or global queue, poll network.
-// 注释：获取G；获取顺序是：先从本地P中获取-》全局队列中获取-》网络轮询，已经就绪的网络连接中获取（优化方案）-》去其他线程的本地队列里窃取（偷）
+// 注释：获取可以运行的G；获取顺序是：先从本地P中获取-》全局队列中获取-》网络轮询，已经就绪的网络连接中获取（优化方案）-》去其他线程的本地队列里窃取（偷）
 func findrunnable() (gp *g, inheritTime bool) {
 	_g_ := getg()
 
@@ -4211,10 +4211,10 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	newg.sched.g = guintptr(unsafe.Pointer(newg))                                // 注释：(保存现场)存当前的G地址
 	gostartcallfn(&newg.sched, fn)                                               // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
 	newg.gopc = callerpc                                                         // 注释：调用者的PC值;例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
-	newg.ancestors = saveAncestors(callergp)
+	newg.ancestors = saveAncestors(callergp)                                     // 注释：把当前的G的信息保存到调用链上，用于debug追溯时使用
 	newg.startpc = fn.fn
 	if _g_.m.curg != nil {
-		newg.labels = _g_.m.curg.labels
+		newg.labels = _g_.m.curg.labels // 注释：如果线程M正在运行G存在时，同步探测器标签
 	}
 	if isSystemGoroutine(newg, false) {
 		atomic.Xadd(&sched.ngsys, +1)

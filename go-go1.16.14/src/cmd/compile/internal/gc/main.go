@@ -220,13 +220,13 @@ func Main(archInit func(*Arch)) {
 	objabi.Flagcount("E", "debug symbol export", &Debug.E)
 	objabi.Flagcount("K", "debug missing line numbers", &Debug.K)
 	objabi.Flagcount("L", "show full file names in error messages", &Debug.L)
-	objabi.Flagcount("N", "disable optimizations", &Debug.N)
-	objabi.Flagcount("S", "print assembly listing", &Debug.S)
+	objabi.Flagcount("N", "disable optimizations", &Debug.N)  // 注释：禁止优化
+	objabi.Flagcount("S", "print assembly listing", &Debug.S) // 注释：打印汇编
 	objabi.Flagcount("W", "debug parse tree after type checking", &Debug.W)
 	objabi.Flagcount("e", "no limit on number of errors reported", &Debug.e)
 	objabi.Flagcount("h", "halt on error", &Debug.h)
 	objabi.Flagcount("j", "debug runtime-initialized variables", &Debug.j)
-	objabi.Flagcount("l", "disable inlining", &Debug.l)
+	objabi.Flagcount("l", "disable inlining", &Debug.l) // 注释：禁止内联优化
 	objabi.Flagcount("m", "print optimization decisions", &Debug.m)
 	objabi.Flagcount("r", "debug generated wrappers", &Debug.r)
 	objabi.Flagcount("w", "debug type checking", &Debug.w)

@@ -38,17 +38,18 @@ var archInits = map[string]func(*gc.Arch){
 	"wasm":     wasm.Init,
 }
 
+// 注释：编译阶段的主函数
 func main() {
 	// disable timestamps for reproducible output
 	log.SetFlags(0)
 	log.SetPrefix("compile: ")
 
-	archInit, ok := archInits[objabi.GOARCH]
+	archInit, ok := archInits[objabi.GOARCH] // 注释：获取系统架构
 	if !ok {
 		fmt.Fprintf(os.Stderr, "compile: unknown architecture %q\n", objabi.GOARCH)
 		os.Exit(2)
 	}
 
-	gc.Main(archInit)
+	gc.Main(archInit) // 注释：开始编译
 	gc.Exit(0)
 }

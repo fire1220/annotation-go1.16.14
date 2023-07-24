@@ -1390,7 +1390,7 @@ opswitch:
 			m.Type = t
 
 			fn := syslook(fnname)
-			m.Left = mkcall1(fn, types.Types[TUNSAFEPTR], init, typename(t.Elem()), conv(len, argtype), conv(cap, argtype))
+			m.Left = mkcall1(fn, types.Types[TUNSAFEPTR], init, typename(t.Elem()), conv(len, argtype), conv(cap, argtype)) // 注释：组装要执行的函数,这里有用conv做类型转换，装换其实就是把类型复制，不校验类型是否正确
 			m.Left.MarkNonNil()
 			m.List.Set2(conv(len, types.Types[TINT]), conv(cap, types.Types[TINT]))
 
@@ -2526,6 +2526,8 @@ func mkcall1(fn *Node, t *types.Type, init *Nodes, args ...*Node) *Node {
 	return vmkcall(fn, t, init, args)
 }
 
+// 注释：类型装换，只是重新定义了一下类型，不做类型校验，所以这里只要内存能够装下，什么类型都可以
+// 注释：比如:make([]int, 0, 1.0);make([]int, 0, 1.10);make([]int, 0, 'a')都可以编译过，但运行时只有make([]int, 0, 1.0)能通过
 func conv(n *Node, t *types.Type) *Node {
 	if types.Identical(n.Type, t) {
 		return n

@@ -2527,7 +2527,7 @@ func mkcall1(fn *Node, t *types.Type, init *Nodes, args ...*Node) *Node {
 }
 
 // 注释：类型装换，只是重新定义了一下类型，不做类型校验，所以这里只要内存能够装下，什么类型都可以
-// 注释：比如:make([]int, 0, 1.0);make([]int, 0, 1.10);make([]int, 0, 'a')都可以编译过，但运行时只有make([]int, 0, 1.0)能通过
+// 注释：比如:make([]int, 0, 1.0);make([]int, 0, 'a')都可以编译过,并可以正常运行
 func conv(n *Node, t *types.Type) *Node {
 	if types.Identical(n.Type, t) {
 		return n

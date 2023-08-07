@@ -657,7 +657,7 @@ again:
 	var elem unsafe.Pointer    // 注释：准备写入的value地址
 bucketloop:
 	for {
-		for i := uintptr(0); i < bucketCnt; i++ { // 注释：遍历桶内数据，共8组数据
+		for i := uintptr(0); i < bucketCnt; i++ { // 注释：遍历桶内数据，共8组数据(使用的是：开放寻址法的线性探测策略，解决哈希冲突)
 			if b.tophash[i] != top {
 				if isEmpty(b.tophash[i]) && inserti == nil { // 注释：如果bmap里的topbits为空时(包括当前桶里为空或后面链表桶的tophash全部为空)
 					inserti = &b.tophash[i]                                                                      // 注释：把空对应的指针赋值，等待后面插入，方便后面修改
@@ -688,7 +688,7 @@ bucketloop:
 		if ovf == nil {      // 注释：如果没有溢出桶则跳出循环
 			break // 注释：跳出循环会创建新的溢出桶
 		}
-		b = ovf // 注释：更改桶指针，从正常桶更改为溢出桶,再次循环时则处理的是溢出桶数据
+		b = ovf // 注释：更改桶指针，从正常桶更改为溢出桶,再次循环时则处理的是溢出桶数据(使用的是：拉链法，解决哈希冲突)
 	}
 
 	// Did not find mapping for key. Allocate new cell & add entry.

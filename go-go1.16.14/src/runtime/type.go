@@ -41,7 +41,7 @@ type _type struct {
 	kind       uint8   // 注释：基础类型
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
-	equal func(unsafe.Pointer, unsafe.Pointer) bool // 注释：比较函数
+	equal func(unsafe.Pointer, unsafe.Pointer) bool // 注释：比较函数(map中有使用这个对比key是否相等)
 	// gcdata stores the GC type data for the garbage collector.
 	// If the KindGCProg bit is set in kind, gcdata is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
@@ -405,7 +405,7 @@ func (mt *maptype) reflexivekey() bool { // true if k==k for all keys
 	return mt.flags&4 != 0 // 注释：reflexive key(反射的key)
 }
 func (mt *maptype) needkeyupdate() bool { // true if we need to update key on an overwrite
-	return mt.flags&8 != 0 // 注释：need key update(需要密钥更新)
+	return mt.flags&8 != 0 // 注释：等量扩容标识是8，判断是否是等量扩容，通过key更新时，如果是等量扩容需要特殊处理 // need key update
 }
 func (mt *maptype) hashMightPanic() bool { // true if hash function might panic
 	return mt.flags&16 != 0 // 注释：hash might panic(散列可能会死机)

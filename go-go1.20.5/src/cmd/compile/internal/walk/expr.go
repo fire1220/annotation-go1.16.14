@@ -287,7 +287,7 @@ func walkExpr1(n ir.Node, init *ir.Nodes) ir.Node {
 		n := n.(*ir.MakeExpr)
 		return walkMakeChan(n, init)
 
-	case ir.OMAKEMAP:
+	case ir.OMAKEMAP: // 注释：make一个map
 		n := n.(*ir.MakeExpr)
 		return walkMakeMap(n, init)
 

@@ -280,6 +280,7 @@ func (h *hmap) createOverflow() {
 	}
 }
 
+// 注释：64位系统make一个map
 func makemap64(t *maptype, hint int64, h *hmap) *hmap {
 	if int64(int(hint)) != hint {
 		hint = 0
@@ -301,6 +302,7 @@ func makemap_small() *hmap {
 // can be created on the stack, h and/or bucket may be non-nil.
 // If h != nil, the map can be created directly in h.
 // If h.buckets != nil, bucket pointed to can be used as the first bucket.
+// 注释：make一个map
 func makemap(t *maptype, hint int, h *hmap) *hmap {
 	mem, overflow := math.MulUintptr(uintptr(hint), t.bucket.size)
 	if overflow || mem > maxAlloc {

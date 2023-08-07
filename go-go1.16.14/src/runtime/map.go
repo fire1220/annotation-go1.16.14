@@ -665,29 +665,30 @@ bucketloop:
 					elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize)) // 注释：映射val的指针，方便后面修改
 				}
 				if b.tophash[i] == emptyRest { // 注释：判断后面链表桶里全部为空
-					break bucketloop
+					break bucketloop // 注释：跳出，重新扫描，这个时候已经有准备要插入的key和value了
 				}
-				continue
+				continue // 注释：跳过不相等的数据
 			}
-			k := add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize))
-			if t.indirectkey() {
-				k = *((*unsafe.Pointer)(k))
+			// 注释：再一次验证是否找到对应的key,这次比对key的真实值
+			k := add(unsafe.Pointer(b), dataOffset+i*uintptr(t.keysize)) // 注释：key数据对应的地址
+			if t.indirectkey() {                                         // 注释：如果是间接的key，则通过地址找到真实key的数据
+				k = *((*unsafe.Pointer)(k)) // 注释：key数据
 			}
-			if !t.key.equal(key, k) {
+			if !t.key.equal(key, k) { // 注释：对比，(key真实数据对比)key地址对应的数据是否相等，如果不等则跳过
 				continue
 			}
 			// already have a mapping for key. Update it.
-			if t.needkeyupdate() {
-				typedmemmove(t.key, k, key)
+			if t.needkeyupdate() { // 注释：判断是否是等量扩容中
+				typedmemmove(t.key, k, key) // 注释：如果正在扩容中，会把旧桶的key同步到新桶中(key和k是地址，通过地址拷贝key数据),保证了新桶中也存在这个key
 			}
-			elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize))
+			elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+i*uintptr(t.elemsize)) // 注释：映射val的指针，方便后面修改
 			goto done
 		}
-		ovf := b.overflow(t)
-		if ovf == nil {
+		ovf := b.overflow(t) // 注释：（溢出桶地址）开始准备找溢出桶
+		if ovf == nil {      // 注释：如果没有溢出桶则跳出循环
 			break
 		}
-		b = ovf
+		b = ovf // 注释：更改桶指针，从正常桶更改为溢出桶,再次循环时则处理的是溢出桶数据
 	}
 
 	// Did not find mapping for key. Allocate new cell & add entry.

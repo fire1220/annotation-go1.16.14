@@ -277,6 +277,7 @@ func walkMakeChan(n *ir.MakeExpr, init *ir.Nodes) ir.Node {
 }
 
 // walkMakeMap walks an OMAKEMAP node.
+// 注释：make一个map
 func walkMakeMap(n *ir.MakeExpr, init *ir.Nodes) ir.Node {
 	t := n.Type()
 	hmapType := reflectdata.MapType(t)

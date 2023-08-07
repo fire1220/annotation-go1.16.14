@@ -168,7 +168,7 @@ func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	// other goroutine must also be accompanied by a write
 	// barrier, so at worst we've unnecessarily greyed the old
 	// pointer that was in src.
-	memmove(dst, src, typ.size) // 注释：内存复制数据
+	memmove(dst, src, typ.size) // 注释：内存复制数据,把type.size个字节充src复制到dst中
 	if writeBarrier.cgo {
 		cgoCheckMemmove(typ, dst, src, 0, typ.size)
 	}

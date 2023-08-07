@@ -695,7 +695,7 @@ bucketloop:
 
 	// If we hit the max load factor or we have too many overflow buckets,
 	// and we're not already in the middle of growing, start growing.
-	// 注释：判断是否需要扩容
+	// 注释：判断是否需要扩容,如果上面ovf == nil时跳出循环,这个时候也会触发扩容，扩容完成后会重新开始执行
 	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
 		hashGrow(t, h)
 		// 注释：修改hmap结构体完成后，重新执行并执行数据迁移

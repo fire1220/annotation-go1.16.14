@@ -702,6 +702,8 @@ bucketloop:
 		goto again // Growing the table invalidates everything, so try again
 	}
 
+	// 注释：下面是处理在没有获取到inserti和insertk和elem的情况下执行，会创建对应新的对象对地址放在这三个变量中
+
 	// 注释：如果上面ovf == nil时跳出循环，这个时候需要重新建立新的溢出桶
 	if inserti == nil {
 		// The current bucket and all the overflow buckets connected to it are full, allocate a new one.
@@ -714,16 +716,16 @@ bucketloop:
 	// store new key/elem at insert position
 	if t.indirectkey() { // 注释：判断是否是间接的key地址
 		kmem := newobject(t.key)           // 注释：通过类型申请空对象
-		*(*unsafe.Pointer)(insertk) = kmem // 注释：新申请的对象地址作为key的存放地址
-		insertk = kmem
+		*(*unsafe.Pointer)(insertk) = kmem // 注释：把旧的间接key地址对应的key值对象清空
+		insertk = kmem                     // 注释：新申请的对象地址作为key的存放地址
 	}
-	if t.indirectelem() {
-		vmem := newobject(t.elem)
-		*(*unsafe.Pointer)(elem) = vmem
+	if t.indirectelem() { // 注释：判断value是否是间接value地址
+		vmem := newobject(t.elem)       // 注释：创建新对象来存放value
+		*(*unsafe.Pointer)(elem) = vmem // 注释：替换就存放地址
 	}
-	typedmemmove(t.key, insertk, key)
-	*inserti = top
-	h.count++
+	typedmemmove(t.key, insertk, key) // 注释：复制数据，把key地址对应的值，复制到insertk地址对应的内存位置
+	*inserti = top                    // 注释：高8位的位置存放高8位的值
+	h.count++                         // 注释：map元素加1
 
 done:
 	if h.flags&hashWriting == 0 {

@@ -606,7 +606,7 @@ func mapaccess2_fat(t *maptype, h *hmap, key, zero unsafe.Pointer) (unsafe.Point
 	return e, true
 }
 
-// 注释：创建或修改map函数(map的分配)
+// 注释：(通过key找到存放value的地址)创建或修改map函数(map的分配)，返回key对应的value的地址（存放数据的地址）。(写入动作需要单独处理)
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
 func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 	if h == nil {
@@ -728,14 +728,14 @@ bucketloop:
 	h.count++                         // 注释：map元素加1
 
 done:
-	if h.flags&hashWriting == 0 {
+	if h.flags&hashWriting == 0 { // 注释：如果不是正在写入标识，则panic
 		throw("concurrent map writes")
 	}
-	h.flags &^= hashWriting
-	if t.indirectelem() {
-		elem = *((*unsafe.Pointer)(elem))
+	h.flags &^= hashWriting // 注释：取消正在写入标识
+	if t.indirectelem() {   // 注释：如果是间接的value,则重置value
+		elem = *((*unsafe.Pointer)(elem)) // 注释：把间接地址设置为直接地址
 	}
-	return elem
+	return elem // 注释：返回存放value的地址
 }
 
 func mapdelete(t *maptype, h *hmap, key unsafe.Pointer) {
@@ -1433,7 +1433,7 @@ func reflect_mapaccess(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
 
 //go:linkname reflect_mapassign reflect.mapassign
 func reflect_mapassign(t *maptype, h *hmap, key unsafe.Pointer, elem unsafe.Pointer) {
-	p := mapassign(t, h, key)
+	p := mapassign(t, h, key)     // 注释：通过key找到存放value的地址
 	typedmemmove(t.elem, p, elem) // 注释：把elem赋值到p中(是把整体的数据拷贝到map对应的value中)（map的value是独立的空间存储的）
 }
 

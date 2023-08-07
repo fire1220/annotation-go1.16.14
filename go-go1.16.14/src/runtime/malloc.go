@@ -1179,6 +1179,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 // implementation of new builtin
 // compiler (both frontend and SSA backend) knows the signature
 // of this function
+// 注释：通过类型申请内存,返回内存首地址（对象地址）
 func newobject(typ *_type) unsafe.Pointer {
 	return mallocgc(typ.size, typ, true)
 }

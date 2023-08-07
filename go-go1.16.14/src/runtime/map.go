@@ -686,7 +686,7 @@ bucketloop:
 		}
 		ovf := b.overflow(t) // 注释：（溢出桶地址）开始准备找溢出桶
 		if ovf == nil {      // 注释：如果没有溢出桶则跳出循环
-			break
+			break // 注释：跳出循环会创建新的溢出桶
 		}
 		b = ovf // 注释：更改桶指针，从正常桶更改为溢出桶,再次循环时则处理的是溢出桶数据
 	}
@@ -695,25 +695,26 @@ bucketloop:
 
 	// If we hit the max load factor or we have too many overflow buckets,
 	// and we're not already in the middle of growing, start growing.
-	// 注释：判断是否需要扩容,如果上面ovf == nil时跳出循环,这个时候也会触发扩容，扩容完成后会重新开始执行
+	// 注释：判断是否需要扩容
 	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
 		hashGrow(t, h)
 		// 注释：修改hmap结构体完成后，重新执行并执行数据迁移
 		goto again // Growing the table invalidates everything, so try again
 	}
 
+	// 注释：如果上面ovf == nil时跳出循环，这个时候需要重新建立新的溢出桶
 	if inserti == nil {
 		// The current bucket and all the overflow buckets connected to it are full, allocate a new one.
-		newb := h.newoverflow(t, b)
-		inserti = &newb.tophash[0]
-		insertk = add(unsafe.Pointer(newb), dataOffset)
-		elem = add(insertk, bucketCnt*uintptr(t.keysize))
+		newb := h.newoverflow(t, b)                       // 注释：创建新的溢出桶
+		inserti = &newb.tophash[0]                        // 注释：新溢出桶的第一个tophash的地址作为要插入的tophash的地址
+		insertk = add(unsafe.Pointer(newb), dataOffset)   // 注释：新溢出桶的第一个key的地址作为要插入的key的地址
+		elem = add(insertk, bucketCnt*uintptr(t.keysize)) // 注释：新溢出桶的第一个value的位置地址作为要插入的value的地址
 	}
 
 	// store new key/elem at insert position
-	if t.indirectkey() {
-		kmem := newobject(t.key)
-		*(*unsafe.Pointer)(insertk) = kmem
+	if t.indirectkey() { // 注释：判断是否是间接的key地址
+		kmem := newobject(t.key)           // 注释：通过类型申请空对象
+		*(*unsafe.Pointer)(insertk) = kmem // 注释：新申请的对象地址作为key的存放地址
 		insertk = kmem
 	}
 	if t.indirectelem() {

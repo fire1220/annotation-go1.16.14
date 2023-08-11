@@ -271,7 +271,7 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fromPtr unsafe.Pointer, fromLen 
 		return n
 	}
 
-	size := uintptr(n) * width // 注释：需要复制的数据长度
+	size := uintptr(n) * width // 注释：需要复制的数据长度,n是toLen和fromLen两个中最小的值（防止内存溢出）
 	if raceenabled {
 		callerpc := getcallerpc()
 		pc := funcPC(slicecopy)

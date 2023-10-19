@@ -15,7 +15,7 @@
 TEXT _rt0_amd64(SB),NOSPLIT,$-8
 	MOVQ	0(SP), DI	// argc
 	LEAQ	8(SP), SI	// argv
-	JMP	runtime·rt0_go(SB)
+	JMP	runtime·rt0_go(SB) // 注释：调用runtime·rt0_go函数（汇编语言实现的）
 
 // main is common startup code for most amd64 systems when using
 // external linking. The C startup code will call the symbol "main"

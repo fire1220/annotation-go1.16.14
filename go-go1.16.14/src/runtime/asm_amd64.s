@@ -13,8 +13,8 @@
 // number of arguments and the C-style argv.
 // 注释：程序真正的入口
 TEXT _rt0_amd64(SB),NOSPLIT,$-8
-	MOVQ	0(SP), DI	// argc
-	LEAQ	8(SP), SI	// argv
+	MOVQ	0(SP), DI	// 注释：命令行参数个数 // argc
+	LEAQ	8(SP), SI	// 注释：命令行参数    // argv
 	JMP	runtime·rt0_go(SB) // 注释：调用runtime·rt0_go函数（汇编语言实现的）
 
 // main is common startup code for most amd64 systems when using

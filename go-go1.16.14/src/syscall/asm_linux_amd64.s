@@ -19,7 +19,7 @@
 // 注释：macOS 等类 UINX 系统调用的参数传输大多数都采用类似的规则。
 
 // 注释：系统调用：第一个参数会放到AX中表示"系统调用编号"；第二个到第四个会放到DI，SI，DX中表示调的参数；返回值有三个分别是系统调用返回的两个参数和一个err
-TEXT ·Syscall(SB),NOSPLIT,$0-56
+TEXT ·Syscall(SB),NOSPLIT,$0-56         // 注释：函数名Syscall；NOSPLIT：函数不分裂；$0：自动计算函数栈空间大小；56：函数出入参数大小为56字节
 	CALL	runtime·entersyscall(SB)
 	MOVQ	a1+8(FP), DI                // 注释：函数入参的第2个参数放到DI寄存器里，DI是系统调用API的第一个参数
 	MOVQ	a2+16(FP), SI               // 注释：函数入参的第3个参数放到SI寄存器里，SI是系统调用API的第二个参数

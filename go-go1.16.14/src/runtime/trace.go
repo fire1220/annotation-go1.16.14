@@ -110,7 +110,7 @@ const (
 // 注释：栈追踪的全局上下文结构体
 var trace struct {
 	lock          mutex       // protects the following members
-	lockOwner     *g          // to avoid deadlocks during recursive lock locks
+	lockOwner     *g          // 注释：主G地址 // to avoid deadlocks during recursive lock locks // 注释：在递归锁期间避免死锁
 	enabled       bool        // 注释：是否开启栈追踪 // when set runtime traces events
 	shutdown      bool        // set when we are waiting for trace reader to finish after setting enabled to false
 	headerWritten bool        // whether ReadTrace has emitted trace header
@@ -123,8 +123,8 @@ var trace struct {
 	timeEnd       int64       // nanotime when tracing was stopped
 	seqGC         uint64      // GC start/done sequencer
 	reading       traceBufPtr // buffer currently handed off to user
-	empty         traceBufPtr // stack of empty buffers
-	fullHead      traceBufPtr // queue of full buffers
+	empty         traceBufPtr // 注释：空缓冲区堆栈 // stack of empty buffers
+	fullHead      traceBufPtr // 注释：缓冲区已满时的缓冲区地址队列的头部 // queue of full buffers
 	fullTail      traceBufPtr
 	reader        guintptr        // goroutine that called ReadTrace, or nil
 	stackTab      traceStackTable // maps stack traces to unique ids
@@ -149,8 +149,8 @@ var trace struct {
 // traceBufHeader is per-P tracing buffer.
 type traceBufHeader struct {
 	link      traceBufPtr             // in trace.empty/full
-	lastTicks uint64                  // when we wrote the last event
-	pos       int                     // next write offset in arr
+	lastTicks uint64                  // 注释：当我们写最后一个事件的时间 // when we wrote the last event
+	pos       int                     // 注释：arr中的下一个写入偏移下标 // next write offset in arr
 	stk       [traceStackSize]uintptr // scratch buffer for traceback
 }
 
@@ -159,7 +159,7 @@ type traceBufHeader struct {
 //go:notinheap
 type traceBuf struct {
 	traceBufHeader
-	arr [64<<10 - unsafe.Sizeof(traceBufHeader{})]byte // underlying buffer for traceBufHeader.buf
+	arr [64<<10 - unsafe.Sizeof(traceBufHeader{})]byte // 注释：traceBufHeader.buf的基础缓冲区 // underlying buffer for traceBufHeader.buf
 }
 
 // traceBufPtr is a *traceBuf that is not traced by the garbage
@@ -485,7 +485,7 @@ func traceProcFree(pp *p) {
 	unlock(&trace.lock)
 }
 
-// traceFullQueue queues buf into queue of full buffers.
+// traceFullQueue queues buf into queue of full buffers. // 注释：traceFullQueue将buf排队到缓冲区已满的队列中。
 func traceFullQueue(buf traceBufPtr) {
 	buf.ptr().link = 0
 	if trace.fullHead == 0 {
@@ -554,13 +554,14 @@ func traceEvent(ev byte, skip int, args ...uint64) {
 }
 
 func traceEventLocked(extraBytes int, mp *m, pid int32, bufp *traceBufPtr, ev byte, skip int, args ...uint64) {
-	buf := bufp.ptr()
+	buf := bufp.ptr() // 注释获取缓冲区对象
 	// TODO: test on non-zero extraBytes param.
-	maxSize := 2 + 5*traceBytesPerNumber + extraBytes // event type, length, sequence, timestamp, stack id and two add params
-	if buf == nil || len(buf.arr)-buf.pos < maxSize {
-		buf = traceFlush(traceBufPtrOf(buf), pid).ptr()
-		bufp.set(buf)
+	maxSize := 2 + 5*traceBytesPerNumber + extraBytes // 注释：事件类型、长度、序列、时间戳、堆栈id和两个添加参数 // event type, length, sequence, timestamp, stack id and two add params
+	if buf == nil || len(buf.arr)-buf.pos < maxSize { // 注释：如果没有缓冲区对象，或缓冲区数组无法容纳时（数组长度 - 要写的位置 - 基础的数据 < 0）
+		buf = traceFlush(traceBufPtrOf(buf), pid).ptr() // 注释：把当前缓冲区放到队列中，返回空缓冲区地址
+		bufp.set(buf)                                   // 注释：重新设置缓冲区地址对象
 	}
+	// 注释：【ing...】
 
 	ticks := uint64(cputicks()) / traceTickDiv
 	tickDiff := ticks - buf.lastTicks
@@ -641,40 +642,41 @@ func traceReleaseBuffer(pid int32) {
 	releasem(getg().m) // 注释：释放M（解锁）
 }
 
-// traceFlush puts buf onto stack of full buffers and returns an empty buffer.
+// traceFlush puts buf onto stack of full buffers and returns an empty buffer. // 注释：traceFlush将buf放入已满缓冲区的堆栈中，并返回一个空缓冲区。
+// 注释：把buf缓冲区放到已满的缓冲区队列中，返回空的缓冲区对象地址
 func traceFlush(buf traceBufPtr, pid int32) traceBufPtr {
-	owner := trace.lockOwner
-	dolock := owner == nil || owner != getg().m.curg
-	if dolock {
-		lock(&trace.lock)
+	owner := trace.lockOwner                         // 注释：主G地址
+	dolock := owner == nil || owner != getg().m.curg // 注释：如果没有主G地址或者当前的G不是主G时为ture
+	if dolock {                                      // 注释：如果没有主G地址或者当前的G不是主G时为ture
+		lock(&trace.lock) // 注释：如果没有主G地址或者当前的G不是主G时，添加锁
 	}
 	if buf != 0 {
-		traceFullQueue(buf)
+		traceFullQueue(buf) // 注释：把buf缓冲区放到已满的缓冲区队列中
 	}
-	if trace.empty != 0 {
-		buf = trace.empty
-		trace.empty = buf.ptr().link
+	if trace.empty != 0 { // 注释：如果空缓冲区有缓冲区数据时，用空缓冲区里的数据对象
+		buf = trace.empty            // 注释：空缓冲区堆栈(和下面bufp.link.set(nil)一起组成出栈)
+		trace.empty = buf.ptr().link // 注释：把链表下一个缓冲区对象放到空缓冲区里
 	} else {
-		buf = traceBufPtr(sysAlloc(unsafe.Sizeof(traceBuf{}), &memstats.other_sys))
+		buf = traceBufPtr(sysAlloc(unsafe.Sizeof(traceBuf{}), &memstats.other_sys)) // 注释：如果空缓冲区对象里没有数据时，申请内存空间
 		if buf == 0 {
 			throw("trace: out of memory")
 		}
 	}
-	bufp := buf.ptr()
-	bufp.link.set(nil)
-	bufp.pos = 0
+	bufp := buf.ptr()  // 注释：取出缓冲区对象
+	bufp.link.set(nil) // 注释：断开链表连接（相当于出栈）
+	bufp.pos = 0       // 注释：清空下一个要写入的偏移量下标，（已经把偏移量的位置数据放到缓冲区已满的队列里了）
 
 	// initialize the buffer for a new batch
-	ticks := uint64(cputicks()) / traceTickDiv
-	bufp.lastTicks = ticks
-	bufp.byte(traceEvBatch | 1<<traceArgCountShift)
-	bufp.varint(uint64(pid))
-	bufp.varint(ticks)
+	ticks := uint64(cputicks()) / traceTickDiv      // 注释：获取系统时钟时间
+	bufp.lastTicks = ticks                          // 注释：记录最后一次处理的时间
+	bufp.byte(traceEvBatch | 1<<traceArgCountShift) // 注释：把traceEvBatch | 1<<traceArgCountShift(固定的数据前缀)放到缓冲区arr数组中，并把下一个要插入的偏移量下标加一（bufp.pos）
+	bufp.varint(uint64(pid))                        // 注释：把pid写入到缓冲去数组arr里
+	bufp.varint(ticks)                              // 注释：把系统时钟时间写入到缓冲去数组arr里
 
 	if dolock {
-		unlock(&trace.lock)
+		unlock(&trace.lock) // 注释：如果没有主G地址或者当前的G不是主G时，上面加的锁，这里要解锁
 	}
-	return buf
+	return buf // 注释：返回缓冲区数据对象
 }
 
 // traceString adds a string to the trace.strings and returns the id.
@@ -746,15 +748,18 @@ func traceAppend(buf []byte, v uint64) []byte {
 }
 
 // varint appends v to buf in little-endian-base-128 encoding.
+// 注释：variant在little-endian-base-128编码中将v附加到buf。
+// 注释：把v写入到缓冲去数组arr里
 func (buf *traceBuf) varint(v uint64) {
-	pos := buf.pos
+	pos := buf.pos // 注释：获取要写入的偏移量下标
+	// 注释：循环把数据写入到缓冲区数组里(每8位循环一次（0X80=128）)，处理64为系统的指针数据放到byte(8位)里
 	for ; v >= 0x80; v >>= 7 {
 		buf.arr[pos] = 0x80 | byte(v)
 		pos++
 	}
-	buf.arr[pos] = byte(v)
-	pos++
-	buf.pos = pos
+	buf.arr[pos] = byte(v) // 注释：把最后不足8位的数据放到数组里
+	pos++                  // 注释：偏移量下标加一
+	buf.pos = pos          // 注释：设置下一个要插入的缓冲区偏移量下标
 }
 
 // byte appends v to buf.

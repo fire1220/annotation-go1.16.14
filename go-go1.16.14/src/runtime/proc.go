@@ -3590,28 +3590,32 @@ func save(pc, sp uintptr) {
 	}
 }
 
-// The goroutine g is about to enter a system call.
-// Record that it's not using the cpu anymore.
-// This is called only from the go syscall library and cgocall,
-// not from the low-level system calls used by the runtime.
+// The goroutine g is about to enter a system call. 			// 注释：goroutine g即将进入系统调用。
+// Record that it's not using the cpu anymore.					// 注释：记录它不再使用cpu。
+// This is called only from the go syscall library and cgocall, // 注释：这只能从go系统调用库和cgocall调用，
+// not from the low-level system calls used by the runtime. 	// 注释：而不是来自运行时使用的低级系统调用。
 //
 // Entersyscall cannot split the stack: the gosave must
 // make g->sched refer to the caller's stack segment, because
 // entersyscall is going to return immediately after.
+// 注释：Entersyscall无法拆分堆栈：gosave必须使g->sched引用调用方的堆栈段，因为Entersyscall将在之后立即返回。
 //
-// Nothing entersyscall calls can split the stack either.
-// We cannot safely move the stack during an active call to syscall,
+// Nothing entersyscall calls can split the stack either. // 注释：entersyscall调用也不能拆分堆栈。
+// We cannot safely move the stack during an active call to syscall, // 注释：在对系统调用的活动调用期间，我们无法安全地移动堆栈，
 // because we do not know which of the uintptr arguments are
-// really pointers (back into the stack).
+// really pointers (back into the stack). // 注释：因为我们不知道哪个uintptr参数是真正的指针（返回堆栈）。
 // In practice, this means that we make the fast path run through
 // entersyscall doing no-split things, and the slow path has to use systemstack
 // to run bigger things on the system stack.
+// 注释：在实践中，这意味着我们让快速路径通过entersyscall运行，而不进行拆分，而慢速路径必须使用systemstack在系统堆栈上运行更大的东西。
 //
 // reentersyscall is the entry point used by cgo callbacks, where explicitly
 // saved SP and PC are restored. This is needed when exitsyscall will be called
 // from a function further up in the call stack than the parent, as g->syscallsp
 // must always point to a valid stack frame. entersyscall below is the normal
 // entry point for syscalls, which obtains the SP and PC from the caller.
+// 注释：returnersyscall是cgo回调使用的入口点，显式保存的SP和PC将在这里恢复。当exitsyscall将从调用堆栈中比父函数更靠上的函数调用时，
+// 注释：需要这样做，因为g->syscallsp必须始终指向有效的堆栈帧。下面的entersyscall是syscalls的正常入口点，它从调用方获取SP和PC。
 //
 // Syscall tracing:
 // At the start of a syscall we emit traceGoSysCall to capture the stack trace.

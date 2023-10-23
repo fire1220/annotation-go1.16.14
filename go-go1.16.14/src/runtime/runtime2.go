@@ -534,7 +534,7 @@ type m struct {
 	mallocing     int32
 	throwing      int32
 	preemptoff    string // if != "", keep curg running on this m
-	locks         int32  // 注释：大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
+	locks         int32  // 注释：(禁用抢占)大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
 	spinning      bool // 注释：是否自旋，自旋就表示M正在找G来运行，表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work

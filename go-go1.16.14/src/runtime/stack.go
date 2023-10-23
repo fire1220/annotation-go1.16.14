@@ -127,7 +127,7 @@ const (
 	// Stored into g->stackguard0 to cause split stack check failure.
 	// Must be greater than any real sp.
 	// 0xfffffade in hex.
-	stackPreempt = uintptrMask & -1314
+	stackPreempt = uintptrMask & -1314 // 注释：Goroutine抢占请求。存储到g->stackguard0中，导致拆分堆栈检查失败。必须大于十六进制中的任何实际sp.
 
 	// Thread is forking.
 	// Stored into g->stackguard0 to cause split stack check failure.

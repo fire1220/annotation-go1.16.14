@@ -3636,14 +3636,16 @@ func reentersyscall(pc, sp uintptr) {
 
 	// Disable preemption because during this function g is in Gsyscall status,
 	// but can have inconsistent g->sched, do not let GC observe it.
-	_g_.m.locks++
+	_g_.m.locks++ // 注释：禁用抢占，因为在这个函数中，g处于Gsyscall状态，但可能有不一致的g->sched，不要让GC观察它。
 
 	// Entersyscall must not call any function that might split/grow the stack.
 	// (See details in comment above.)
 	// Catch calls that might, by replacing the stack guard with something that
 	// will trip any stack check and leaving a flag to tell newstack to die.
-	_g_.stackguard0 = stackPreempt
-	_g_.throwsplit = true
+	// 注释：Entersyscall不能调用任何可能拆分/增长堆栈的函数。（请参阅上面评论中的详细信息。）捕获可能的调用，
+	// 注释：方法是用会触发任何堆栈检查的东西替换堆栈保护，并留下一个标志来告诉newstack死亡。
+	_g_.stackguard0 = stackPreempt // 注释：标记栈抢占请求
+	_g_.throwsplit = true          // 注释：禁止栈拆分
 
 	// Leave SP around for GC and traceback.
 	save(pc, sp)

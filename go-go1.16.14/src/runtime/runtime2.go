@@ -442,8 +442,8 @@ type g struct {
 	_defer       *_defer        // 注释：当前G的延迟调用的数据指针(单向链表，deferreturn会获取链表数据) // innermost defer
 	m            *m             // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行） // current m; offset known to arm liblink
 	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据
-	syscallsp    uintptr        // 注释：如果G的状态为Gsyscall，值为sched.sp主要用于GC期间 // if status==Gsyscall, syscallsp = sched.sp to use during gc
-	syscallpc    uintptr        // 注释：如果G的状态为GSyscall，值为sched.pc主要用于GC期间 // if status==Gsyscall, syscallpc = sched.pc to use during gc
+	syscallsp    uintptr        // 注释：如果G的状态为Gsyscall(系统调用时的PC值)，值为sched.sp主要用于GC期间 // if status==Gsyscall, syscallsp = sched.sp to use during gc
+	syscallpc    uintptr        // 注释：如果G的状态为GSyscall(系统调用时SPP值)，值为sched.pc主要用于GC期间 // if status==Gsyscall, syscallpc = sched.pc to use during gc
 	stktopsp     uintptr        // 注释：期望sp位于栈顶，用于回源跟踪 // expected sp at top of stack, to check in traceback
 	param        unsafe.Pointer // 注释：wakeup唤醒时候传递的参数，睡眠时其他g可以设置param，唤醒时该g可以获取，例如调用ready() // passed parameter on wakeup
 	atomicstatus uint32         // 注释：当前G的状态，例如：_Gidle:0;_Grunnable:1;_Grunning:2;_Gsyscall:3;_Gwaiting:4 等
@@ -563,7 +563,7 @@ type m struct {
 	waitlock      unsafe.Pointer                // 注释：等待锁指针
 	waittraceev   byte                          // 注释：等待追踪事件类型
 	waittraceskip int                           // 注释：跳过几层事件追踪的结果（事件追踪结果中从哪一级返回数据，跳过的是不重要的）
-	startingtrace bool
+	startingtrace bool                          // 注释：是否已经开始栈追踪
 	syscalltick   uint32
 	freelink      *m // on sched.freem // 注释：对应freem的链表(freelink->sched.freem)
 
@@ -665,7 +665,7 @@ type p struct {
 		buf [128]*mspan
 	}
 
-	tracebuf traceBufPtr
+	tracebuf traceBufPtr // 注释：存放栈追踪的栈缓冲区地址
 
 	// traceSweep indicates the sweep events should be traced.
 	// This is used to defer the sweep start event until a span

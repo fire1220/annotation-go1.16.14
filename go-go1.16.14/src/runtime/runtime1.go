@@ -475,11 +475,11 @@ func acquirem() *m {
 //go:nosplit
 func releasem(mp *m) {
 	_g_ := getg() // 注释：获取当前运行的g
-	mp.locks--    // 注释：线程使用数减一
-	// 注释：如果当前线程已经被标记为使用，并且当前G发出了抢占请求时，标记抢占标记
+	mp.locks--    // 注释：线程使用数减一(大于0时禁止抢占)
+	// 注释：如果当前线程已经被标记为未使用，并且当前G发出了抢占请求时，标记抢占请求
 	if mp.locks == 0 && _g_.preempt {
 		// restore the preemption request in case we've cleared it in newstack
-		_g_.stackguard0 = stackPreempt // 注释：标记抢占标记
+		_g_.stackguard0 = stackPreempt // 注释：标记抢占请求
 	}
 }
 

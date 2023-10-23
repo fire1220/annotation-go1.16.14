@@ -3647,19 +3647,19 @@ func reentersyscall(pc, sp uintptr) {
 	_g_.stackguard0 = stackPreempt // 注释：标记栈抢占请求
 	_g_.throwsplit = true          // 注释：禁止栈拆分
 
-	// Leave SP around for GC and traceback.
-	save(pc, sp)
-	_g_.syscallsp = sp
-	_g_.syscallpc = pc
-	casgstatus(_g_, _Grunning, _Gsyscall)
-	if _g_.syscallsp < _g_.stack.lo || _g_.stack.hi < _g_.syscallsp {
+	// Leave SP around for GC and traceback. // 注释：保留SP以进行GC和回溯。
+	save(pc, sp)                                                      // 注释：保存现场
+	_g_.syscallsp = sp                                                // 注释：设置系统调用时的SP值
+	_g_.syscallpc = pc                                                // 注释：设置系统调用时的PC值
+	casgstatus(_g_, _Grunning, _Gsyscall)                             // 注释：设置系统的调用的状态码
+	if _g_.syscallsp < _g_.stack.lo || _g_.stack.hi < _g_.syscallsp { // 注释：判断SP入股没有在栈地址范围内则报错
 		systemstack(func() {
 			print("entersyscall inconsistent ", hex(_g_.syscallsp), " [", hex(_g_.stack.lo), ",", hex(_g_.stack.hi), "]\n")
 			throw("entersyscall")
 		})
 	}
 
-	if trace.enabled {
+	if trace.enabled { // 注释：如果栈追踪开启
 		systemstack(traceGoSysCall)
 		// systemstack itself clobbers g.sched.{pc,sp} and we might
 		// need them later when the G is genuinely blocked in a

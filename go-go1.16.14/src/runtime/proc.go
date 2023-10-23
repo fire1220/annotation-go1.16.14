@@ -3691,6 +3691,8 @@ func reentersyscall(pc, sp uintptr) {
 //
 // This is exported via linkname to assembly in the syscall package.
 //
+// 注释：进入系统调用前执行的前置方法
+//
 //go:nosplit
 //go:linkname entersyscall
 func entersyscall() {

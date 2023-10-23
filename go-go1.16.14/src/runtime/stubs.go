@@ -260,10 +260,12 @@ func publicationBarrier()
 // immediately and can only be passed to nosplit functions.
 
 // 注释：返回对所在函数的调用，上面案例中有解释
+// 注释：获取 caller(呼叫者，上游的函数)的PC（伪）指令寄存器，对应硬件IP寄存器
 //go:noescape
 func getcallerpc() uintptr
 
 // 注释：返回对所在函数的返回，上面案例中有解释
+// 注释：获取 caller(呼叫者，上游的函数)的SP（伪）寄存器，对应硬件BP寄存器（函数栈帧底部）
 //go:noescape
 func getcallersp() uintptr // implemented as an intrinsic on all platforms
 

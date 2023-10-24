@@ -3660,7 +3660,7 @@ func reentersyscall(pc, sp uintptr) {
 	}
 
 	if trace.enabled { // 注释：如果栈追踪开启
-		systemstack(traceGoSysCall)
+		systemstack(traceGoSysCall) // 注释：切换到系统栈，执行栈追踪
 		// systemstack itself clobbers g.sched.{pc,sp} and we might
 		// need them later when the G is genuinely blocked in a
 		// syscall

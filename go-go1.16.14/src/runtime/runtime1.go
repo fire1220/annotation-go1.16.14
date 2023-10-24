@@ -13,36 +13,40 @@ import (
 
 // Keep a cached value to make gotraceback fast,
 // since we call it on every call to gentraceback.
+// 注释：保留一个缓存值以使gotraceback快速，因为我们在每次调用gentraceback时都会调用它。
 // The cached value is a uint32 in which the low bits
 // are the "crash" and "all" settings and the remaining
 // bits are the traceback value (0 off, 1 on, 2 include system).
+// 注释：缓存的值是uint32，其中低位是“崩溃”和“所有”设置，其余位是回溯值（0关闭，1打开，2包括系统）。
+//
 const (
-	tracebackCrash = 1 << iota
-	tracebackAll
-	tracebackShift = iota
+	tracebackCrash = 1 << iota // 注释：回溯崩溃
+	tracebackAll               // 注释：全部回溯
+	tracebackShift = iota      // 注释：移位，用来设置高位时使用
 )
 
-var traceback_cache uint32 = 2 << tracebackShift
+var traceback_cache uint32 = 2 << tracebackShift // 注释：1000
 var traceback_env uint32
 
 // gotraceback returns the current traceback settings.
 //
-// If level is 0, suppress all tracebacks.
-// If level is 1, show tracebacks, but exclude runtime frames.
-// If level is 2, show tracebacks including runtime frames.
-// If all is set, print all goroutine stacks. Otherwise, print just the current goroutine.
-// If crash is set, crash (core dump, etc) after tracebacking.
+// If level is 0, suppress all tracebacks.  // 注释：如果级别为0，则抑制所有回溯。
+// If level is 1, show tracebacks, but exclude runtime frames. // 注释：如果级别为1，则显示回溯，但排除运行时帧。
+// If level is 2, show tracebacks including runtime frames. // 注释： 如果级别为2，则显示包括运行时帧的回溯。
+// If all is set, print all goroutine stacks. Otherwise, print just the current goroutine. // 注释：如果设置了all，则打印所有goroutine堆栈。否则，只打印当前goroutine。
+// If crash is set, crash (core dump, etc) after tracebacking. // 注释：如果设置了崩溃，则在回溯后崩溃（核心转储等）。
 //
+// 注释返回堆栈信息，1.栈追踪级别；2.是否是栈全部追溯；3.是否崩溃
 //go:nosplit
 func gotraceback() (level int32, all, crash bool) {
 	_g_ := getg()
-	t := atomic.Load(&traceback_cache)
-	crash = t&tracebackCrash != 0
-	all = _g_.m.throwing > 0 || t&tracebackAll != 0
-	if _g_.m.traceback != 0 {
-		level = int32(_g_.m.traceback)
+	t := atomic.Load(&traceback_cache)              // 注释：(原子)查询1000到地址
+	crash = t&tracebackCrash != 0                   // 注释：是否崩溃
+	all = _g_.m.throwing > 0 || t&tracebackAll != 0 // 注释：如果m存储完整堆栈，或者有全部追溯标识，表示全部追溯
+	if _g_.m.traceback != 0 {                       // 注释：如果栈追踪级别不为0时使用栈追踪级别，否则级别为2
+		level = int32(_g_.m.traceback) // 注释：m上的栈追溯等级标识
 	} else {
-		level = int32(t >> tracebackShift)
+		level = int32(t >> tracebackShift) // 注释：默认2为追溯级别
 	}
 	return
 }

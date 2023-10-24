@@ -73,16 +73,20 @@ func tracebackdefers(gp *g, callback func(*stkframe, unsafe.Pointer) bool, v uns
 
 const sizeofSkipFunction = 256
 
-// Generic traceback. Handles runtime stack prints (pcbuf == nil),
+// Generic traceback. Handles runtime stack prints (pcbuf == nil), // 注释：通用追溯。处理运行时堆栈打印（ pcbuf == nil ），
 // the runtime.Callers function (pcbuf != nil), as well as the garbage
 // collector (callback != nil).  A little clunky to merge these, but avoids
 // duplicating the code and all its subtlety.
+// 注释：运行时。调用方函数（pcbuf!=nil），以及垃圾收集器（callback!=nile）。合并这些代码有点笨拙，但避免了重复代码及其所有微妙之处。
 //
 // The skip argument is only valid with pcbuf != nil and counts the number
 // of logical frames to skip rather than physical frames (with inlining, a
 // PC in pcbuf can represent multiple calls). If a PC is partially skipped
 // and max > 1, pcbuf[1] will be runtime.skipPleaseUseCallersFrames+N where
 // N indicates the number of logical frames to skip in pcbuf[0].
+// 注释：skip参数仅对pcbuf!=nil时有效，并计算要跳过的逻辑帧数，而不是物理帧数（通过内联，pcbuf中的PC可以表示多个调用）。如果部分跳过PC并且最大值>1，则pcbuf[1]将是运行时。
+// 注释：skipPleaseUseCallersFrames+N，其中N表示pcbuf[0]中要跳过的逻辑帧数。
+//
 func gentraceback(pc0, sp0, lr0 uintptr, gp *g, skip int, pcbuf *uintptr, max int, callback func(*stkframe, unsafe.Pointer) bool, v unsafe.Pointer, flags uint) int {
 	if skip > 0 && callback != nil {
 		throw("gentraceback callback cannot be used with non-zero skip")
@@ -105,7 +109,7 @@ func gentraceback(pc0, sp0, lr0 uintptr, gp *g, skip int, pcbuf *uintptr, max in
 		// instead on the g0 stack.
 		throw("gentraceback cannot trace user goroutine on its own stack")
 	}
-	level, _, _ := gotraceback()
+	level, _, _ := gotraceback() // 注释：获取栈追溯等级
 
 	var ctxt *funcval // Context pointer for unstarted goroutines. See issue #25897.
 

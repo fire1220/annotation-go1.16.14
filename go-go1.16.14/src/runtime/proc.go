@@ -4151,7 +4151,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	_g_ := getg() // 注释：获取tls(FS寄存器的值)里的G的地址
 
 	if fn == nil {
-		_g_.m.throwing = -1 // do not dump full stacks
+		_g_.m.throwing = -1 // do not dump full stacks // 注释：不要转储完整的堆栈
 		throw("go of nil func value")
 	}
 	acquirem()           // 注释：获取M并加锁，这里没有用到返回值，所以是单纯的加锁，禁止被抢占 // disable preemption because it can be holding p in a local var

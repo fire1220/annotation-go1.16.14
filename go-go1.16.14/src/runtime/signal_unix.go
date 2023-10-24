@@ -757,14 +757,14 @@ func sigpanic() {
 	panic(errorString(sigtable[g.sig].name))
 }
 
-// dieFromSignal kills the program with a signal.
-// This provides the expected exit status for the shell.
-// This is only called with fatal signals expected to kill the process.
+// dieFromSignal kills the program with a signal. // 注释：dieFromSignal用一个信号杀死程序。
+// This provides the expected exit status for the shell. // 注释：这提供了shell的预期退出状态。
+// This is only called with fatal signals expected to kill the process. // 注释：这只在预期会终止进程的致命信号的情况下调用。
 //go:nosplit
 //go:nowritebarrierrec
 func dieFromSignal(sig uint32) {
 	unblocksig(sig)
-	// Mark the signal as unhandled to ensure it is forwarded.
+	// Mark the signal as unhandled to ensure it is forwarded. // 注释：将信号标记为未处理，以确保其被转发。
 	atomic.Store(&handlingSig[sig], 0)
 	raise(sig)
 
@@ -773,11 +773,12 @@ func dieFromSignal(sig uint32) {
 	// the current thread, which means that the signal may not yet
 	// have been delivered. Give other threads a chance to run and
 	// pick up the signal.
+	// 注释：这应该会杀死我们。不过，在某些系统上，raise会将信号发送到整个进程，而不仅仅是当前线程，这意味着信号可能尚未传递。给其他线程一个运行并获取信号的机会。
 	osyield()
 	osyield()
 	osyield()
 
-	// If that didn't work, try _SIG_DFL.
+	// If that didn't work, try _SIG_DFL. // 注释：如果不起作用，请尝试_SIG_DFL。
 	setsig(sig, _SIG_DFL)
 	raise(sig)
 
@@ -785,7 +786,7 @@ func dieFromSignal(sig uint32) {
 	osyield()
 	osyield()
 
-	// If we are still somehow running, just exit with the wrong status.
+	// If we are still somehow running, just exit with the wrong status. // 注释：如果我们仍在以某种方式运行，请使用错误的状态退出。
 	exit(2)
 }
 
@@ -850,10 +851,12 @@ func raisebadsignal(sig uint32, c *sigctxt) {
 func crash() {
 	// OS X core dumps are linear dumps of the mapped memory,
 	// from the first virtual byte to the last, with zeros in the gaps.
+	// 注释：OSX内核转储是映射内存的线性转储，从第一个虚拟字节到最后一个，间隙为零。
 	// Because of the way we arrange the address space on 64-bit systems,
 	// this means the OS X core file will be >128 GB and even on a zippy
 	// workstation can take OS X well over an hour to write (uninterruptible).
-	// Save users from making that mistake.
+	// 注释：由于我们在64位系统上安排地址空间的方式，这意味着OS X核心文件将>128 GB，即使在一个灵活的工作站上，OS X也可能需要一个多小时才能写入（不间断）。
+	// Save users from making that mistake. // 注释：避免用户犯那个错误。
 	if GOOS == "darwin" && GOARCH == "amd64" {
 		return
 	}

@@ -532,7 +532,7 @@ type m struct {
 	oldp          puintptr // the p that was attached before executing a syscall
 	id            int64
 	mallocing     int32
-	throwing      int32
+	throwing      int32  // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）
 	preemptoff    string // if != "", keep curg running on this m
 	locks         int32  // 注释：(禁用抢占)大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
 	dying         int32
@@ -545,7 +545,7 @@ type m struct {
 	freeWait      uint32    // if == 0, safe to free g0 and delete m (atomic)
 	fastrand      [2]uint32 // 注释：(快速随机数时使用)快速随机数的基础数，程序初始化（schedinit）或创建M（allocm）时设置，随机数是基于这两个数计算出来的，计算完成后重新回填到这两个数里
 	needextram    bool
-	traceback     uint8
+	traceback     uint8                         // 注释：堆栈追踪级别（用于栈追踪时使用）
 	ncgocall      uint64                        // 注释：cgo调用的总数 // number of cgo calls in total
 	ncgo          int32                         // 注释：当前cgo调用的数目 // number of cgo calls currently in progress
 	cgoCallersUse uint32                        // if non-zero, cgoCallers in use temporarily

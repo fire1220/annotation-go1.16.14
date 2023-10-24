@@ -127,7 +127,7 @@ var trace struct {
 	fullHead      traceBufPtr     // 注释：缓冲区已满时的缓冲区地址队列的头部 // queue of full buffers
 	fullTail      traceBufPtr     // 注释：缓冲区队列的尾部地址对象
 	reader        guintptr        // goroutine that called ReadTrace, or nil
-	stackTab      traceStackTable // maps stack traces to unique ids
+	stackTab      traceStackTable // maps stack traces to unique ids // 注释：将堆栈跟踪映射到唯一id
 
 	// Dictionary for traceEvString.
 	//
@@ -591,7 +591,7 @@ func traceEventLocked(extraBytes int, mp *m, pid int32, bufp *traceBufPtr, ev by
 	if skip == 0 { // 注释：如果步间值是0时
 		buf.varint(0) // 注释：记录0到缓冲区数组里
 	} else if skip > 0 {
-		buf.varint(traceStackID(mp, buf.stk[:], skip)) // 注释：跳过栈ID（buf.stk数组里存储的是栈ID）
+		buf.varint(traceStackID(mp, buf.stk[:], skip)) // 注释：(获取栈ID并且添加到缓冲区数组里)跳过skip的个数的栈ID（buf.stk数组里存储的是栈ID）
 	}
 	evSize := buf.pos - startPos
 	if evSize > maxSize {
@@ -603,11 +603,12 @@ func traceEventLocked(extraBytes int, mp *m, pid int32, bufp *traceBufPtr, ev by
 	}
 }
 
+// 注释：跳过skip个数的的栈ID，返回跳过后的栈ID，buf是栈ID数组，skip是要跳过的栈ID的个数
 func traceStackID(mp *m, buf []uintptr, skip int) uint64 {
-	_g_ := getg()
-	gp := mp.curg
+	_g_ := getg() // 注释：从TLS里获取G地址对象
+	gp := mp.curg // 注释：获取传入的M中的G
 	var nstk int
-	if gp == _g_ {
+	if gp == _g_ { // 注释：如果传入的M中的G等于当前G
 		nstk = callers(skip+1, buf)
 	} else if gp != nil {
 		gp = mp.curg
@@ -619,7 +620,7 @@ func traceStackID(mp *m, buf []uintptr, skip int) uint64 {
 	if nstk > 0 && gp.goid == 1 {
 		nstk-- // skip runtime.main
 	}
-	id := trace.stackTab.put(buf[:nstk])
+	id := trace.stackTab.put(buf[:nstk]) // 注释：
 	return uint64(id)
 }
 
@@ -780,12 +781,14 @@ type traceStackTable struct {
 }
 
 // traceStack is a single stack in traceStackTable.
+// 注释：traceStack是traceStackTable中的单个堆栈。
+// 注释：追溯的堆栈记录
 type traceStack struct {
-	link traceStackPtr
-	hash uintptr
-	id   uint32
-	n    int
-	stk  [0]uintptr // real type [n]uintptr
+	link traceStackPtr // 注释：追溯堆栈指针对象
+	hash uintptr       // 注释：堆栈内存的哈希值
+	id   uint32        // 注释：追溯的栈记录的自增ID，（每次访问堆栈对象时自增）
+	n    int           // 注释：堆栈的长度（堆栈内存个数）
+	stk  [0]uintptr    // 注释：堆栈ID(内存地址)数组(也是PC值)的首指针，用来存储堆栈的ID数组，数组的长度时n // real type [n]uintptr
 }
 
 type traceStackPtr uintptr
@@ -799,6 +802,7 @@ func (ts *traceStack) stack() []uintptr {
 
 // put returns a unique id for the stack trace pcs and caches it in the table,
 // if it sees the trace for the first time.
+// 注释：put为堆栈跟踪pc返回一个唯一的id，如果它第一次看到跟踪，则将其缓存在表中。
 func (tab *traceStackTable) put(pcs []uintptr) uint32 {
 	if len(pcs) == 0 {
 		return 0
@@ -814,21 +818,21 @@ func (tab *traceStackTable) put(pcs []uintptr) uint32 {
 		unlock(&tab.lock)
 		return id
 	}
-	// Create new record.
-	tab.seq++
-	stk := tab.newStack(len(pcs))
-	stk.hash = hash
-	stk.id = tab.seq
-	stk.n = len(pcs)
-	stkpc := stk.stack()
-	for i, pc := range pcs {
-		stkpc[i] = pc
+	// Create new record. // 注释：创建新的记录
+	tab.seq++                     // 注释：堆栈记录的ID
+	stk := tab.newStack(len(pcs)) // 注释：申请堆栈记录的内存
+	stk.hash = hash               // 注释：保存哈希
+	stk.id = tab.seq              // 注释：保存记录的ID
+	stk.n = len(pcs)              // 注释：保存记录的长度
+	stkpc := stk.stack()          // 注释：记录的数据部分的指针数组，是有多个栈地址组成的数组，长度是n
+	for i, pc := range pcs {      // 注释：把传入的栈id(内存地址)
+		stkpc[i] = pc // 注释：把传入的栈id(内存地址)，写入数组中(记录的数据部分)
 	}
 	part := int(hash % uintptr(len(tab.tab)))
 	stk.link = tab.tab[part]
 	atomicstorep(unsafe.Pointer(&tab.tab[part]), unsafe.Pointer(stk))
 	unlock(&tab.lock)
-	return stk.id
+	return stk.id // 注释：返回记录的ID
 }
 
 // find checks if the stack trace pcs is already present in the table.
@@ -849,6 +853,7 @@ Search:
 }
 
 // newStack allocates a new stack of size n.
+// 注释：申请堆栈记录的内存，内存的大小时结构体的大小加数据数组的大小
 func (tab *traceStackTable) newStack(n int) *traceStack {
 	return (*traceStack)(tab.mem.alloc(unsafe.Sizeof(traceStack{}) + uintptr(n)*sys.PtrSize))
 }

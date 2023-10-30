@@ -933,16 +933,16 @@ TEXT aeshashbody<>(SB),NOSPLIT,$0-0
 	PXOR	runtime·aeskeysched(SB), X0	// xor in per-process seed  // 注释：每个进程种子中的xor
 	AESENC	X0, X0				// scramble seed                    // 注释：打乱种子
 
-	CMPQ	CX, $16
-	JB	aes0to15
-	JE	aes16
-	CMPQ	CX, $32
-	JBE	aes17to32
-	CMPQ	CX, $64
-	JBE	aes33to64
-	CMPQ	CX, $128
-	JBE	aes65to128
-	JMP	aes129plus
+	CMPQ	CX, $16             // 注释：判断CX寄存器里的值和16相比较
+	JB	aes0to15                // 注释：如果小于则跳转到aes0to15标记
+	JE	aes16                   // 注释：如果等于则跳转aes16标记
+	CMPQ	CX, $32             // 注释：比较CX和32
+	JBE	aes17to32               // 注释：小于等于是跳转到aes17to32标记
+	CMPQ	CX, $64             // 注释：比较CX寄存器和64
+	JBE	aes33to64               // 注释：小于等于时跳转到aes33to64标记
+	CMPQ	CX, $128            // 注释：比较CX寄存器和128
+	JBE	aes65to128              // 注释：小于等于时跳转到aes65to128标记
+	JMP	aes129plus              // 注释：无条件跳转到aes129plus标记
 
 aes0to15:
 	TESTQ	CX, CX

@@ -929,9 +929,9 @@ TEXT aeshashbody<>(SB),NOSPLIT,$0-0
 	MOVQ	h+8(FP), X0			// 64 bits of per-table hash seed   // 注释：(就是上面的第二个参数)每个表的64位散列种子
 	PINSRW	$4, CX, X0			// 16 bits of length                // 注释：长度为16位,将CX中的低位插入到X0中的第4个位置
 	PSHUFHW $0, X0, X0			// repeat length 4 times total      // 注释：重复长度总计4次，（根据X0（第三个参数）中编码对X0（第二个参数）高位进行打乱处理，结果放到0中（丢掉结果））
-	MOVO	X0, X1				// save unscrambled seed            // 注释：保存未处理的种子
+	MOVO	X0, X1				// save unscrambled seed            // 注释：保存未处理的种子，到X1中
 	PXOR	runtime·aeskeysched(SB), X0	// xor in per-process seed  // 注释：每个进程种子中的xor
-	AESENC	X0, X0				// scramble seed                    // 注释：打乱种子
+	AESENC	X0, X0				// scramble seed                    // 注释：打乱种子(执行一轮AES加密流程)
 
 	CMPQ	CX, $16             // 注释：判断CX寄存器里的值和16相比较
 	JB	aes0to15                // 注释：如果小于则跳转到aes0to15标记

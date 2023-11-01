@@ -8,8 +8,8 @@ import "unsafe"
 
 type mOS struct {
 	initialized bool
-	mutex       pthreadmutex
-	cond        pthreadcond
+	mutex       pthreadmutex // 注释：线程锁
+	cond        pthreadcond  // 注释：线程条件
 	count       int
 }
 
@@ -65,14 +65,15 @@ func semasleep(ns int64) int32 {
 	}
 }
 
+// 注释：MacOS系统-唤醒M
 //go:nosplit
 func semawakeup(mp *m) {
-	pthread_mutex_lock(&mp.mutex)
+	pthread_mutex_lock(&mp.mutex) // 注释：线程锁，加锁
 	mp.count++
 	if mp.count > 0 {
 		pthread_cond_signal(&mp.cond)
 	}
-	pthread_mutex_unlock(&mp.mutex)
+	pthread_mutex_unlock(&mp.mutex) // 注释：线程锁，解锁
 }
 
 // The read and write file descriptors used by the sigNote functions.

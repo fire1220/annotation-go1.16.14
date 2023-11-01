@@ -152,14 +152,14 @@ func notewakeup(n *note) {
 	// Successfully set waitm to locked.
 	// What was it before?
 	switch {
-	case v == 0:
+	case v == 0: // 注释：如果是0什么都不做
 		// Nothing was waiting. Done.
-	case v == locked:
+	case v == locked: // 注释：如果是1则代表已经是唤醒的状态了，抛出异常
 		// Two notewakeups! Not allowed.
 		throw("notewakeup - double wakeup")
 	default:
 		// Must be the waiting m. Wake it up.
-		semawakeup((*m)(unsafe.Pointer(v)))
+		semawakeup((*m)(unsafe.Pointer(v))) // 注释：如果是指针则转换成M指针并唤醒M
 	}
 }
 

@@ -192,7 +192,7 @@ type note struct {
 	// Futex-based impl treats it as uint32 key,
 	// while sema-based impl as M* waitm.
 	// Used to be a union, but unions break precise GC.
-	key uintptr // 注释：这里的值是【0或1或*M】0什么都不做，1已经是唤醒的状态，*M待唤醒的M指针
+	key uintptr // 注释：这里的值是【0或1或*M】0什么都不做，1表示已经是唤醒状态，*M待唤醒的M指针
 }
 
 type funcval struct {

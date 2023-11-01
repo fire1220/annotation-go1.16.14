@@ -1416,7 +1416,7 @@ func typecheck1(n *Node, top int) (res *Node) {
 		}
 
 		n.Left = typecheck(n.Left, ctxExpr)
-		n.Left = defaultlit(n.Left, nil)
+		n.Left = defaultlit(n.Left, nil) // 注释：len(nil)的时候报错
 		n.Left = implicitstar(n.Left)
 		l := n.Left
 		t := l.Type

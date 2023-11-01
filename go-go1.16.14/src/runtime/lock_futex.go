@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// 注释：该文件只在dragonfly freebsd linux下编译执行
+
 // +build dragonfly freebsd linux
 
 package runtime
@@ -135,6 +137,7 @@ func noteclear(n *note) {
 	n.key = 0
 }
 
+// 注释：【Linux系统】唤醒节点
 func notewakeup(n *note) {
 	old := atomic.Xchg(key32(&n.key), 1)
 	if old != 0 {

@@ -568,6 +568,7 @@ TEXT runtime·madvise(SB),NOSPLIT,$0
 
 // int64 futex(int32 *uaddr, int32 op, int32 val,
 //	struct timespec *timeout, int32 *uaddr2, int32 val2);
+// 注释：唤醒M
 TEXT runtime·futex(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVL	op+8(FP), SI

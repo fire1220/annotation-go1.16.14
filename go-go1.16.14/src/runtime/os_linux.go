@@ -51,9 +51,10 @@ func futexsleep(addr *uint32, val uint32, ns int64) {
 }
 
 // If any procs are sleeping on addr, wake up at most cnt.
+// 注释：【Linux系统】唤醒M，地址addr上的M唤醒cnt个
 //go:nosplit
 func futexwakeup(addr *uint32, cnt uint32) {
-	ret := futex(unsafe.Pointer(addr), _FUTEX_WAKE_PRIVATE, cnt, nil, nil, 0)
+	ret := futex(unsafe.Pointer(addr), _FUTEX_WAKE_PRIVATE, cnt, nil, nil, 0) // 注释：唤醒M（汇编实现的）（Linux系统是汇编实现的，MacOS是go代码实现的）
 	if ret >= 0 {
 		return
 	}
@@ -61,6 +62,7 @@ func futexwakeup(addr *uint32, cnt uint32) {
 	// I don't know that futex wakeup can return
 	// EAGAIN or EINTR, but if it does, it would be
 	// safe to loop and call futex again.
+	// 注释：我不知道futex唤醒可以返回EAGAIN或EINTR，但如果它返回了，则可以安全地循环并再次调用futex。
 	systemstack(func() {
 		print("futexwakeup addr=", addr, " returned ", ret, "\n")
 	})

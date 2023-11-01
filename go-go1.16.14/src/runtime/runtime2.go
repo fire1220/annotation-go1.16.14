@@ -828,6 +828,7 @@ type schedt struct {
 
 	// safepointFn should be called on each P at the next GC
 	// safepoint if p.runSafePointFn is set.
+	// 注释：如果设置了P.runSafePointFn，则应在下一个GC安全点对每个P调用安全点Fn。
 	safePointFn   func(*p)
 	safePointWait int32
 	safePointNote note

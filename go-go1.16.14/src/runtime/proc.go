@@ -1734,6 +1734,7 @@ func syscall_runtime_doAllThreadsSyscall(fn func(bool) bool) {
 // _Psyscall to avoid a race where forEachP sees that the P is running
 // just before the P goes into _Pidle/_Psyscall and neither forEachP
 // nor the P run the safe-point function.
+// 注释：必须在向_Pidle或_Psyscall的任何转换中检查runSafePointFn，以避免发生竞争，即forEachP在P进入_Pidle/Psyscall之前看到P正在运行，并且forEachP和P都没有运行安全点函数。
 func runSafePointFn() {
 	p := getg().m.p.ptr()
 	// Resolve the race between forEachP running the safe-point

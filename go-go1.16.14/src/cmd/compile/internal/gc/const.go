@@ -219,15 +219,20 @@ func defaultlit(n *Node, t *types.Type) *Node { return convlit1(n, t, false, nil
 
 // convlit1 converts an untyped expression n to type t. If n already
 // has a type, convlit1 has no effect.
+// 注释：convlit1将未类型化的表达式n转换为类型t。如果n已经有了类型，那么convlit1。
 //
 // For explicit conversions, t must be non-nil, and integer-to-string
 // conversions are allowed.
+// 注释：对于显式转换，t必须是非零，并且允许整数到字符串的转换。
 //
 // For implicit conversions (e.g., assignments), t may be nil; if so,
 // n is converted to its default type.
+// 注释：对于隐式转换（例如赋值），t可以为零；如果是，则n将转换为其默认类型。
 //
 // If there's an error converting n to t, context is used in the error
 // message.
+// 注释：如果在将n转换为t时出错，则在错误消息中使用上下文。
+//
 func convlit1(n *Node, t *types.Type, explicit bool, context func() string) *Node {
 	if explicit && t == nil {
 		Fatalf("explicit conversion missing type")
@@ -251,7 +256,7 @@ func convlit1(n *Node, t *types.Type, explicit bool, context func() string) *Nod
 		n = n.rawcopy()
 	}
 
-	// Nil is technically not a constant, so handle it specially.
+	// Nil is technically not a constant, so handle it specially. // 注释：从技术上讲，零不是一个常数，所以要特别处理它。
 	if n.Type.Etype == TNIL {
 		if t == nil {
 			yyerror("use of untyped nil")

@@ -493,7 +493,7 @@ opswitch:
 			n.List.Set1(itabname(n.Type, n.Left.Type))
 		}
 
-	case OLEN, OCAP:
+	case OLEN, OCAP: // 注释：执行len和cap时调用(n.Type是对应的类型地址)，在之前会有类型判断
 		if isRuneCount(n) {
 			// Replace len([]rune(string)) with runtime.countrunes(string). // 注释：将len（[]rune（string））替换为runtime.countunes（string）。
 			n = mkcall("countrunes", n.Type, init, conv(n.Left.Left, types.Types[TSTRING]))

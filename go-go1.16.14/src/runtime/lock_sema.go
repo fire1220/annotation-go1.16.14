@@ -139,6 +139,7 @@ func noteclear(n *note) {
 	}
 }
 
+// 注释：唤醒节点M
 func notewakeup(n *note) {
 	var v uintptr
 	for {

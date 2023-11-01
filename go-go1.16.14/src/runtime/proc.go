@@ -1741,14 +1741,14 @@ func runSafePointFn() {
 	// function on this P's behalf and this P running the
 	// safe-point function directly.
 	// 注释：把p.runSafePointFn从1设置为0
-	if !atomic.Cas(&p.runSafePointFn, 1, 0) {
+	if !atomic.Cas(&p.runSafePointFn, 1, 0) { // 注释：是否有安全节点函数0否1是，如果是1则设置为0并且返回true，并把布尔值取反
 		return
 	}
-	sched.safePointFn(p)
-	lock(&sched.lock)
+	sched.safePointFn(p) // 注释：执行安全节点函数，把当前P放进去，检查是否有数据冲突（检测数据竞争）
+	lock(&sched.lock)    // 注释：加锁
 	sched.safePointWait--
 	if sched.safePointWait == 0 {
-		notewakeup(&sched.safePointNote)
+		notewakeup(&sched.safePointNote) // 注释：如果安全节点safePointWait为0时环境M
 	}
 	unlock(&sched.lock)
 }

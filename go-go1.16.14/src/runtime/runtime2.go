@@ -715,7 +715,7 @@ type p struct {
 	// TODO: Consider caching this in the running G.
 	wbBuf wbBuf
 
-	runSafePointFn uint32 // if 1, run sched.safePointFn at next safe point
+	runSafePointFn uint32 // 注释：是否有安全节点检查函数0否1是，如果是1则执行安全节点函数 // if 1, run sched.safePointFn at next safe point // 注释：如果为1，则在下一个安全点运行sched.safePointFn
 
 	// statsSeq is a counter indicating whether this P is currently
 	// writing any stats. Its value is even when not, odd when it is.
@@ -748,6 +748,7 @@ type p struct {
 	pad cpu.CacheLinePad
 }
 
+// 注释：全局变量
 // 注释：调度器结构体对象，记录了调度器的工作状态
 // 注释：记录调度器的状态和g的全局运行队列：
 type schedt struct {
@@ -756,7 +757,7 @@ type schedt struct {
 	lastpoll  uint64 // time of last network poll, 0 if currently polling
 	pollUntil uint64 // time to which current poll is sleeping
 
-	lock mutex // 注释：锁（把局部P加入全局P队列会用到，修改的字段是"runq和runqsize"）
+	lock mutex // 注释：锁（把局部P加入全局P队列会用到，修改的字段是"runq和runqsize"）(系统调用时也会用到)
 
 	// When increasing nmidle, nmidlelocked, nmsys, or nmfreed, be
 	// sure to call checkdead().
@@ -829,9 +830,9 @@ type schedt struct {
 	// safepointFn should be called on each P at the next GC
 	// safepoint if p.runSafePointFn is set.
 	// 注释：如果设置了P.runSafePointFn，则应在下一个GC安全点对每个P调用安全点Fn。
-	safePointFn   func(*p)
-	safePointWait int32
-	safePointNote note
+	safePointFn   func(*p) // 注释：执行安全节点函数，把当前P放进去，检查是否有数据冲突（检测数据竞争）
+	safePointWait int32    // 注释：安全节点等待数，默认是 gomaxprocs - 1，执行一个安全节点检查后递减
+	safePointNote note     //  注释：等待被唤醒的节点M，安全节点数safePointWait为0时唤醒
 
 	profilehz int32 // cpu profiling rate
 

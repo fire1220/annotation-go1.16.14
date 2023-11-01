@@ -1,6 +1,7 @@
 // Copyright 2011 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+// 注释该文件只在 aix darwin netbsd openbsd plan9 solaris windows 这些系统下编译执行
 
 // +build aix darwin netbsd openbsd plan9 solaris windows
 

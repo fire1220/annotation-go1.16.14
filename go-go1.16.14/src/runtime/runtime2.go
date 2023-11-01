@@ -819,8 +819,8 @@ type schedt struct {
 	gcwaiting  uint32 // gc is waiting to run // 注释：GC启动STW时会把gcwaiting=1，等待所有的M停止(休眠),默认是0
 	stopwait   int32  // 注释：停止等待，默认值是P的个数，如果等于0代表所有的P都已经被抢占了。冻结时值为一个很大的值，STW时减1,
 	stopnote   note
-	sysmonwait uint32
-	sysmonnote note
+	sysmonwait uint32 // 注释：(系统监控)是否有等待的M,0否，1是
+	sysmonnote note   // 注释：如果有等待的M，则唤醒M并且把sysmonwait设置为0
 
 	// While true, sysmon not ready for mFixup calls.
 	// Accessed atomically.

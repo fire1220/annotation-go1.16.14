@@ -3630,9 +3630,10 @@ func save(pc, sp uintptr) {
 // Note that the increment is done even if tracing is not enabled,
 // because tracing can be enabled in the middle of syscall. We don't want the wait to hang.
 //
+// 注释：系统调用的前置函数
 //go:nosplit
 func reentersyscall(pc, sp uintptr) {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取G，在TLS中获取G指针
 
 	// Disable preemption because during this function g is in Gsyscall status,
 	// but can have inconsistent g->sched, do not let GC observe it.
@@ -3667,9 +3668,9 @@ func reentersyscall(pc, sp uintptr) {
 		save(pc, sp)
 	}
 
-	if atomic.Load(&sched.sysmonwait) != 0 {
-		systemstack(entersyscall_sysmon)
-		save(pc, sp)
+	if atomic.Load(&sched.sysmonwait) != 0 { // 注释：判断是否有等待的M，如果有则唤醒它
+		systemstack(entersyscall_sysmon) // 注释：（系统栈运行）唤醒等待的M
+		save(pc, sp)                     // 注释：重新保存现场
 	}
 
 	if _g_.m.p.ptr().runSafePointFn != 0 {

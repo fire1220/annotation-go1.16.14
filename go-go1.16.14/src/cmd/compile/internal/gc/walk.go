@@ -495,7 +495,7 @@ opswitch:
 
 	case OLEN, OCAP:
 		if isRuneCount(n) {
-			// Replace len([]rune(string)) with runtime.countrunes(string).
+			// Replace len([]rune(string)) with runtime.countrunes(string). // 注释：将len（[]rune（string））替换为runtime.countunes（string）。
 			n = mkcall("countrunes", n.Type, init, conv(n.Left.Left, types.Types[TSTRING]))
 			break
 		}
@@ -4034,8 +4034,8 @@ func canMergeLoads() bool {
 	return false
 }
 
-// isRuneCount reports whether n is of the form len([]rune(string)).
-// These are optimized into a call to runtime.countrunes.
+// isRuneCount reports whether n is of the form len([]rune(string)). // 注释：isRuneCount报告n的形式是否为len（[]rune（string））。
+// These are optimized into a call to runtime.countrunes. // 注释：这些被优化为对runtime.councines的调用。
 func isRuneCount(n *Node) bool {
 	return Debug.N == 0 && !instrumenting && n.Op == OLEN && n.Left.Op == OSTR2RUNES
 }

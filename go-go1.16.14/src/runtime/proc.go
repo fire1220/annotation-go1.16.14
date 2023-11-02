@@ -3725,15 +3725,15 @@ func entersyscall_gcwait() {
 	_g_ := getg()           // 注释：获取当前的G
 	_p_ := _g_.m.oldp.ptr() // 注释：获取系统调用时存放的旧的P的对象（就是执行系统调用前的P）
 
-	lock(&sched.lock) // 注释：全局调度锁，加锁
-	if sched.stopwait > 0 && atomic.Cas(&_p_.status, _Psyscall, _Pgcstop) {
-		if trace.enabled {
-			traceGoSysBlock(_p_)
-			traceProcStop(_p_)
+	lock(&sched.lock)                                                       // 注释：全局调度锁，加锁
+	if sched.stopwait > 0 && atomic.Cas(&_p_.status, _Psyscall, _Pgcstop) { // 注释：把系统调用状态更改成功停止状态（GC导致的停止）
+		if trace.enabled { //注释：如果开启栈追踪
+			traceGoSysBlock(_p_) // 注释：系统调用停止时的栈追踪
+			traceProcStop(_p_)   // 注释：(栈追踪)线程停止事件
 		}
-		_p_.syscalltick++
-		if sched.stopwait--; sched.stopwait == 0 {
-			notewakeup(&sched.stopnote)
+		_p_.syscalltick++                          // 注释：系统调度计数器，每一次系统调用加1
+		if sched.stopwait--; sched.stopwait == 0 { // 注释：
+			notewakeup(&sched.stopnote) // 注释：唤醒停止的节点M
 		}
 	}
 	unlock(&sched.lock)

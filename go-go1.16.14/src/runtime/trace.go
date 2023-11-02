@@ -27,7 +27,7 @@ const (
 	traceEvStack             = 3  // stack [stack id, number of PCs, array of {PC, func string ID, file string ID, line}]
 	traceEvGomaxprocs        = 4  // current value of GOMAXPROCS [timestamp, GOMAXPROCS, stack id]
 	traceEvProcStart         = 5  // start of P [timestamp, thread id]
-	traceEvProcStop          = 6  // stop of P [timestamp]
+	traceEvProcStop          = 6  // 注释：(栈追踪)线程停止事件 // stop of P [timestamp]
 	traceEvGCStart           = 7  // GC start [timestamp, seq, stack id]
 	traceEvGCDone            = 8  // GC done [timestamp]
 	traceEvGCSTWStart        = 9  // GC STW start [timestamp, kind]
@@ -51,7 +51,7 @@ const (
 	traceEvGoBlockNet        = 27 // goroutine blocks on network [timestamp, stack]
 	traceEvGoSysCall         = 28 // 注释：系统栈追踪 // syscall enter [timestamp, stack]
 	traceEvGoSysExit         = 29 // syscall exit [timestamp, goroutine id, seq, real timestamp]
-	traceEvGoSysBlock        = 30 // syscall blocks [timestamp]
+	traceEvGoSysBlock        = 30 // 注释：系统调用停止时的栈追踪 // syscall blocks [timestamp]
 	traceEvGoWaiting         = 31 // denotes that goroutine is blocked when tracing starts [timestamp, goroutine id]
 	traceEvGoInSyscall       = 32 // denotes that goroutine is in syscall when tracing starts [timestamp, goroutine id]
 	traceEvHeapAlloc         = 33 // memstats.heap_live change [timestamp, heap_alloc]
@@ -1006,6 +1006,7 @@ func traceProcStart() {
 func traceProcStop(pp *p) {
 	// Sysmon and stopTheWorld can stop Ps blocked in syscalls,
 	// to handle this we temporary employ the P.
+	// 注释：Sysmon和stopTheWorld可以阻止系统调用中阻止的P，为了处理这个问题，我们临时使用了P。
 	mp := acquirem()
 	oldp := mp.p
 	mp.p.set(pp)
@@ -1159,15 +1160,17 @@ func traceGoSysExit(ts int64) {
 	traceEvent(traceEvGoSysExit, -1, uint64(_g_.goid), _g_.traceseq, uint64(ts)/traceTickDiv)
 }
 
+// 注释：系统调用停止时的栈追踪
 func traceGoSysBlock(pp *p) {
 	// Sysmon and stopTheWorld can declare syscalls running on remote Ps as blocked,
 	// to handle this we temporary employ the P.
-	mp := acquirem()
-	oldp := mp.p
-	mp.p.set(pp)
-	traceEvent(traceEvGoSysBlock, -1)
-	mp.p = oldp
-	releasem(mp)
+	// 注释：Sysmon和stopTheWorld可以将在远程P上运行的系统调用声明为阻塞，为了处理此问题，我们临时使用P。
+	mp := acquirem()                  // 注释：获取当前P。临时使用
+	oldp := mp.p                      // 注释：把P存储起来
+	mp.p.set(pp)                      // 注释：把传入的P替换当前的P，后面栈事件使用
+	traceEvent(traceEvGoSysBlock, -1) // 注释：栈事件,系统调用停止时的栈追踪
+	mp.p = oldp                       //注释：还原原来的P
+	releasem(mp)                      //注释：释放临时的P
 }
 
 func traceHeapAlloc() {

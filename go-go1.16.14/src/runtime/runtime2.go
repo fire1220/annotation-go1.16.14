@@ -477,7 +477,7 @@ type g struct {
 	parkingOnChan uint8 // 注释：1表示G放在管道读取队列（c.recvq）或写入队列（c.sendq）里。用于栈的收缩，是一个布尔值，但是原子性更新
 
 	raceignore     int8     // ignore race detection events
-	sysblocktraced bool     // StartTrace has emitted EvGoInSyscall about this goroutine
+	sysblocktraced bool     // 注释：（系统调用时为true,其他情况为false）标记开始系统调用的栈追踪 // StartTrace has emitted EvGoInSyscall about this goroutine
 	sysexitticks   int64    // cputicks when syscall has returned (for tracing)
 	traceseq       uint64   // trace event sequencer
 	tracelastp     puintptr // last P emitted an event for this goroutine
@@ -529,7 +529,7 @@ type m struct {
 	caughtsig     guintptr // goroutine running during fatal signal
 	p             puintptr // 注释：记录与当前工作线程绑定的p结构体对象 // attached p for executing go code (nil if not executing go code)
 	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定),其他M把P抢走后会设置这个字段告诉当前M如果执行时应该绑定其他的P
-	oldp          puintptr // the p that was attached before executing a syscall
+	oldp          puintptr // 注释：在系统调用的时候把当前的P存放到这里，系统调用结束后拿出来 // the p that was attached before executing a syscall // 注释：在执行系统调用之前附加的p
 	id            int64
 	mallocing     int32
 	throwing      int32  // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）

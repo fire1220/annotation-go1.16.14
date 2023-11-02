@@ -3632,7 +3632,8 @@ func save(pc, sp uintptr) {
 // Note that the increment is done even if tracing is not enabled,
 // because tracing can be enabled in the middle of syscall. We don't want the wait to hang.
 //
-// 注释：系统调用的前置函数，主要动作：保存现场PC、SP和G，栈追踪、唤醒等待的M、安全节点检查避免数据竞争
+// 注释：系统调用的前置函数，
+// 注释：主要动作：保存现场PC、SP和G，栈追踪、唤醒等待的M、安全节点检查避免数据竞争，把当前P放到m.oldp里，解除M和P的绑定，把P的状态设置成系统调用(_Psyscall)
 //go:nosplit
 func reentersyscall(pc, sp uintptr) {
 	_g_ := getg() // 注释：获取G，在TLS中获取G指针
@@ -3683,12 +3684,12 @@ func reentersyscall(pc, sp uintptr) {
 	}
 
 	_g_.m.syscalltick = _g_.m.p.ptr().syscalltick // 注释：保存P里的系统调度计数器，P每一次系统调用加1
-	_g_.sysblocktraced = true
-	pp := _g_.m.p.ptr()
-	pp.m = 0
-	_g_.m.oldp.set(pp)
-	_g_.m.p = 0
-	atomic.Store(&pp.status, _Psyscall)
+	_g_.sysblocktraced = true                     // 设置系统调用的，系统追踪
+	pp := _g_.m.p.ptr()                           // 注释：获取当前G对应的P
+	pp.m = 0                                      // 注释：（解除P和M的绑定）断开当前G对对应P和M
+	_g_.m.oldp.set(pp)                            // 注释：把当前的P存放起来
+	_g_.m.p = 0                                   // 注释：（解除M和P的绑定）断开当前G对应M对应P
+	atomic.Store(&pp.status, _Psyscall)           // 注释：把P的状态设置成系统调用(_Psyscall)
 	if sched.gcwaiting != 0 {
 		systemstack(entersyscall_gcwait)
 		save(pc, sp)

@@ -3733,7 +3733,7 @@ func entersyscall_gcwait() {
 		}
 		_p_.syscalltick++                          // 注释：系统调度计数器，每一次系统调用加1
 		if sched.stopwait--; sched.stopwait == 0 { // 注释：
-			notewakeup(&sched.stopnote) // 注释：唤醒停止的节点M
+			notewakeup(&sched.stopnote) // 注释：唤醒停止的节点M【ing...】
 		}
 	}
 	unlock(&sched.lock)

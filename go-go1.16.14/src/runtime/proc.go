@@ -3692,7 +3692,7 @@ func reentersyscall(pc, sp uintptr) {
 	_g_.m.p = 0                                   // 注释：（解除M和P的绑定）断开当前G对应M对应P
 	atomic.Store(&pp.status, _Psyscall)           // 注释：把P的状态设置成系统调用(_Psyscall)
 	if sched.gcwaiting != 0 {                     // 注释：判断是否需要等待，非0表示等待
-		systemstack(entersyscall_gcwait) // 注释：进入系统调用等待
+		systemstack(entersyscall_gcwait) // 注释：(停止当前的P)系统栈执行停止当前P
 		save(pc, sp)                     // 注释：再次保存现场
 	}
 
@@ -3720,12 +3720,12 @@ func entersyscall_sysmon() {
 	unlock(&sched.lock)
 }
 
-// 注释：系统调用等待（STW时进入系统调用进入这个等待函数）
+// 注释：(停止当前的P)系统栈执行停止当前P（STW时进入系统调用进入这个等待函数）
 func entersyscall_gcwait() {
-	_g_ := getg()
-	_p_ := _g_.m.oldp.ptr()
+	_g_ := getg()           // 注释：获取当前的G
+	_p_ := _g_.m.oldp.ptr() // 注释：获取系统调用时存放的旧的P的对象（就是执行系统调用前的P）
 
-	lock(&sched.lock)
+	lock(&sched.lock) // 注释：全局调度锁，加锁
 	if sched.stopwait > 0 && atomic.Cas(&_p_.status, _Psyscall, _Pgcstop) {
 		if trace.enabled {
 			traceGoSysBlock(_p_)

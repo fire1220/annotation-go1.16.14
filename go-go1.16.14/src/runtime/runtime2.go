@@ -145,7 +145,7 @@ const (
 	//
 	// The P retains its run queue and startTheWorld will restart
 	// the scheduler on Ps with non-empty run queues.
-	_Pgcstop // 注释：GC停止世界（STW）时把当前的P也停止了，并设置这个状态
+	_Pgcstop // 注释：(STW时停止P，包括系统调用时也会停止)GC停止世界（STW）时把当前的P也停止了，并设置这个状态
 
 	// _Pdead means a P is no longer used (GOMAXPROCS shrank). We
 	// reuse Ps if GOMAXPROCS increases. A dead P is mostly

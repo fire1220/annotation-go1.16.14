@@ -715,7 +715,7 @@ type p struct {
 	// TODO: Consider caching this in the running G.
 	wbBuf wbBuf
 
-	runSafePointFn uint32 // 注释：是否有安全节点检查函数0否1是，如果是1则执行安全节点函数 // if 1, run sched.safePointFn at next safe point // 注释：如果为1，则在下一个安全点运行sched.safePointFn
+	runSafePointFn uint32 // 注释：(以避免发生竞争)是否有安全节点检查函数0否1是，如果是1则执行安全节点函数 // if 1, run sched.safePointFn at next safe point // 注释：如果为1，则在下一个安全点运行sched.safePointFn
 
 	// statsSeq is a counter indicating whether this P is currently
 	// writing any stats. Its value is even when not, odd when it is.

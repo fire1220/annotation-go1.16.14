@@ -1735,6 +1735,7 @@ func syscall_runtime_doAllThreadsSyscall(fn func(bool) bool) {
 // just before the P goes into _Pidle/_Psyscall and neither forEachP
 // nor the P run the safe-point function.
 // 注释：必须在向_Pidle或_Psyscall的任何转换中检查runSafePointFn，以避免发生竞争，即forEachP在P进入_Pidle/Psyscall之前看到P正在运行，并且forEachP和P都没有运行安全点函数。
+// 注释：安全节点检查，避免数据竞争
 func runSafePointFn() {
 	p := getg().m.p.ptr()
 	// Resolve the race between forEachP running the safe-point
@@ -1744,13 +1745,13 @@ func runSafePointFn() {
 	if !atomic.Cas(&p.runSafePointFn, 1, 0) { // 注释：是否有安全节点函数0否1是，如果是1则设置为0并且返回true，并把布尔值取反
 		return
 	}
-	sched.safePointFn(p) // 注释：执行安全节点函数，把当前P放进去，检查是否有数据冲突（检测数据竞争）
-	lock(&sched.lock)    // 注释：加锁
-	sched.safePointWait--
+	sched.safePointFn(p)  // 注释：执行安全节点函数，把当前P放进去，检查是否有数据冲突（检测数据竞争）
+	lock(&sched.lock)     // 注释：加锁
+	sched.safePointWait-- // 注释：安全节点数量递减
 	if sched.safePointWait == 0 {
-		notewakeup(&sched.safePointNote) // 注释：如果安全节点safePointWait为0时环境M
+		notewakeup(&sched.safePointNote) // 注释：如果安全节点safePointWait为0时唤醒安全节点的M
 	}
-	unlock(&sched.lock)
+	unlock(&sched.lock) // 注释：解锁
 }
 
 // When running with cgo, we call _cgo_thread_start
@@ -3666,7 +3667,7 @@ func reentersyscall(pc, sp uintptr) {
 		// systemstack itself clobbers g.sched.{pc,sp} and we might
 		// need them later when the G is genuinely blocked in a
 		// syscall
-		save(pc, sp)
+		save(pc, sp) // 注释：再次保存现场
 	}
 
 	if atomic.Load(&sched.sysmonwait) != 0 { // 注释：判断是否有等待的M，如果有则唤醒它
@@ -3674,10 +3675,11 @@ func reentersyscall(pc, sp uintptr) {
 		save(pc, sp)                     // 注释：重新保存现场
 	}
 
-	if _g_.m.p.ptr().runSafePointFn != 0 {
+	if _g_.m.p.ptr().runSafePointFn != 0 { // 注释：安全节点检查，以避免发生竞争
 		// runSafePointFn may stack split if run on this stack
-		systemstack(runSafePointFn)
-		save(pc, sp)
+		// 注释：如果在此堆栈上运行，runSafePointFn可能会进行堆栈拆分
+		systemstack(runSafePointFn) // 注释：在系统栈上运行，安全节点检查（检查数据竞争）
+		save(pc, sp)                // 注释：再次保存现场
 	}
 
 	_g_.m.syscalltick = _g_.m.p.ptr().syscalltick

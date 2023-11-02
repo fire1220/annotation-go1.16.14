@@ -3634,7 +3634,7 @@ func save(pc, sp uintptr) {
 //
 // 注释：系统调用的前置函数，
 // 注释：主要动作：
-// 注释：标记栈抢占请求； 禁止栈拆分； 保存现场（PC、SP和G）； 栈追踪； 唤醒等待的M； 安全节点检查避免数据竞争； 把当前P放到m.oldp里； 解除M和P的绑定； 把P的状态设置成系统调用(_Psyscall)；
+// 注释：标记栈抢占请求； 禁止栈拆分； 保存现场（PC、SP和G）； 栈追踪； 唤醒等待的M； 安全节点检查避免数据竞争； 把当前P放到m.oldp里； 解除M和P的绑定； 把P的状态设置成系统调用(_Psyscall)；如果STW则进入等待
 //go:nosplit
 func reentersyscall(pc, sp uintptr) {
 	_g_ := getg() // 注释：获取G，在TLS中获取G指针
@@ -3691,9 +3691,9 @@ func reentersyscall(pc, sp uintptr) {
 	_g_.m.oldp.set(pp)                            // 注释：把当前的P存放起来
 	_g_.m.p = 0                                   // 注释：（解除M和P的绑定）断开当前G对应M对应P
 	atomic.Store(&pp.status, _Psyscall)           // 注释：把P的状态设置成系统调用(_Psyscall)
-	if sched.gcwaiting != 0 {
-		systemstack(entersyscall_gcwait)
-		save(pc, sp)
+	if sched.gcwaiting != 0 {                     // 注释：判断是否需要等待，非0表示等待
+		systemstack(entersyscall_gcwait) // 注释：进入系统调用等待
+		save(pc, sp)                     // 注释：再次保存现场
 	}
 
 	_g_.m.locks--
@@ -3720,6 +3720,7 @@ func entersyscall_sysmon() {
 	unlock(&sched.lock)
 }
 
+// 注释：系统调用等待（STW时进入系统调用进入这个等待函数）
 func entersyscall_gcwait() {
 	_g_ := getg()
 	_p_ := _g_.m.oldp.ptr()

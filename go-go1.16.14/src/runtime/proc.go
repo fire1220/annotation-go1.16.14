@@ -3632,7 +3632,7 @@ func save(pc, sp uintptr) {
 // Note that the increment is done even if tracing is not enabled,
 // because tracing can be enabled in the middle of syscall. We don't want the wait to hang.
 //
-// 注释：系统调用的前置函数
+// 注释：系统调用的前置函数，主要动作：保存现场PC、SP和G，栈追踪、唤醒等待的M、安全节点检查避免数据竞争
 //go:nosplit
 func reentersyscall(pc, sp uintptr) {
 	_g_ := getg() // 注释：获取G，在TLS中获取G指针
@@ -3682,7 +3682,7 @@ func reentersyscall(pc, sp uintptr) {
 		save(pc, sp)                // 注释：再次保存现场
 	}
 
-	_g_.m.syscalltick = _g_.m.p.ptr().syscalltick
+	_g_.m.syscalltick = _g_.m.p.ptr().syscalltick // 注释：保存P里的系统调度计数器，P每一次系统调用加1
 	_g_.sysblocktraced = true
 	pp := _g_.m.p.ptr()
 	pp.m = 0

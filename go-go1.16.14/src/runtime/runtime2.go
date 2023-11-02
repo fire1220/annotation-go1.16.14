@@ -564,8 +564,8 @@ type m struct {
 	waittraceev   byte                          // 注释：等待追踪事件类型
 	waittraceskip int                           // 注释：跳过几层事件追踪的结果（事件追踪结果中从哪一级返回数据，跳过的是不重要的）
 	startingtrace bool                          // 注释：是否已经开始栈追踪
-	syscalltick   uint32
-	freelink      *m // on sched.freem // 注释：对应freem的链表(freelink->sched.freem)
+	syscalltick   uint32                        // 注释：保存P里的系统调度计数器，P每一次系统调用加1
+	freelink      *m                            // on sched.freem // 注释：对应freem的链表(freelink->sched.freem)
 
 	// mFixup is used to synchronize OS related m state
 	// (credentials etc) use mutex to access. To avoid deadlocks

@@ -1408,7 +1408,7 @@ func typecheck1(n *Node, top int) (res *Node) {
 		}
 		n.Type = types.Types[TUINTPTR]
 
-	case OCAP, OLEN:
+	case OCAP, OLEN: // 注释：针对cap和len的类型检查（比如len(nil)则会报错）,类型正确的时候不走该位置
 		ok |= ctxExpr
 		if !onearg(n, "%v", n.Op) {
 			n.Type = nil
@@ -1416,7 +1416,7 @@ func typecheck1(n *Node, top int) (res *Node) {
 		}
 
 		n.Left = typecheck(n.Left, ctxExpr)
-		n.Left = defaultlit(n.Left, nil)
+		n.Left = defaultlit(n.Left, nil) // 注释：len(nil)的时候报错
 		n.Left = implicitstar(n.Left)
 		l := n.Left
 		t := l.Type

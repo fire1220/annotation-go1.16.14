@@ -493,9 +493,9 @@ opswitch:
 			n.List.Set1(itabname(n.Type, n.Left.Type))
 		}
 
-	case OLEN, OCAP:
+	case OLEN, OCAP: // 注释：执行len和cap时调用(n.Type是对应的类型地址)，在方法walkexpr之前会判断是否有类型指针
 		if isRuneCount(n) {
-			// Replace len([]rune(string)) with runtime.countrunes(string).
+			// Replace len([]rune(string)) with runtime.countrunes(string). // 注释：将len（[]rune（string））替换为runtime.countunes（string）。
 			n = mkcall("countrunes", n.Type, init, conv(n.Left.Left, types.Types[TSTRING]))
 			break
 		}
@@ -4034,8 +4034,8 @@ func canMergeLoads() bool {
 	return false
 }
 
-// isRuneCount reports whether n is of the form len([]rune(string)).
-// These are optimized into a call to runtime.countrunes.
+// isRuneCount reports whether n is of the form len([]rune(string)). // 注释：isRuneCount报告n的形式是否为len（[]rune（string））。
+// These are optimized into a call to runtime.countrunes. // 注释：这些被优化为对runtime.councines的调用。
 func isRuneCount(n *Node) bool {
 	return Debug.N == 0 && !instrumenting && n.Op == OLEN && n.Left.Op == OSTR2RUNES
 }

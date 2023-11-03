@@ -139,12 +139,12 @@ func noteclear(n *note) {
 
 // 注释：【Linux系统】唤醒节点
 func notewakeup(n *note) {
-	old := atomic.Xchg(key32(&n.key), 1) // 注释：交换位置并且返回，把ptr指针里的值和new的相互交换后返回ptr指针对应的值
-	if old != 0 {                        // 注释：如果传入的节点不为空报错
+	old := atomic.Xchg(key32(&n.key), 1) // 注释：(把n.key设置成1并返回n.key的旧值)交换位置并且返回，把ptr指针里的值和new的相互交换后返回ptr指针对应的值
+	if old != 0 {                        // 注释：如果传入的节点不为空报错(n.key的旧值)
 		print("notewakeup - double wakeup (", old, ")\n")
 		throw("notewakeup - double wakeup")
 	}
-	futexwakeup(key32(&n.key), 1)
+	futexwakeup(key32(&n.key), 1) // 注释：(这时n.key的值是1)开始唤醒M
 }
 
 func notesleep(n *note) {

@@ -568,7 +568,8 @@ TEXT runtime·madvise(SB),NOSPLIT,$0
 
 // int64 futex(int32 *uaddr, int32 op, int32 val,
 //	struct timespec *timeout, int32 *uaddr2, int32 val2);
-// 注释：唤醒M
+// 注释：唤醒M(传入6个参数直接执行系统调用)
+// 注释：Futex 是Fast Userspace muTexes的缩写(快速用户空间互斥体)
 TEXT runtime·futex(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVL	op+8(FP), SI
@@ -576,9 +577,9 @@ TEXT runtime·futex(SB),NOSPLIT,$0
 	MOVQ	ts+16(FP), R10
 	MOVQ	addr2+24(FP), R8
 	MOVL	val3+32(FP), R9
-	MOVL	$SYS_futex, AX
-	SYSCALL
-	MOVL	AX, ret+40(FP)
+	MOVL	$SYS_futex, AX      // 注释：系统调用码
+	SYSCALL                     // 注释：执行系统调用
+	MOVL	AX, ret+40(FP)      // 注释：系统调用的结果会放到AX寄存器中，这里放到返回值位置
 	RET
 
 // int32 clone(int32 flags, void *stk, M *mp, G *gp, void (*fn)(void));

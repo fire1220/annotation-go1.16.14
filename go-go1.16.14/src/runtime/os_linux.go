@@ -51,9 +51,10 @@ func futexsleep(addr *uint32, val uint32, ns int64) {
 }
 
 // If any procs are sleeping on addr, wake up at most cnt.
-// 注释：【Linux系统】唤醒M，地址addr上的M唤醒cnt个
+// 注释：【Linux系统】快速唤醒M进程，地址addr上的M一共唤醒cnt个
 //go:nosplit
 func futexwakeup(addr *uint32, cnt uint32) {
+	// 注释：Futex 是Fast Userspace muTexes的缩写(快速用户空间互斥体)，快速查看addr地址对应的Futex变量是否存在线程竞争
 	ret := futex(unsafe.Pointer(addr), _FUTEX_WAKE_PRIVATE, cnt, nil, nil, 0) // 注释：唤醒M（汇编实现的）（Linux系统是汇编实现的，MacOS是go代码实现的）
 	if ret >= 0 {
 		return

@@ -3634,7 +3634,7 @@ func save(pc, sp uintptr) {
 //
 // 注释：系统调用的前置函数，
 // 注释：主要动作：
-// 注释：标记栈抢占请求； 禁止栈拆分； 保存现场（PC、SP和G）； 栈追踪； 唤醒等待的M； 安全节点检查避免数据竞争； 把当前P放到m.oldp里； 解除M和P的绑定； 把P的状态设置成系统调用(_Psyscall)；如果STW则进入等待
+// 注释：标记栈抢占请求； 禁止栈拆分； 保存现场（PC、SP和G）； 栈追踪； 唤醒等待的M； 安全节点检查避免数据竞争； 把当前P放到m.oldp里； 解除M和P的绑定； 把P的状态设置成系统调用(_Psyscall)；如果STW则停止当前的P
 //go:nosplit
 func reentersyscall(pc, sp uintptr) {
 	_g_ := getg() // 注释：获取G，在TLS中获取G指针

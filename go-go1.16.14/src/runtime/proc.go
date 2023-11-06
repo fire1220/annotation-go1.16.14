@@ -3704,12 +3704,12 @@ func reentersyscall(pc, sp uintptr) {
 //
 // This is exported via linkname to assembly in the syscall package.
 //
-// 注释：进入系统调用前执行的前置方法
+// 注释：进入系统调用前执行的前置方法【系统调用的汇编方法：TEXT ·Syscall(SB)】
 //
 //go:nosplit
 //go:linkname entersyscall
 func entersyscall() {
-	reentersyscall(getcallerpc(), getcallersp())
+	reentersyscall(getcallerpc(), getcallersp()) // 注释：系统调用的前置函数
 }
 
 func entersyscall_sysmon() {

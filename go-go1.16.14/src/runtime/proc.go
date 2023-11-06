@@ -816,15 +816,16 @@ func ready(gp *g, traceskip int, next bool) {
 
 // freezeStopWait is a large value that freezetheworld sets
 // sched.stopwait to in order to request that all Gs permanently stop.
+// 注释：freezetheworld是一个很大的值，freezetheworld将sched.stopwait设置为，以请求永久停止所有G。
 const freezeStopWait = 0x7fffffff
 
 // freezing is set to non-zero if the runtime is trying to freeze the
 // world.
 var freezing uint32
 
-// Similar to stopTheWorld but best-effort and can be called several times.
-// There is no reverse operation, used during crashing.
-// This function must not lock any mutexes.
+// Similar to stopTheWorld but best-effort and can be called several times. // 注释：类似于stopTheWorld，但尽了最大努力，可以叫几次。
+// There is no reverse operation, used during crashing. // 注释：没有在崩溃期间使用的反向操作。
+// This function must not lock any mutexes. // 注释：此函数不能锁定任何互斥对象。
 func freezetheworld() {
 	atomic.Store(&freezing, 1)
 	// stopwait and preemption requests can be lost
@@ -3807,17 +3808,17 @@ func entersyscallblock_handoff() {
 //go:nowritebarrierrec
 //go:linkname exitsyscall
 func exitsyscall() {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前G
 
-	_g_.m.locks++ // see comment in entersyscall
-	if getcallersp() > _g_.syscallsp {
+	_g_.m.locks++                      // 注释：给M加锁 // see comment in entersyscall
+	if getcallersp() > _g_.syscallsp { // 注释：判断单签SP是否是大于系统SP(如果大于说明在系统调用之后的SP，所以需要报错)
 		throw("exitsyscall: syscall frame is no longer valid")
 	}
 
-	_g_.waitsince = 0
-	oldp := _g_.m.oldp.ptr()
-	_g_.m.oldp = 0
-	if exitsyscallfast(oldp) {
+	_g_.waitsince = 0          // 注释：清空阻塞的时间
+	oldp := _g_.m.oldp.ptr()   // 注释：取出系统调用前的P的指针
+	_g_.m.oldp = 0             // 注释：清空存放系统调用前的P的指针
+	if exitsyscallfast(oldp) { // 注释：尝试执行快速系统调用后置函数
 		if trace.enabled {
 			if oldp != _g_.m.p.ptr() || _g_.m.syscalltick != _g_.m.p.ptr().syscalltick {
 				systemstack(traceGoStart)
@@ -3879,17 +3880,18 @@ func exitsyscall() {
 	_g_.throwsplit = false
 }
 
+// 注释：系统调用快速后置函数
 //go:nosplit
 func exitsyscallfast(oldp *p) bool {
 	_g_ := getg()
 
-	// Freezetheworld sets stopwait but does not retake P's.
-	if sched.stopwait == freezeStopWait {
+	// Freezetheworld sets stopwait but does not retake P's. // 注释：Freezetheworld设置了stopwait，但没有重夺P。
+	if sched.stopwait == freezeStopWait { // 注释：如果是冻结状态的直接返回false
 		return false
 	}
 
-	// Try to re-acquire the last P.
-	if oldp != nil && oldp.status == _Psyscall && atomic.Cas(&oldp.status, _Psyscall, _Pidle) {
+	// Try to re-acquire the last P. // 注释：尝试重新获取最后一个P。
+	if oldp != nil && oldp.status == _Psyscall && atomic.Cas(&oldp.status, _Psyscall, _Pidle) { // 注释：如果成功把系统调用前的P的状态从系统调用更改为空闲状态
 		// There's a cpu for us, so we can run.
 		wirep(oldp)
 		exitsyscallfast_reacquired()

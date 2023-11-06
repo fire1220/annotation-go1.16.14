@@ -114,7 +114,7 @@ const (
 	//
 	// The P is owned by the idle list or by whatever is
 	// transitioning its state. Its run queue is empty.
-	_Pidle = iota
+	_Pidle = iota // 注释：P的空闲状态
 
 	// _Prunning means a P is owned by an M and is being used to
 	// run user code or the scheduler. Only the M that owns this P
@@ -123,7 +123,7 @@ const (
 	// do), _Psyscall (when entering a syscall), or _Pgcstop (to
 	// halt for the GC). The M may also hand ownership of the P
 	// off directly to another M (e.g., to schedule a locked G).
-	_Prunning
+	_Prunning // 注释：P运行中的状态
 
 	// _Psyscall means a P is not running user code. It has
 	// affinity to an M in a syscall but is not owned by it and
@@ -135,7 +135,7 @@ const (
 	// an M successfully CASes its original P back to _Prunning
 	// after a syscall, it must understand the P may have been
 	// used by another M in the interim.
-	_Psyscall
+	_Psyscall // 注释：P系统调用状态
 
 	// _Pgcstop means a P is halted for STW and owned by the M
 	// that stopped the world. The M that stopped the world
@@ -534,7 +534,7 @@ type m struct {
 	mallocing     int32
 	throwing      int32  // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）
 	preemptoff    string // if != "", keep curg running on this m
-	locks         int32  // 注释：(禁用抢占)大于0时说明正在g正在被使用，可能用于GC（获取时++，释放是--）
+	locks         int32  // 注释：给M加锁;(禁用抢占)大于0时说明正在g正在被使用，系统调用后置函数的时候有使用（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
 	spinning      bool // 注释：是否自旋，自旋就表示M正在找G来运行，表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work
@@ -818,7 +818,7 @@ type schedt struct {
 	freem *m
 
 	gcwaiting  uint32 // 注释：是否需要GC等待，0否1是，默认0（在GC发起后就处于等待阶段，需要把所有的P(P的数量默认是系统核数)都停止后执行GC，GC启动后会设置成1） // gc is waiting to run
-	stopwait   int32  // 注释：停止等待，默认值是P的个数，如果等于0代表所有的P都被停止了(一般用于STW的时候判断是否全部停止了，然后执行后续操作)。冻结时值为一个很大的值，STW时减1,
+	stopwait   int32  // 注释：停止等待，默认值是P的个数，如果等于0代表所有的P都被停止了(一般用于STW的时候判断是否全部停止了，然后执行后续操作)。冻结(类似于STW，但尽了最大努力，可以叫几次)时值为一个很大的值(const freezeStopWait)，STW时减1,
 	stopnote   note   // 注释：用于处理GC的M节点，当STW把所有的P都停止后唤醒，默认是停止状态
 	sysmonwait uint32 // 注释：(系统监控)是否有等待的M,0否，1是
 	sysmonnote note   // 注释：如果有等待的M，则唤醒M并且把sysmonwait设置为0

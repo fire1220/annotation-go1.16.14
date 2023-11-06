@@ -3791,14 +3791,17 @@ func entersyscallblock_handoff() {
 	handoffp(releasep())
 }
 
-// The goroutine g exited its system call.
-// Arrange for it to run on a cpu again.
+// The goroutine g exited its system call. // 注释：goroutine g退出了系统调用。
+// Arrange for it to run on a cpu again. 	// 注释：安排它再次在cpu上运行。
 // This is called only from the go syscall library, not
 // from the low-level system calls used by the runtime.
+// 注释：这只能从go系统调用库中调用，而不能从运行时使用的低级系统调用中调用。
 //
-// Write barriers are not allowed because our P may have been stolen.
+// Write barriers are not allowed because our P may have been stolen. // 注释：写障碍是不允许的，因为我们的P可能被盗了。
 //
-// This is exported via linkname to assembly in the syscall package.
+// This is exported via linkname to assembly in the syscall package. // 注释：这是通过链接名导出到系统调用包中的程序集的。
+//
+// 注释：系统调用后置动作
 //
 //go:nosplit
 //go:nowritebarrierrec

@@ -3634,7 +3634,8 @@ func save(pc, sp uintptr) {
 //
 // 注释：系统调用的前置函数，
 // 注释：主要动作：
-// 注释：标记栈抢占请求； 禁止栈拆分； 保存现场（PC、SP和G）； 栈追踪； 唤醒等待的M； 安全节点检查避免数据竞争； 把当前P放到m.oldp里； 解除M和P的绑定； 把P的状态设置成系统调用(_Psyscall)；如果STW则停止当前的P
+// 注释：标记栈抢占请求； 禁止栈拆分； 保存现场（PC、SP和G）； 栈追踪； 唤醒等待的M； 安全节点检查避免数据竞争； 把当前P放到m.oldp里； 解除M和P的绑定；
+// 注释：把P的状态设置成系统调用(_Psyscall)；判断是否开启GC，如果GC开启则把当前的P进入停止，如果当前的P是最后一个P时则运行GC，P的数量默认是系统核数
 //go:nosplit
 func reentersyscall(pc, sp uintptr) {
 	_g_ := getg() // 注释：获取G，在TLS中获取G指针
@@ -3691,7 +3692,7 @@ func reentersyscall(pc, sp uintptr) {
 	_g_.m.oldp.set(pp)                            // 注释：把当前的P存放起来
 	_g_.m.p = 0                                   // 注释：（解除M和P的绑定）断开当前G对应M对应P
 	atomic.Store(&pp.status, _Psyscall)           // 注释：把P的状态设置成系统调用(_Psyscall)
-	if sched.gcwaiting != 0 {                     // 注释：判断是否需要等待，非0表示等待
+	if sched.gcwaiting != 0 {                     // 注释：是否开启GC，如果开启，并且是等待GC的状态非0时，执行，把当前的P也进入等待节点，如果是最后一个P时（所有的P都停止了）执行GC
 		systemstack(entersyscall_gcwait) // 注释：(停止当前的P)系统栈执行停止当前P
 		save(pc, sp)                     // 注释：再次保存现场
 	}
@@ -3732,8 +3733,8 @@ func entersyscall_gcwait() {
 			traceProcStop(_p_)   // 注释：(栈追踪)线程停止事件
 		}
 		_p_.syscalltick++                          // 注释：系统调度计数器，每一次系统调用加1
-		if sched.stopwait--; sched.stopwait == 0 { // 注释：
-			notewakeup(&sched.stopnote) // 注释：唤醒停止的节点M【ing...】
+		if sched.stopwait--; sched.stopwait == 0 { // 注释：当所有的P都停止时执行(sched.stopwait默认是P的个数)
+			notewakeup(&sched.stopnote) // 注释：唤醒CG的M节点
 		}
 	}
 	unlock(&sched.lock)

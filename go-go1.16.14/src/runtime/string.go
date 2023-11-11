@@ -49,7 +49,7 @@ func concatstrings(buf *tmpBuf, a []string) string {
 		return a[idx]
 	}
 	// 注释：通过字节数创建空间，返回字符串和指向字符串地址的[]byte,这样在下面就可以直接复制到[]byte里（间接复制到字符串里），然返回字符串
-	s, b := rawstringtmp(buf, l)
+	s, b := rawstringtmp(buf, l) // 注释：申请内存，返回string和slice，两个共用同一块内存，通过修改slice实现变更string
 	for _, x := range a {
 		copy(b, x) // 注释：复制到[]byte里
 		b = b[len(x):] // 注释：把b指针向后移动，移动到一下个x位置
@@ -126,6 +126,7 @@ func stringDataOnStack(s string) bool {
 	return stk.lo <= ptr && ptr < stk.hi
 }
 
+// 注释：申请内存，返回string和slice，两个共用同一块内存，可以通过修改slice实现变更string
 func rawstringtmp(buf *tmpBuf, l int) (s string, b []byte) {
 	if buf != nil && l <= len(buf) {
 		b = buf[:l]
@@ -263,6 +264,9 @@ func intstring(buf *[4]byte, v int64) (s string) {
 // string and byte slice both refer to the same storage.
 // The storage is not zeroed. Callers should use
 // b to set the string contents and then drop b.
+// 注释：申请内存，返回string和slice，两个共用同一块内存，可以通过修改slice实现变更string
+// 注释：（用作字符串拼接使用，拼接时用切片，最后返回字符串实现字符串拼接格式是：str := str1 + str2）,这里str1和str2至少有一个是变量
+// 注释：如果执行了这个函数就意味着，最后的string通过地址转换成slice也是可以修改的（汇编没有打上rodata的标记）
 func rawstring(size int) (s string, b []byte) {
 	p := mallocgc(uintptr(size), nil, false)
 

@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4fe83205-d19e-4729-ba7c-3e9bebf10665" name="Default Changelist" comment="" />
+    <list default="true" id="4fe83205-d19e-4729-ba7c-3e9bebf10665" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go-go1.16.14/src/runtime/string.go" beforeDir="false" afterPath="$PROJECT_DIR$/go-go1.16.14/src/runtime/string.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -53,7 +57,7 @@
     <setting file="file://$PROJECT_DIR$/go-go1.16.14/src/runtime/mfinal.go" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProjectId" id="2N20FBzCKonXG8UA3xfvNCuzoHc" />
-  <component name="ProjectLevelVcsManager">
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectViewState">
@@ -65,6 +69,7 @@
     <property name="DefaultGoTemplateProperty" value="Go File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
     <property name="configurable..is.expanded" value="false" />
@@ -123,7 +128,8 @@
       <workItem from="1688164058051" duration="1427000" />
       <workItem from="1688191419534" duration="9300000" />
       <workItem from="1689386238754" duration="1795000" />
-      <workItem from="1699725216810" duration="442000" />
+      <workItem from="1699725216810" duration="1201000" />
+      <workItem from="1699727794841" duration="615000" />
     </task>
     <servers />
   </component>

@@ -461,6 +461,7 @@ func findnullw(s *uint16) int {
 	return l
 }
 
+// 注释：把slice转换成string（不复制数据）
 //go:nosplit
 func gostringnocopy(str *byte) string {
 	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)}

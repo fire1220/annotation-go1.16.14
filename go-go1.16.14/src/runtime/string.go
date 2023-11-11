@@ -266,7 +266,7 @@ func intstring(buf *[4]byte, v int64) (s string) {
 // b to set the string contents and then drop b.
 // 注释：申请内存，返回string和slice，两个共用同一块内存，可以通过修改slice实现变更string
 // 注释：（用作字符串拼接使用，拼接时用切片，最后返回字符串实现字符串拼接格式是：str := str1 + str2）,这里str1和str2至少有一个是变量
-// 注释：如果执行了这个函数就意味着，最后的string通过地址转换成slice也是可以修改的（汇编没有打上rodata的标记）
+// 注释：如果执行了这个函数就意味着，最后的string通过地址转换成slice也是可以修改的（汇编没有打上rodata只读标记）
 func rawstring(size int) (s string, b []byte) {
 	p := mallocgc(uintptr(size), nil, false)
 

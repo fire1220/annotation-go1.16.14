@@ -970,12 +970,12 @@ func gopanic(e interface{}) {
 				addOneOpenDeferFrame(gp, 0, nil)
 			}
 		} else {
-			p.argp = unsafe.Pointer(getargp(0))
+			p.argp = unsafe.Pointer(getargp(0)) // 注释：记录当前栈请求参数的位置指针，访问下一个函数准备参数和返回值的位置地址。
 			reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz))
 		}
 		p.argp = nil
 
-		// reflectcall did not panic. Remove d.
+		// reflectcall did not panic. Remove d. // 注释：reflectcall没有panic。删除d。
 		if gp._defer != d {
 			throw("bad defer entry in panic")
 		}
@@ -1071,10 +1071,11 @@ func gopanic(e interface{}) {
 
 // getargp returns the location where the caller
 // writes outgoing function call arguments.
+// 注释：getargp返回调用者编写传出函数调用参数的位置。
 //go:nosplit
 //go:noinline
 func getargp(x int) uintptr {
-	// x is an argument mainly so that we can return its address.
+	// x is an argument mainly so that we can return its address. // 注释：x是一个参数，主要是为了返回它的地址。
 	return uintptr(noescape(unsafe.Pointer(&x)))
 }
 

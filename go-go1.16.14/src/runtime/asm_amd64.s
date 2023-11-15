@@ -479,9 +479,11 @@ TEXT runtime·morestack_noctxt(SB),NOSPLIT,$0
 
 // reflectcall: call a function with the given argument list
 // func call(argtype *_type, f *FuncVal, arg *byte, argsize, retoffset uint32).
+// 注释：reflectcall：使用给定的参数列表func调用（argtype*_type，f*FuncVal，arg*byte，argsize，retoffset uint32）调用函数。
 // we don't have variable-sized frames, so we use a small number
 // of constant-sized-frame functions to encode a few bits of size in the pc.
-// Caution: ugly multiline assembly macros in your future!
+// 注释：我们没有可变大小的帧，所以我们使用少量恒定大小的帧函数来在pc中编码一些大小的比特。
+// Caution: ugly multiline assembly macros in your future! // 注释：注意：将来会出现难看的多行汇编宏！
 
 #define DISPATCH(NAME,MAXSIZE)		\
 	CMPQ	CX, $MAXSIZE;		\

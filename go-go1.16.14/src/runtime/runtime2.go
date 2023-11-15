@@ -438,8 +438,8 @@ type g struct {
 	stackguard0 uintptr // 注释：爆栈前警戒线（所在位置是G偏移16字节）。Go代码检查栈空间低于这个值会扩张。被设置成StackPreempt意味着当前g发出了抢占请求 // offset known to liblink
 	stackguard1 uintptr // 注释：（C代码的爆栈警戒线）C代码检查栈空间低于这个值会扩张。 // offset known to liblink
 
-	_panic       *_panic        // 注释：当前G的panic的数据指针(panic的链表，_panic.link 链接) // innermost panic - offset known to liblink
-	_defer       *_defer        // 注释：当前G的延迟调用的数据指针(单向链表，deferreturn会获取链表数据) // innermost defer
+	_panic       *_panic        // 注释：当前G的panic的链表首指针(panic的链表，_panic.link 链接) （panic是记录在这里的）// innermost panic - offset known to liblink
+	_defer       *_defer        // 注释：当前G的延迟调用的链表首指针(单向链表，deferreturn会获取链表数据) (defer是记录在这里的) // innermost defer
 	m            *m             // 注释：当前G绑定的M指针（此g正在被哪个工作线程执行） // current m; offset known to arm liblink
 	sched        gobuf          // 注释：协成执行现场数据(调度信息)，G状态(atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据
 	syscallsp    uintptr        // 注释：如果G的状态为Gsyscall(系统调用时的PC值)，值为sched.sp主要用于GC期间 // if status==Gsyscall, syscallsp = sched.sp to use during gc
@@ -961,7 +961,7 @@ type _defer struct {
 	openDefer bool     // 注释：表示当前 defer 是否经过开放编码的优化
 	sp        uintptr  // 注释：sp寄存器的值，栈指针 // sp at time of defer
 	pc        uintptr  // 注释：pc寄存器的值，调用方的程序计数器 // pc at time of defer
-	fn        *funcval // 注释：传入的函数 // can be nil for open-coded defers
+	fn        *funcval // 注释：传入的函数，就是defer要执行的函数地址 // can be nil for open-coded defers
 	_panic    *_panic  // 注释：是触发延迟调用的结构体，可能为空 // panic that is running defer
 	link      *_defer  // 注释：defer的链表地址
 
@@ -986,7 +986,7 @@ type _defer struct {
 // handling during stack growth: because they are pointer-typed and
 // _panic values only live on the stack, regular stack pointer
 // adjustment takes care of them.
-// 注释：panic的结构体
+// 注释：panic的结构体（panic是记录在G里的）
 type _panic struct {
 	argp      unsafe.Pointer // 注释：指向defer调用时参数的指针 // pointer to arguments of deferred call run during panic; cannot move - known to liblink
 	arg       interface{}    // 注释：panic的参数，打印panic的内容 // argument to panic

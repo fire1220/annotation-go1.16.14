@@ -3883,7 +3883,7 @@ func exitsyscall() {
 // 注释：系统调用快速后置函数
 //go:nosplit
 func exitsyscallfast(oldp *p) bool {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前G
 
 	// Freezetheworld sets stopwait but does not retake P's. // 注释：Freezetheworld设置了stopwait，但没有重夺P。
 	if sched.stopwait == freezeStopWait { // 注释：如果是冻结状态的直接返回false
@@ -3893,7 +3893,7 @@ func exitsyscallfast(oldp *p) bool {
 	// Try to re-acquire the last P. // 注释：尝试重新获取最后一个P。
 	if oldp != nil && oldp.status == _Psyscall && atomic.Cas(&oldp.status, _Psyscall, _Pidle) { // 注释：如果成功把系统调用前的P的状态从系统调用更改为空闲状态
 		// There's a cpu for us, so we can run.
-		wirep(oldp)
+		wirep(oldp) // 注释：当前线程m和p相互绑定，并且把p的状态从_Pidle设置成_Prunning
 		exitsyscallfast_reacquired()
 		return true
 	}
@@ -3924,6 +3924,7 @@ func exitsyscallfast(oldp *p) bool {
 // exitsyscallfast_reacquired is the exitsyscall path on which this G
 // has successfully reacquired the P it was running on before the
 // syscall.
+// 注释：exitsyscallfast_reacquired是exitsyscall路径，在该路径上，该G已成功重新获取其在6系统调用之前运行的P。
 //
 //go:nosplit
 func exitsyscallfast_reacquired() {

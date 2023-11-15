@@ -485,17 +485,19 @@ TEXT runtime·morestack_noctxt(SB),NOSPLIT,$0
 // 注释：我们没有可变大小的帧，所以我们使用少量恒定大小的帧函数来在pc中编码一些大小的比特。
 // Caution: ugly multiline assembly macros in your future! // 注释：注意：将来会出现难看的多行汇编宏！
 
+// 注释：宏，用来比较并且执行，CX寄存器 > $MAXSIZE则跳过，小于则执行NAME对应的函数地址
 #define DISPATCH(NAME,MAXSIZE)		\
-	CMPQ	CX, $MAXSIZE;		\
-	JA	3(PC);			\
-	MOVQ	$NAME(SB), AX;		\
-	JMP	AX
+	CMPQ	CX, $MAXSIZE;		\           // 注释：比较CX和第二个入参
+	JA	3(PC);			\                   // 注释：如果CX > 第二个入参，则根据当前PC地址向后跳转3个PC位置（这里的意思是向后执行下个DISPATCH）
+	MOVQ	$NAME(SB), AX;		\           // 注释：这里把NAME的栈地址赋值给寄存器AX，用来跳转执行
+	JMP	AX                                  // 注释：跳转执行
 // Note: can't just "JMP NAME(SB)" - bad inlining results.
 
+// 注释：这里会调用d.fn函数，就是refer里执行的函数
 TEXT ·reflectcall<ABIInternal>(SB), NOSPLIT, $0-32
 	MOVLQZX argsize+24(FP), CX
-	DISPATCH(runtime·call16, 16)
-	DISPATCH(runtime·call32, 32)
+	DISPATCH(runtime·call16, 16) // 注释：DISPATCH是个宏(在上面有定义),16 > CX寄存器则执行下一个，否则执行runtime·call16函数,这个函数也被一个宏包裹(宏名称：CALLFN)
+	DISPATCH(runtime·call32, 32) // 注释：32 > CX寄存器则继续向下执行比较，否则执行runtime·call32
 	DISPATCH(runtime·call64, 64)
 	DISPATCH(runtime·call128, 128)
 	DISPATCH(runtime·call256, 256)
@@ -521,9 +523,10 @@ TEXT ·reflectcall<ABIInternal>(SB), NOSPLIT, $0-32
 	DISPATCH(runtime·call268435456, 268435456)
 	DISPATCH(runtime·call536870912, 536870912)
 	DISPATCH(runtime·call1073741824, 1073741824)
-	MOVQ	$runtime·badreflectcall(SB), AX
+	MOVQ	$runtime·badreflectcall(SB), AX         // 注释：如果上面都没有比较通过，则panic
 	JMP	AX
 
+// 注释：定义宏
 #define CALLFN(NAME,MAXSIZE)			\
 TEXT NAME(SB), WRAPPER, $MAXSIZE-32;		\
 	NO_LOCAL_POINTERS;			\
@@ -562,7 +565,7 @@ TEXT callRet<>(SB), NOSPLIT, $32-0
 	CALL	runtime·reflectcallmove(SB)
 	RET
 
-CALLFN(·call16, 16)
+CALLFN(·call16, 16)     // 注释：CALLFN是一个宏，上面有定义
 CALLFN(·call32, 32)
 CALLFN(·call64, 64)
 CALLFN(·call128, 128)

@@ -265,10 +265,12 @@ type guintptr uintptr
 func (gp guintptr) ptr() *g { return (*g)(unsafe.Pointer(gp)) }
 
 // 注释：把gp设置成g
+//
 //go:nosplit
 func (gp *guintptr) set(g *g) { *gp = guintptr(unsafe.Pointer(g)) }
 
 // 注释：(Compare And Swap)比较赋值(原子操作)，如果prt==old,则赋值ptr=new，返回TRUE否则返回FALSE
+//
 //go:nosplit
 func (gp *guintptr) cas(old, new guintptr) bool {
 	return atomic.Casuintptr((*uintptr)(unsafe.Pointer(gp)), uintptr(old), uintptr(new))
@@ -276,6 +278,7 @@ func (gp *guintptr) cas(old, new guintptr) bool {
 
 // setGNoWB performs *gp = new without a write barrier.
 // For times when it's impractical to use a guintptr.
+//
 //go:nosplit
 //go:nowritebarrier
 func setGNoWB(gp **g, new *g) {
@@ -297,8 +300,8 @@ func (pp *puintptr) set(p *p) { *pp = puintptr(unsafe.Pointer(p)) }
 //
 // 1. Never hold an muintptr locally across a safe point.
 //
-// 2. Any muintptr in the heap must be owned by the M itself so it can
-//    ensure it is not in use when the last true *m is released.
+//  2. Any muintptr in the heap must be owned by the M itself so it can
+//     ensure it is not in use when the last true *m is released.
 type muintptr uintptr
 
 //go:nosplit
@@ -309,6 +312,7 @@ func (mp *muintptr) set(m *m) { *mp = muintptr(unsafe.Pointer(m)) }
 
 // setMNoWB performs *mp = new without a write barrier.
 // For times when it's impractical to use an muintptr.
+//
 //go:nosplit
 //go:nowritebarrier
 func setMNoWB(mp **m, new *m) {
@@ -987,15 +991,17 @@ type _defer struct {
 // _panic values only live on the stack, regular stack pointer
 // adjustment takes care of them.
 // 注释：panic的结构体（panic是记录在G里的）
+// 注释：字段argp很有意思代表：发生panic的时候回触发refer函数，在为调refer函数准备的参数栈地址（调用下一个函数的参数和返回值，又上一个函数栈准备，这里就是这个站准备的参数的站地址）
+// 注释：当recover的时候会接受到入参argp，然后和存储的panic.argp进行比较，如果比较不通过的时候无法获取recover的数据
 type _panic struct {
-	argp      unsafe.Pointer // 注释：指向defer调用时参数的指针 // pointer to arguments of deferred call run during panic; cannot move - known to liblink
+	argp      unsafe.Pointer // 注释：指向defer调用时参数的指针(调用refer前的的参数指针，给refer准备的参数对应的指针) // pointer to arguments of deferred call run during panic; cannot move - known to liblink
 	arg       interface{}    // 注释：panic的参数，打印panic的内容 // argument to panic
 	link      *_panic        // 注释：panic的单向链表  // link to earlier panic
 	pc        uintptr        // 注释：recover的时候,如果绕过painc的时候需要继续之前的pc位置执行 // where to return to in runtime if this panic is bypassed
 	sp        unsafe.Pointer // 注释：recover的时候,如果绕过painc的时候需要继续之前的sp栈位置 // where to return to in runtime if this panic is bypassed
 	recovered bool           // 注释：当前是否被recover恢复 // whether this panic is over
-	aborted   bool           // 注释：当前是否被强行终止 // the panic was aborted
-	goexit    bool
+	aborted   bool           // 注释：当前是否被强行终止(当defer里发生panin的时候会把上一个panic.aborted设置成true) // the panic was aborted
+	goexit    bool           // 注释：是否是推出函数发生的panic
 }
 
 // stack traces

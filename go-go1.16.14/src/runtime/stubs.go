@@ -7,6 +7,7 @@ package runtime
 import "unsafe"
 
 // Should be a built-in for unsafe.Pointer?
+//
 //go:nosplit
 func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(p) + x)
@@ -58,6 +59,7 @@ func mcall(fn func(*g))
 //	... use x ...
 //
 // 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G），汇编位置：TEXT runtime·systemstack(SB), NOSPLIT, $0-8
+//
 //go:noescape
 func systemstack(fn func())
 
@@ -91,6 +93,7 @@ func badsystemstack() {
 // The (CPU-specific) implementations of this function are in memclr_*.s.
 //
 // 注释：ptr指针向后删除n个字节
+//
 //go:noescape
 func memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr)
 
@@ -112,6 +115,7 @@ func reflect_memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) {
 // Implementations are in memmove_*.s.
 //
 // 注释：将n个字节从“from”复制到“to”
+//
 //go:noescape
 func memmove(to, from unsafe.Pointer, n uintptr)
 
@@ -124,6 +128,7 @@ func reflect_memmove(to, from unsafe.Pointer, n uintptr) {
 var hashLoad = float32(loadFactorNum) / float32(loadFactorDen)
 
 // 注释：快速返回随机数
+//
 //go:nosplit
 func fastrand() uint32 {
 	mp := getg().m
@@ -156,6 +161,7 @@ func net_fastrand() uint32 { return fastrand() }
 func os_fastrand() uint32 { return fastrand() }
 
 // in internal/bytealg/equal_*.s
+//
 //go:noescape
 func memequal(a, b unsafe.Pointer, size uintptr) bool
 
@@ -165,6 +171,7 @@ func memequal(a, b unsafe.Pointer, size uintptr) bool
 // compiles down to zero instructions.
 // 注释：翻译：noescape对escape分析隐藏了一个指针。noescape是身份函数，但escape分析不认为输出取决于输入。noescape是内联的，目前编译为零指令。
 // USE CAREFULLY! // 注释：小心使用！
+//
 //go:nosplit
 func noescape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
@@ -203,6 +210,7 @@ func breakpoint()
 // 注释：包反射总是通过一个帧类型。在包运行时中，Windows回调是将结果复制回的唯一用途，并且这些回调的结果中不能有指针，因此运行时为帧类型传递nil。
 //
 // Package reflect accesses this symbol through a linkname. // 注释：包反射通过链接名访问此符号。
+// 注释：这里会调用d.fn函数，就是refer里执行的函数
 func reflectcall(argtype *_type, fn, arg unsafe.Pointer, argsize uint32, retoffset uint32)
 
 func procyield(cycles uint32)
@@ -271,11 +279,13 @@ func publicationBarrier()
 
 // 注释：返回对所在函数的调用，上面案例中有解释
 // 注释：获取 caller(呼叫者，上游的函数)的PC（伪）指令寄存器，对应硬件IP寄存器
+//
 //go:noescape
 func getcallerpc() uintptr
 
 // 注释：返回对所在函数的返回，上面案例中有解释
 // 注释：获取 caller(呼叫者，上游的函数)的SP（伪）寄存器，对应硬件BP寄存器（函数栈帧底部）
+//
 //go:noescape
 func getcallersp() uintptr // implemented as an intrinsic on all platforms
 

@@ -958,11 +958,12 @@ func extendRandom(r []byte, n int) {
 type _defer struct {
 	siz     int32 // 注释：存放参数和返回值的内存大小 // includes both arguments and results
 	started bool
-	heap    bool
+	heap    bool // 注释：是否存储在堆上,true代表在堆上，false代表在栈上
 	// openDefer indicates that this _defer is for a frame with open-coded
 	// defers. We have only one defer record for the entire frame (which may
 	// currently have 0, 1, or more defers active).
-	openDefer bool     // 注释：表示当前 defer 是否经过开放编码的优化
+	// 注释：open defer优化条件，当前函数小于等于8个defer，或者return个数 * defer个数 < 15个，才被优化到函数尾部，有点像函数内联
+	openDefer bool     // 注释：表示当前 defer 是否经过开放编码的优化(优化大题意思和函数内联很相似，就是把defer放到当前函数末尾位置，然后用一个8位的二进制标记运行时是否需要执行defer)
 	sp        uintptr  // 注释：sp寄存器的值，栈指针 // sp at time of defer
 	pc        uintptr  // 注释：pc寄存器的值，调用方的程序计数器 // pc at time of defer
 	fn        *funcval // 注释：传入的函数，就是defer要执行的函数地址 // can be nil for open-coded defers
@@ -979,7 +980,8 @@ type _defer struct {
 	// with sp above (which is the sp associated with the stack frame),
 	// framepc/sp can be used as pc/sp pair to continue a stack trace via
 	// gentraceback().
-	framepc uintptr
+	// 注释：framepc是与堆栈帧关联的当前pc。再加上上面的sp（与堆栈帧关联的sp），framepc/sp可以用作pc/sp对，通过gentraceback（）继续堆栈跟踪。
+	framepc uintptr // 注释：
 }
 
 // A _panic holds information about an active panic.

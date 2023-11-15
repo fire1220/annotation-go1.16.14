@@ -565,7 +565,7 @@ TEXT callRet<>(SB), NOSPLIT, $32-0
 	CALL	runtime·reflectcallmove(SB)
 	RET
 
-CALLFN(·call16, 16)     // 注释：CALLFN是一个宏，上面有定义
+CALLFN(·call16, 16)     // 注释：CALLFN是一个宏，上面有定义，用宏来组装汇编函数(因为只有函数名和栈大小不同，所以才用宏的方式实现)
 CALLFN(·call32, 32)
 CALLFN(·call64, 64)
 CALLFN(·call128, 128)

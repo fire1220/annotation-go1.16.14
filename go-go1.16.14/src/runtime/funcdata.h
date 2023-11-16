@@ -8,6 +8,7 @@
 //
 // These must agree with symtab.go and ../cmd/internal/objabi/funcdata.go.
 
+// 注释：PC表格和FUNC表格是给GC使用的
 // 注释：PCDATA（生成PC表格）汇编指令的第一个参数（PC表格的类型）
 #define PCDATA_UnsafePoint 0    // 注释：不安全的指针
 #define PCDATA_StackMapIndex 1  // 注释：包含代码的文件路径、行号和函数信息

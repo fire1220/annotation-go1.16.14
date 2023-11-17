@@ -116,8 +116,16 @@ func block() {
 //
 // selectgo returns the index of the chosen scase, which matches the
 // ordinal position of its respective select{recv,send,default} call.
+// 注释：selectgo返回所选scase的索引，该索引与相应select｛recv，send，default｝调用的序号位置相匹配。
 // Also, if the chosen scase was a receive operation, it reports whether
 // a value was received.
+// 注释：此外，如果选择的scase是一个接收操作，它会报告是否接收到值。
+//
+// 注释：运行select case语句的时候会执行该函数
+// 注释：cas0：存放的是case管道数组首指针；
+// 注释：order0：存放的值是case管道数组的下标数组首指针。
+// 注释：nsends：存放case里发送管道类型的管道数量
+// 注释：nrecvs：存放case里接受管道类型的管道数量
 func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, block bool) (int, bool) {
 	if debugSelect {
 		print("select: cas0=", cas0, "\n")
@@ -125,20 +133,21 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 
 	// NOTE: In order to maintain a lean stack size, the number of scases
 	// is capped at 65536.
-	cas1 := (*[1 << 16]scase)(unsafe.Pointer(cas0))
-	order1 := (*[1 << 17]uint16)(unsafe.Pointer(order0))
+	// 注释：为了保持精简堆栈大小，scase的数量上限为65536。
+	cas1 := (*[1 << 16]scase)(unsafe.Pointer(cas0))      // 注释：case是存放在数组里的，数组个数是1<<16个
+	order1 := (*[1 << 17]uint16)(unsafe.Pointer(order0)) // 注释：（大小是case的两倍）存放排序后的数组下标，前半部分是乱序的下标，后半部分是下标对应的锁
 
-	ncases := nsends + nrecvs
-	scases := cas1[:ncases:ncases]
-	pollorder := order1[:ncases:ncases]
-	lockorder := order1[ncases:][:ncases:ncases]
+	ncases := nsends + nrecvs                    // 注释：接受管道和发送管道的个数
+	scases := cas1[:ncases:ncases]               // 注释：管道数组转换成slice
+	pollorder := order1[:ncases:ncases]          // 注释：打乱后的数组下标
+	lockorder := order1[ncases:][:ncases:ncases] // 注释：数组后半部分的下标对应的锁数据
 	// NOTE: pollorder/lockorder's underlying array was not zero-initialized by compiler.
 
 	// Even when raceenabled is true, there might be select
 	// statements in packages compiled without -race (e.g.,
 	// ensureSigM in runtime/signal_unix.go).
 	var pcs []uintptr
-	if raceenabled && pc0 != nil {
+	if raceenabled && pc0 != nil { // 注释：判读是否开启数据竞争
 		pc1 := (*[1 << 16]uintptr)(unsafe.Pointer(pc0))
 		pcs = pc1[:ncases:ncases]
 	}

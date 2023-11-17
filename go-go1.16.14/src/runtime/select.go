@@ -17,7 +17,7 @@ const debugSelect = false
 // Known to compiler.
 // Changes here must also be made in src/cmd/internal/gc/select.go's scasetype.
 type scase struct {
-	c    *hchan         // chan
+	c    *hchan         // 注释：case的管道数据指针 // chan
 	elem unsafe.Pointer // data element
 }
 
@@ -139,8 +139,8 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 
 	ncases := nsends + nrecvs                    // 注释：接受管道和发送管道的个数
 	scases := cas1[:ncases:ncases]               // 注释：管道数组转换成slice
-	pollorder := order1[:ncases:ncases]          // 注释：打乱后的数组下标
-	lockorder := order1[ncases:][:ncases:ncases] // 注释：数组后半部分的下标对应的锁数据
+	pollorder := order1[:ncases:ncases]          // 注释：(order1数组的上半部分)存储slice打乱后的数组下标
+	lockorder := order1[ncases:][:ncases:ncases] // 注释：(order1数组的下半部分)存储slice下标对应的锁数据
 	// NOTE: pollorder/lockorder's underlying array was not zero-initialized by compiler.
 
 	// Even when raceenabled is true, there might be select
@@ -172,30 +172,32 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// optimizing (and needing to test).
 
 	// generate permuted order
-	norder := 0
-	for i := range scases {
-		cas := &scases[i]
+	norder := 0             // 注释：没有随机的case切片下标
+	for i := range scases { // 注释：遍历case切片数据，打乱case切片数据，实现case的随机执行
+		cas := &scases[i] // 注释：获取case的数据
 
 		// Omit cases without channels from the poll and lock orders.
-		if cas.c == nil {
+		if cas.c == nil { // 注释：跳过值为nil的管道
 			cas.elem = nil // allow GC
 			continue
 		}
 
-		j := fastrandn(uint32(norder + 1))
-		pollorder[norder] = pollorder[j]
-		pollorder[j] = uint16(i)
-		norder++
+		j := fastrandn(uint32(norder + 1)) // 注释：随机出一个下标，通过存放下标，进行数据打乱，实现case随机执行
+		pollorder[norder] = pollorder[j]   // 注释：交换数据，当前数组下标数据和随机后的下标数据进行交换，数据为case切片的小标编号
+		pollorder[j] = uint16(i)           // 注释：把当前的小标编号存放到随机的下标编号的位置。
+		norder++                           // 注释：当前下标加一
 	}
-	pollorder = pollorder[:norder]
-	lockorder = lockorder[:norder]
+	pollorder = pollorder[:norder] // 注释：记录打乱后的case切片有效数据的下标
+	lockorder = lockorder[:norder] // 注释：用来记录case切片有效数据的下标，标记case下标对应的锁
 
 	// sort the cases by Hchan address to get the locking order.
 	// simple heap sort, to guarantee n log n time and constant stack footprint.
+	// 注释：根据Hchan地址对cases进行排序以获得锁定顺序。简单的堆排序，以保证log n时间和恒定的堆栈占用空间。
 	for i := range lockorder {
 		j := i
 		// Start with the pollorder to permute cases on the same channel.
-		c := scases[pollorder[i]].c
+		// 注释：从轮询顺序开始，在同一频道上排列案例。
+		c := scases[pollorder[i]].c // 注释：获取打乱后的case的管道数据
 		for j > 0 && scases[lockorder[(j-1)/2]].c.sortkey() < c.sortkey() {
 			k := (j - 1) / 2
 			lockorder[j] = lockorder[k]

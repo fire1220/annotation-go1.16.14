@@ -194,11 +194,12 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// simple heap sort, to guarantee n log n time and constant stack footprint.
 	// 注释：根据Hchan地址对cases进行排序以获得锁定顺序。简单的堆排序，以保证log n时间和恒定的堆栈占用空间。
 	// 注释：大堆排序
-	for i := range lockorder {
-		j := i
+	for i := range lockorder { // 注释：程序向后遍历
+		j := i // 注释：记录当前节点坐标
 		// Start with the pollorder to permute cases on the same channel.
 		// 注释：从轮询顺序开始，在同一频道上排列案例。
-		c := scases[pollorder[i]].c                                         // 注释：(当前case的下标)获取打乱后的case的管道数据
+		c := scases[pollorder[i]].c // 注释：(当前case的下标)获取打乱后的case的管道数据
+		// 注释：程序向前遍历
 		for j > 0 && scases[lockorder[(j-1)/2]].c.sortkey() < c.sortkey() { // 注释：父节点和子节点比较，子节点大于父节点是交换数据
 			k := (j - 1) / 2            // 注释：父节点位置
 			lockorder[j] = lockorder[k] // 注释：交换节点数据
@@ -208,23 +209,23 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 	// 注释：从后开始循环，里面是从前循环，里面循环结束条件是大于外面循环的key或者父节点本身就大于子节点。
 	for i := len(lockorder) - 1; i >= 0; i-- {
-		o := lockorder[i]
-		c := scases[o].c
-		lockorder[i] = lockorder[0]
-		j := 0
+		o := lockorder[i]           // 注释：当前下标(记录最后一个节点)
+		c := scases[o].c            // 注释：（当前遍历的节点是：最后一个子节点）当前case
+		lockorder[i] = lockorder[0] // 注释：把跟节点放到最后一个节点的位置(其实就是踢出跟节点,因为下次循环的时候i--正好把最后一个节点踢出了)
+		j := 0                      // 注释：每次都是从跟节点开始遍历
 		for {
 			k := j*2 + 1 // 注释：左子节点(右子节点是j*2+2)
-			if k >= i {  // 注释：如果到最后一个子节点则退出循环
+			if k >= i {  // 注释：如果到最后一个子节点则退出循环(左子节点大于最后一个节点时退出)
 				break
 			}
 			// 注释：比较左子节点和右子节点，记录大节点的key
 			if k+1 < i && scases[lockorder[k]].c.sortkey() < scases[lockorder[k+1]].c.sortkey() {
-				k++
+				k++ // 注释：右子节点
 			}
 			// 注释：子节点和父节点比较，如果子节点大的话就和父节点交换数据，然后跳到子节点位置重新循环比较(这个顺序是从跟节点到子节点遍历)
-			if c.sortkey() < scases[lockorder[k]].c.sortkey() {
-				lockorder[j] = lockorder[k]
-				j = k
+			if c.sortkey() < scases[lockorder[k]].c.sortkey() { // 注释：父节点和子节点比较
+				lockorder[j] = lockorder[k] // 注释：子节点赋值给父节点
+				j = k                       // 注释：(替换节点位置)从子节点开始向后遍历
 				continue
 			}
 			break // 注释：如果父节点本身就是大值则退出循环

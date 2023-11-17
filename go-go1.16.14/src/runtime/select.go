@@ -198,13 +198,13 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		j := i
 		// Start with the pollorder to permute cases on the same channel.
 		// 注释：从轮询顺序开始，在同一频道上排列案例。
-		c := scases[pollorder[i]].c // 注释：获取打乱后的case的管道数据
-		for j > 0 && scases[lockorder[(j-1)/2]].c.sortkey() < c.sortkey() {
-			k := (j - 1) / 2
-			lockorder[j] = lockorder[k]
-			j = k
+		c := scases[pollorder[i]].c                                         // 注释：(当前case的下标)获取打乱后的case的管道数据
+		for j > 0 && scases[lockorder[(j-1)/2]].c.sortkey() < c.sortkey() { // 注释：父节点和子节点比较，子节点大于父节点是交换数据
+			k := (j - 1) / 2            // 注释：父节点位置
+			lockorder[j] = lockorder[k] // 注释：交换节点数据
+			j = k                       // 注释：从父节点位置重新循环比较
 		}
-		lockorder[j] = pollorder[i]
+		lockorder[j] = pollorder[i] // 注释：最大节点位置存储当前case的下标
 	}
 	// 注释：从后开始循环，里面是从前循环，里面循环结束条件是大于外面循环的key或者父节点本身就大于子节点。
 	for i := len(lockorder) - 1; i >= 0; i-- {

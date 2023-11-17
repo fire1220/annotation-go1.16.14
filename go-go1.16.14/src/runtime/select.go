@@ -193,6 +193,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// sort the cases by Hchan address to get the locking order.
 	// simple heap sort, to guarantee n log n time and constant stack footprint.
 	// 注释：根据Hchan地址对cases进行排序以获得锁定顺序。简单的堆排序，以保证log n时间和恒定的堆栈占用空间。
+	// 注释：大堆排序
 	for i := range lockorder {
 		j := i
 		// Start with the pollorder to permute cases on the same channel.
@@ -205,27 +206,30 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		}
 		lockorder[j] = pollorder[i]
 	}
+	// 注释：从后开始循环，里面是从前循环，里面循环结束条件是大于外面循环的key或者父节点本身就大于子节点。
 	for i := len(lockorder) - 1; i >= 0; i-- {
 		o := lockorder[i]
 		c := scases[o].c
 		lockorder[i] = lockorder[0]
 		j := 0
 		for {
-			k := j*2 + 1
-			if k >= i {
+			k := j*2 + 1 // 注释：左子节点(右子节点是j*2+2)
+			if k >= i {  // 注释：如果到最后一个子节点则退出循环
 				break
 			}
+			// 注释：比较左子节点和右子节点，记录大节点的key
 			if k+1 < i && scases[lockorder[k]].c.sortkey() < scases[lockorder[k+1]].c.sortkey() {
 				k++
 			}
+			// 注释：子节点和父节点比较，如果子节点大的话就和父节点交换数据，然后跳到子节点位置重新循环比较(这个顺序是从跟节点到子节点遍历)
 			if c.sortkey() < scases[lockorder[k]].c.sortkey() {
 				lockorder[j] = lockorder[k]
 				j = k
 				continue
 			}
-			break
+			break // 注释：如果父节点本身就是大值则退出循环
 		}
-		lockorder[j] = o
+		lockorder[j] = o // 注释：每次取出一个最大节点（把最大节点从树中移除，插入到这个数组里面）
 	}
 
 	if debugSelect {

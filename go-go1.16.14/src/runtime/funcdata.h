@@ -8,15 +8,18 @@
 //
 // These must agree with symtab.go and ../cmd/internal/objabi/funcdata.go.
 
-#define PCDATA_UnsafePoint 0
-#define PCDATA_StackMapIndex 1
-#define PCDATA_InlTreeIndex 2
+// 注释：PC表格和FUNC表格是给GC使用的
+// 注释：PCDATA（生成PC表格）汇编指令的第一个参数（PC表格的类型）
+#define PCDATA_UnsafePoint 0    // 注释：不安全的指针
+#define PCDATA_StackMapIndex 1  // 注释：包含代码的文件路径、行号和函数信息
+#define PCDATA_InlTreeIndex 2   // 注释：（内联函数使用）包含代码的文件路径、行号和函数信息
 
-#define FUNCDATA_ArgsPointerMaps 0 /* garbage collector blocks */
-#define FUNCDATA_LocalsPointerMaps 1
+// 注释：FUNCDATA(生成FUNC表格)汇编指令的第一个参数（FUNC表格的类型）
+#define FUNCDATA_ArgsPointerMaps 0      // 注释：（参数）函数参数的指针信息表 /* garbage collector blocks */
+#define FUNCDATA_LocalsPointerMaps 1    // 注释：（局部变量）局部指针信息表
 #define FUNCDATA_StackObjects 2
-#define FUNCDATA_InlTree 3
-#define FUNCDATA_OpenCodedDeferInfo 4 /* info for func with open-coded defers */
+#define FUNCDATA_InlTree 3              // 注释：（内联展开后的局部变量）被内联展开的指针信息表
+#define FUNCDATA_OpenCodedDeferInfo 4   // 注释：open code(开放代码)优化的defer的函数信息 /* info for func with open-coded defers */
 
 // Pseudo-assembly statements.
 

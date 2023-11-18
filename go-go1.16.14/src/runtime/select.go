@@ -266,10 +266,10 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	var caseSuccess bool
 	var caseReleaseTime int64 = -1
 	var recvOK bool
-	for _, casei := range pollorder {
-		casi = int(casei)
-		cas = &scases[casi]
-		c = cas.c
+	for _, casei := range pollorder { // 注释：遍历打乱顺序后的下标(就是实现随机执行case，这里根据这个乱序循环执行对应的case)
+		casi = int(casei)   // 注释：(要执行的case元素下标)拿出当前下标
+		cas = &scases[casi] // 注释：case的元素，当前下标对应的case
+		c = cas.c           // 注释：chan管道
 
 		if casi >= nsends {
 			sg = c.sendq.dequeue()

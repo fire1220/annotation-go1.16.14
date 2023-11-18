@@ -16,6 +16,7 @@ const debugSelect = false
 // Select case descriptor.
 // Known to compiler.
 // Changes here must also be made in src/cmd/internal/gc/select.go's scasetype.
+// 注释：select case中的case结构体
 type scase struct {
 	c    *hchan         // 注释：case的管道数据指针 // chan
 	elem unsafe.Pointer // data element
@@ -30,13 +31,14 @@ func selectsetpc(pc *uintptr) {
 	*pc = getcallerpc()
 }
 
+// 注释：把case里不为nil的管道加锁
 func sellock(scases []scase, lockorder []uint16) {
-	var c *hchan
-	for _, o := range lockorder {
-		c0 := scases[o].c
-		if c0 != c {
-			c = c0
-			lock(&c.lock)
+	var c *hchan                  // 注释：声明一个为nil的管道
+	for _, o := range lockorder { // 注释：循环锁（需要加锁的管道slice）
+		c0 := scases[o].c // 注释：取出对应的管道
+		if c0 != c {      // 注释：判断管道是否为nil，如果存在则加锁
+			c = c0        // 注释：把指针复制一份给声明的管道指针
+			lock(&c.lock) // 注释：把管道的指针对应的管道加锁
 		}
 	}
 }
@@ -194,6 +196,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// simple heap sort, to guarantee n log n time and constant stack footprint.
 	// 注释：根据Hchan地址对cases进行排序以获得锁定顺序。简单的堆排序，以保证log n时间和恒定的堆栈占用空间。
 	// 注释：大堆排序
+	// 注释：构建大堆二叉树
 	for i := range lockorder { // 注释：程序向后遍历
 		j := i // 注释：记录当前节点坐标
 		// Start with the pollorder to permute cases on the same channel.
@@ -208,6 +211,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		lockorder[j] = pollorder[i] // 注释：最大节点位置存储当前case的下标
 	}
 	// 注释：从后开始循环，里面是从前循环，里面循环结束条件是大于外面循环的key或者父节点本身就大于子节点。
+	// 注释：从大堆二叉树踢出根节点，组成倒叙数组
 	for i := len(lockorder) - 1; i >= 0; i-- {
 		o := lockorder[i]           // 注释：当前下标(记录最后一个节点)
 		c := scases[o].c            // 注释：（当前遍历的节点是：最后一个子节点）当前case
@@ -242,8 +246,8 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		}
 	}
 
-	// lock all the channels involved in the select
-	sellock(scases, lockorder)
+	// lock all the channels involved in the select // 注释：锁定选择中涉及的所有通道
+	sellock(scases, lockorder) // 注释：把case里不为nil的管道加锁
 
 	var (
 		gp     *g

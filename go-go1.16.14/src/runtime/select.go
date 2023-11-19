@@ -60,9 +60,9 @@ func selunlock(scases []scase, lockorder []uint16) {
 	for i := len(lockorder) - 1; i >= 0; i-- {
 		c := scases[lockorder[i]].c
 		if i > 0 && c == scases[lockorder[i-1]].c {
-			continue // will unlock it on the next iteration
+			continue // will unlock it on the next iteration // 注释：将在下一次迭代中解锁
 		}
-		unlock(&c.lock)
+		unlock(&c.lock) // 注释：解锁
 	}
 }
 

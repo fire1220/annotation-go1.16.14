@@ -129,10 +129,11 @@ func block() {
 // 注释：此外，如果选择的scase是一个接收操作，它会报告是否接收到值。
 //
 // 注释：运行select case语句的时候会执行该函数
-// 注释：cas0：存放的是case管道数组首指针；
-// 注释：order0：存放的值是case管道数组的下标数组首指针。
-// 注释：nsends：存放case里发送管道类型的管道数量
-// 注释：nrecvs：存放case里接受管道类型的管道数量
+// 注释：cas0 存放的是case管道数组首指针；
+// 注释：order0 存放的值是case管道数组的下标数组首指针。
+// 注释：nsends 存放case里发送管道类型的管道数量
+// 注释：nrecvs 存放case里接受管道类型的管道数量
+// 注释：block 是否需要阻塞
 func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, block bool) (int, bool) {
 	if debugSelect {
 		print("select: cas0=", cas0, "\n")
@@ -266,6 +267,9 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	)
 
 	// pass 1 - look for something already waiting
+	// 注释：情况1 发现已经准好的管道，
+	// 注释：发送时:接收阻塞队列有值或者缓冲区有空位置时;
+	// 注释：接收时:发送阻塞队列有值或者缓冲区有值;
 	var casi int
 	var cas *scase
 	var caseSuccess bool
@@ -304,13 +308,14 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		}
 	}
 
-	if !block {
-		selunlock(scases, lockorder)
-		casi = -1
-		goto retc
+	if !block { // 注释：如果没有设置必须阻塞，则解锁，并且返回case下标和读取的状态
+		selunlock(scases, lockorder) // 注释：解锁
+		casi = -1                    // 注释：重置case下标。设置成无效
+		goto retc                    // 注释：执行返回代码
 	}
 
 	// pass 2 - enqueue on all chans
+	// 注释：情况2
 	gp = getg()
 	if gp.waiting != nil {
 		throw("gp.waiting != nil")
@@ -362,6 +367,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// otherwise they stack up on quiet channels
 	// record the successful case, if any.
 	// We singly-linked up the SudoGs in lock order.
+	// 注释：从不成功的通道中通过3-出列，否则它们会堆积在安静的通道上，记录成功的情况（如果有的话）。我们把SudoG单独按锁定顺序连接起来。
 	casi = -1
 	cas = nil
 	caseSuccess = false
@@ -512,7 +518,7 @@ send: // 注释：执行发送到接收阻塞队列G里
 	}
 	goto retc
 
-retc:
+retc: // 注释：执行返回代码，返回case下标和读取时的状态
 	if caseReleaseTime > 0 {
 		blockevent(caseReleaseTime-t0, 1)
 	}

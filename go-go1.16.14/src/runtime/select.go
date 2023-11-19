@@ -19,7 +19,7 @@ const debugSelect = false
 // 注释：select case中的case结构体
 type scase struct {
 	c    *hchan         // 注释：case的管道数据指针 // chan
-	elem unsafe.Pointer // data element
+	elem unsafe.Pointer // 注释：数据指针，用来发送或接收数据的指针(管道发送时这个时发送的数据指针，管道接收时这个是存放管道数据的数据指针) // data element
 }
 
 var (

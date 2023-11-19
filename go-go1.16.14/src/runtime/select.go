@@ -252,7 +252,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	// lock all the channels involved in the select // 注释：锁定选择中涉及的所有通道
-	sellock(scases, lockorder) // 注释：把case里不为nil的管道加锁
+	sellock(scases, lockorder) // 注释：把case里不为nil的管道加锁(执行完case会解锁)
 
 	var (
 		gp     *g
@@ -294,12 +294,12 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 			if c.closed != 0 { // 注释：如果管道已经关闭，则不能向管道写入数据，跳到处理向已经关闭的管道写数据的代码位置，（其实就是panic）
 				goto sclose // 注释：跳到处理向已经关闭的管道写数据的代码位置
 			}
-			sg = c.recvq.dequeue()
-			if sg != nil {
-				goto send
+			sg = c.recvq.dequeue() // 注释：踢出接收管道的首元素
+			if sg != nil {         // 注释：如果有值，则表示接收阻塞队列里有值，则优先发送到阻塞接收队列里的G
+				goto send // 注释：执行发送到接收阻塞队列G里
 			}
-			if c.qcount < c.dataqsiz {
-				goto bufsend
+			if c.qcount < c.dataqsiz { // 注释：如果当前元素数量小于最大存储的容量时，需要向缓冲区里添加元素
+				goto bufsend // 注释：向缓冲区里添加元素
 			}
 		}
 	}
@@ -459,7 +459,7 @@ bufrecv: // 注释：跳到处理管道缓冲区代码位置，读取管道数�
 	selunlock(scases, lockorder)
 	goto retc
 
-bufsend:
+bufsend: // 注释：向缓冲区里添加元素
 	// can send to buffer
 	if raceenabled {
 		racenotify(c, c.sendx, nil)
@@ -498,7 +498,7 @@ rclose: // 注释：跳到度关闭管道代码位置
 	}
 	goto retc
 
-send:
+send: // 注释：执行发送到接收阻塞队列G里
 	// can send to a sleeping receiver (sg)
 	if raceenabled {
 		raceReadObjectPC(c.elemtype, cas.elem, casePC(casi), chansendpc)
@@ -520,7 +520,7 @@ retc:
 
 sclose: // 注释：处理向已经关闭的管道写数据(会触发panic)
 	// send on closed channel
-	selunlock(scases, lockorder)
+	selunlock(scases, lockorder) // 注释：解锁
 	panic(plainError("send on closed channel"))
 }
 

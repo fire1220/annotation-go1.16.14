@@ -146,6 +146,7 @@ func full(c *hchan) bool {
 }
 
 // entry point for c <- x from compiled code
+//
 //go:nosplit
 func chansend1(c *hchan, elem unsafe.Pointer) {
 	chansend(c, elem, true, getcallerpc())
@@ -477,6 +478,7 @@ func empty(c *hchan) bool {
 }
 
 // entry points for <- c from compiled code
+//
 //go:nosplit
 func chanrecv1(c *hchan, elem unsafe.Pointer) {
 	chanrecv(c, elem, true)
@@ -644,10 +646,11 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 
 // recv processes a receive operation on a full channel c.
 // There are 2 parts:
-// 1) The value sent by the sender sg is put into the channel
-//    and the sender is woken up to go on its merry way.
-// 2) The value received by the receiver (the current G) is
-//    written to ep.
+//  1. The value sent by the sender sg is put into the channel
+//     and the sender is woken up to go on its merry way.
+//  2. The value received by the receiver (the current G) is
+//     written to ep.
+//
 // For synchronous channels, both values are the same.
 // For asynchronous channels, the receiver gets its data from
 // the channel buffer and the sender's data is put in the
@@ -734,7 +737,6 @@ func chanparkcommit(gp *g, chanLock unsafe.Pointer) bool {
 //	} else {
 //		... bar
 //	}
-//
 func selectnbsend(c *hchan, elem unsafe.Pointer) (selected bool) {
 	return chansend(c, elem, false, getcallerpc())
 }
@@ -755,7 +757,6 @@ func selectnbsend(c *hchan, elem unsafe.Pointer) (selected bool) {
 //	} else {
 //		... bar
 //	}
-//
 func selectnbrecv(elem unsafe.Pointer, c *hchan) (selected bool) {
 	selected, _ = chanrecv(c, elem, false)
 	return
@@ -777,7 +778,6 @@ func selectnbrecv(elem unsafe.Pointer, c *hchan) (selected bool) {
 //	} else {
 //		... bar
 //	}
-//
 func selectnbrecv2(elem unsafe.Pointer, received *bool, c *hchan) (selected bool) {
 	// TODO(khr): just return 2 values from this function, now that it is in Go.
 	selected, *received = chanrecv(c, elem, false)
@@ -841,20 +841,20 @@ func (q *waitq) enqueue(sgp *sudog) {
 // 注释：在队列头部取出G（在双向链表头部取出元素；元素移除队列，把链表第一个元素取出来）
 func (q *waitq) dequeue() *sudog {
 	for {
-		sgp := q.first
-		if sgp == nil {
+		sgp := q.first  // 注释：获取第一个元素(链表头部)
+		if sgp == nil { // 注释：如果没有第一个元素则直接返回
 			return nil
 		}
-		y := sgp.next
+		y := sgp.next // 注释：取出链表下一个元素(第二个元素)
 		// 注释：如果链表的下一个元素为nil，说明出栈以后，链表已经没有元素了
-		if y == nil {
-			q.first = nil
-			q.last = nil
+		if y == nil { // 注释：没有下一个元素（没有第二个元素）
+			q.first = nil // 注释：清空首地址
+			q.last = nil  // 注释：清空尾地址
 		} else {
 			// 注释：把链表的下一个元素绑定到first上，然后断开出栈的元素与链表的关系
-			y.prev = nil
-			q.first = y
-			sgp.next = nil // mark as removed (see dequeueSudog)
+			y.prev = nil   // 注释：第二个元素把向上的连接去掉（去掉双向链表的左侧链接，为了踢出左侧元素做准备）
+			q.first = y    // 注释：踢出链表头部元素
+			sgp.next = nil // 注释：释放资源，把原来的第一个元素的向后指针清空 // mark as removed (see dequeueSudog)
 		}
 
 		// if a goroutine was put on this queue because of a
@@ -871,7 +871,7 @@ func (q *waitq) dequeue() *sudog {
 		}
 
 		// 注释：返回链表第一个元素，在双向链表头部取出元素
-		return sgp
+		return sgp // 注释：踢出首元素
 	}
 }
 

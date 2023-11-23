@@ -62,8 +62,8 @@ const (
 type mheap struct {
 	// lock must only be acquired on the system stack, otherwise a g
 	// could self-deadlock if its stack grows with the lock held.
-	lock      mutex
-	pages     pageAlloc // page allocation data structure
+	lock      mutex     // 注释：互斥锁
+	pages     pageAlloc // 注释：指向spans区域，用于映射span和page的关系(页面分配数据结构) // page allocation data structure
 	sweepgen  uint32    // sweep generation, see comment in mspan; written during STW
 	sweepdone uint32    // all spans are swept
 	sweepers  uint32    // number of active sweepone calls
@@ -192,8 +192,9 @@ type mheap struct {
 
 	// curArena is the arena that the heap is currently growing
 	// into. This should always be physPageSize-aligned.
+	// 注释：curArena是堆目前正在增长的arena。这应该始终与physPageSize对齐。
 	curArena struct {
-		base, end uintptr
+		base, end uintptr // 注释：指示arena区首/尾地址
 	}
 
 	_ uint32 // ensure 64-bit alignment of central
@@ -203,7 +204,7 @@ type mheap struct {
 	// spaced CacheLinePadSize bytes apart, so that each mcentral.lock
 	// gets its own cache line.
 	// central is indexed by spanClass.
-	central [numSpanClasses]struct {
+	central [numSpanClasses]struct { // 注释：是class对象表的两倍(每种class对应的两个mcentral)
 		mcentral mcentral
 		pad      [cpu.CacheLinePadSize - unsafe.Sizeof(mcentral{})%cpu.CacheLinePadSize]byte
 	}
@@ -527,15 +528,17 @@ func recordspan(vh unsafe.Pointer, p unsafe.Pointer) {
 }
 
 // A spanClass represents the size class and noscan-ness of a span.
+// 注释：spanClass表示跨度的大小等级和范围。
 //
 // Each size class has a noscan spanClass and a scan spanClass. The
 // noscan spanClass contains only noscan objects, which do not contain
 // pointers and thus do not need to be scanned by the garbage
 // collector.
+// 注释：每个尺寸类都有一个noscan spanClass和一个scan spanClass。noscan spanClass只包含noscan对象，这些对象不包含指针，因此不需要垃圾收集器扫描。
 type spanClass uint8
 
 const (
-	numSpanClasses = _NumSizeClasses << 1
+	numSpanClasses = _NumSizeClasses << 1 // 注释：是class对象列表的两倍
 	tinySpanClass  = spanClass(tinySizeClass<<1 | 1)
 )
 

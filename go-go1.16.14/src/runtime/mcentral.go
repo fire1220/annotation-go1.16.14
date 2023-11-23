@@ -18,7 +18,7 @@ import "runtime/internal/atomic"
 //
 //go:notinheap
 type mcentral struct {
-	spanclass spanClass
+	spanclass spanClass // 注释：每个mcentral管理着一组有相同class的span列表(span class ID)
 
 	// partial and full contain two mspan sets: one of swept in-use
 	// spans, and one of unswept in-use spans. These two trade

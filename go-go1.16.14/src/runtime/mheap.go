@@ -320,16 +320,16 @@ type arenaHint struct {
 // mSpanManual, or mSpanFree. Transitions between these states are
 // constrained as follows:
 //
-// * A span may transition from free to in-use or manual during any GC
-//   phase.
+//   - A span may transition from free to in-use or manual during any GC
+//     phase.
 //
-// * During sweeping (gcphase == _GCoff), a span may transition from
-//   in-use to free (as a result of sweeping) or manual to free (as a
-//   result of stacks being freed).
+//   - During sweeping (gcphase == _GCoff), a span may transition from
+//     in-use to free (as a result of sweeping) or manual to free (as a
+//     result of stacks being freed).
 //
-// * During GC (gcphase != _GCoff), a span *must not* transition from
-//   manual or in-use to free. Because concurrent GC may read a pointer
-//   and then look up its span, the span state must be monotonic.
+//   - During GC (gcphase != _GCoff), a span *must not* transition from
+//     manual or in-use to free. Because concurrent GC may read a pointer
+//     and then look up its span, the span state must be monotonic.
 //
 // Setting mspan.state to mSpanInUse or mSpanManual must be done
 // atomically and only after all other span fields are valid.
@@ -378,14 +378,17 @@ type mSpanList struct {
 	last  *mspan // last span in list, or nil if none
 }
 
+// 注释：span是内存管理的基本单位,每个span用于管理特定的class对象, 跟据对象大小，span将一个或多个页拆分成多个块进行管理。
+// 注释：span的结构体
+//
 //go:notinheap
 type mspan struct {
-	next *mspan     // next span in list, or nil if none
-	prev *mspan     // previous span in list, or nil if none
+	next *mspan     // 注释：列表中的下一个span，如果没有则为nil(用于将span链接起来) // next span in list, or nil if none
+	prev *mspan     // 注释：列表中的前一个span，如果没有则为nil(用于将span链接起来) // previous span in list, or nil if none
 	list *mSpanList // For debugging. TODO: Remove.
 
-	startAddr uintptr // address of first byte of span aka s.base()
-	npages    uintptr // number of pages in span
+	startAddr uintptr // 注释：起始地址，也即所管理页的地址 // address of first byte of span aka s.base()
+	npages    uintptr // 注释：管理的页数 // number of pages in span
 
 	manualFreeList gclinkptr // list of free objects in mSpanManual spans
 
@@ -407,7 +410,7 @@ type mspan struct {
 	freeindex uintptr
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.
-	nelems uintptr // number of object in the span.
+	nelems uintptr // 注释：span中对象的数量(块个数)，也即有多少个块可供分配（对应class表【objects】字段） // number of object in the span.
 
 	// Cache of the allocBits at freeindex. allocCache is shifted
 	// such that the lowest bit corresponds to the bit freeindex.
@@ -439,7 +442,7 @@ type mspan struct {
 	// The sweep will free the old allocBits and set allocBits to the
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
-	allocBits  *gcBits
+	allocBits  *gcBits // 注释：分配位图，每一位代表一个块是否已分配
 	gcmarkBits *gcBits
 
 	// sweep generation:
@@ -453,13 +456,13 @@ type mspan struct {
 	sweepgen    uint32
 	divMul      uint16        // for divide by elemsize - divMagic.mul
 	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
-	allocCount  uint16        // number of allocated objects
-	spanclass   spanClass     // size class and noscan (uint8)
+	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects
+	spanclass   spanClass     // 注释：class表中的【class】字段，就是class id // size class and noscan (uint8)
 	state       mSpanStateBox // mSpanInUse etc; accessed atomically (get/set methods)
 	needzero    uint8         // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2
-	elemsize    uintptr       // computed from sizeclass or from npages
+	elemsize    uintptr       // 注释：class表中的对象大小，也即对象块大小(对应class表中的【bytes/obj】字段) // computed from sizeclass or from npages
 	limit       uintptr       // end of data in span
 	speciallock mutex         // guards specials list
 	specials    *special      // linked list of special records sorted by offset.
@@ -593,6 +596,7 @@ func (i arenaIdx) l2() uint {
 // inheap reports whether b is a pointer into a (potentially dead) heap object.
 // It returns false for pointers into mSpanManual spans.
 // Non-preemptible because it is used by write barriers.
+//
 //go:nowritebarrier
 //go:nosplit
 func inheap(b uintptr) bool {
@@ -1674,7 +1678,8 @@ func spanHasNoSpecials(s *mspan) {
 // offset & next, which this routine will fill in.
 // Returns true if the special was successfully added, false otherwise.
 // (The add will fail only if a record with the same p and s->kind
-//  already exists.)
+//
+//	already exists.)
 func addspecial(p unsafe.Pointer, s *special) bool {
 	span := spanOfHeap(uintptr(p))
 	if span == nil {

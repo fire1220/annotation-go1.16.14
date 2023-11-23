@@ -127,7 +127,7 @@ const (
 	_PageMask = _PageSize - 1
 
 	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
-	_64bit = 1 << (^uintptr(0) >> 63) / 2
+	_64bit = 1 << (^uintptr(0) >> 63) / 2 // 注释：系统位数1是64位0是32位；可以直接用更简洁的方式：^uintptr(0) >> 63
 
 	// Tiny allocator parameters, see "Tiny allocator" comment in malloc.go.
 	_TinySize      = 16

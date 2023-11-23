@@ -77,7 +77,7 @@ const (
 	smallSizeDiv    = 8
 	smallSizeMax    = 1024
 	largeSizeDiv    = 128
-	_NumSizeClasses = 68
+	_NumSizeClasses = 68 // 注释：对象总个数
 	_PageShift      = 13
 )
 

@@ -15,6 +15,7 @@ import (
 //
 // mcaches are allocated from non-GC'd memory, so any heap pointers
 // must be specially handled.
+// 每个线程M下的内存缓存
 //
 //go:notinheap
 type mcache struct {
@@ -41,7 +42,7 @@ type mcache struct {
 
 	// The rest is not accessed on every malloc.
 
-	alloc [numSpanClasses]*mspan // spans to allocate from, indexed by spanClass
+	alloc [numSpanClasses]*mspan // 注释：按class分组的mspan列表 // spans to allocate from, indexed by spanClass
 
 	stackcache [_NumStackOrders]stackfreelist
 

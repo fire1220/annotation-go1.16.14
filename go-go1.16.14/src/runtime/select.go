@@ -19,7 +19,7 @@ const debugSelect = false
 // 注释：select case中的case结构体
 type scase struct {
 	c    *hchan         // 注释：case的管道数据指针 // chan
-	elem unsafe.Pointer // data element
+	elem unsafe.Pointer // 注释：数据指针，用来发送或接收数据的指针(管道发送时这个时发送的数据指针，管道接收时这个是存放管道数据的数据指针) // data element
 }
 
 var (
@@ -43,21 +43,26 @@ func sellock(scases []scase, lockorder []uint16) {
 	}
 }
 
+// 注释：设置case对应的管道解锁
 func selunlock(scases []scase, lockorder []uint16) {
 	// We must be very careful here to not touch sel after we have unlocked
 	// the last lock, because sel can be freed right after the last unlock.
+	// 注释：我们必须非常小心，不要在解锁最后一把锁后触摸sel，因为sel可以在最后一次解锁后立即释放。
 	// Consider the following situation.
 	// First M calls runtime·park() in runtime·selectgo() passing the sel.
+	// 注释：考虑以下情况。第一个M调用runtime·park（）在runtime·selectgo（）中传递sel。
 	// Once runtime·park() has unlocked the last lock, another M makes
 	// the G that calls select runnable again and schedules it for execution.
+	// 注释：一旦runtime·park（）解锁了最后一个锁，另一个M会使调用select的G再次可运行，并安排执行。
 	// When the G runs on another M, it locks all the locks and frees sel.
 	// Now if the first M touches sel, it will access freed memory.
+	// 注释：当G在另一个M上运行时，它锁定所有锁并释放sel。现在，如果第一个M触摸sel，它将访问释放的内存。
 	for i := len(lockorder) - 1; i >= 0; i-- {
 		c := scases[lockorder[i]].c
 		if i > 0 && c == scases[lockorder[i-1]].c {
-			continue // will unlock it on the next iteration
+			continue // will unlock it on the next iteration // 注释：将在下一次迭代中解锁
 		}
-		unlock(&c.lock)
+		unlock(&c.lock) // 注释：解锁
 	}
 }
 
@@ -124,10 +129,11 @@ func block() {
 // 注释：此外，如果选择的scase是一个接收操作，它会报告是否接收到值。
 //
 // 注释：运行select case语句的时候会执行该函数
-// 注释：cas0：存放的是case管道数组首指针；
-// 注释：order0：存放的值是case管道数组的下标数组首指针。
-// 注释：nsends：存放case里发送管道类型的管道数量
-// 注释：nrecvs：存放case里接受管道类型的管道数量
+// 注释：cas0 存放的是case管道数组首指针；
+// 注释：order0 存放的值是case管道数组的下标数组首指针。
+// 注释：nsends 存放case里发送管道类型的管道数量
+// 注释：nrecvs 存放case里接受管道类型的管道数量
+// 注释：block 是否需要阻塞
 func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, block bool) (int, bool) {
 	if debugSelect {
 		print("select: cas0=", cas0, "\n")
@@ -247,7 +253,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	// lock all the channels involved in the select // 注释：锁定选择中涉及的所有通道
-	sellock(scases, lockorder) // 注释：把case里不为nil的管道加锁
+	sellock(scases, lockorder) // 注释：把case里不为nil的管道加锁(执行完case会解锁)
 
 	var (
 		gp     *g
@@ -261,6 +267,9 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	)
 
 	// pass 1 - look for something already waiting
+	// 注释：情况1 发现已经准好的管道，
+	// 注释：发送时:接收阻塞队列有值或者缓冲区有空位置时;
+	// 注释：接收时:发送阻塞队列有值或者缓冲区有值;
 	var casi int
 	var cas *scase
 	var caseSuccess bool
@@ -271,41 +280,42 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 		cas = &scases[casi] // 注释：case的元素，当前下标对应的case
 		c = cas.c           // 注释：chan管道
 
-		if casi >= nsends {
-			sg = c.sendq.dequeue()
-			if sg != nil {
-				goto recv
+		if casi >= nsends { // 注释：(处理管道读操作)大于发送总数，代表case是接收管道
+			sg = c.sendq.dequeue() // 注释：到写入阻塞队列中取出数据，（接收管道，首先是看发送阻塞管道里是否有数据，如果有数据优先取出来）
+			if sg != nil {         // 注释：如果发送阻塞队列中有数据，则跳到接收位置处理接收管道数据
+				goto recv // 注释：跳到处理接收管道数据的代码位置
 			}
-			if c.qcount > 0 {
-				goto bufrecv
+			if c.qcount > 0 { // 如果走到这里代表阻塞队列中没有数据，并且管道里有数据，则说明管道缓冲区里有数据，跳到处理管道缓冲区位置处理读取数据
+				goto bufrecv // 注释：跳到处理管道缓冲区代码位置，读取管道数据
 			}
-			if c.closed != 0 {
-				goto rclose
+			if c.closed != 0 { // 注释：如果管道已经关闭则，跳到处理管道读取关闭时处理的函数位置
+				goto rclose // 注释：跳到度关闭管道代码位置
 			}
-		} else {
-			if raceenabled {
-				racereadpc(c.raceaddr(), casePC(casi), chansendpc)
+		} else { // 注释：处理管道写操作
+			if raceenabled { // 注释：判断是否开启数据竞争
+				racereadpc(c.raceaddr(), casePC(casi), chansendpc) // 注释：检测数据竞争
 			}
-			if c.closed != 0 {
-				goto sclose
+			if c.closed != 0 { // 注释：如果管道已经关闭，则不能向管道写入数据，跳到处理向已经关闭的管道写数据的代码位置，（其实就是panic）
+				goto sclose // 注释：跳到处理向已经关闭的管道写数据的代码位置
 			}
-			sg = c.recvq.dequeue()
-			if sg != nil {
-				goto send
+			sg = c.recvq.dequeue() // 注释：踢出接收管道的首元素
+			if sg != nil {         // 注释：如果有值，则表示接收阻塞队列里有值，则优先发送到阻塞接收队列里的G
+				goto send // 注释：执行发送到接收阻塞队列G里
 			}
-			if c.qcount < c.dataqsiz {
-				goto bufsend
+			if c.qcount < c.dataqsiz { // 注释：如果当前元素数量小于最大存储的容量时，需要向缓冲区里添加元素
+				goto bufsend // 注释：向缓冲区里添加元素
 			}
 		}
 	}
 
-	if !block {
-		selunlock(scases, lockorder)
-		casi = -1
-		goto retc
+	if !block { // 注释：如果没有设置必须阻塞，则解锁，并且返回case下标和读取的状态
+		selunlock(scases, lockorder) // 注释：解锁
+		casi = -1                    // 注释：重置case下标。设置成无效
+		goto retc                    // 注释：执行返回代码
 	}
 
 	// pass 2 - enqueue on all chans
+	// 注释：情况2 【ing...】
 	gp = getg()
 	if gp.waiting != nil {
 		throw("gp.waiting != nil")
@@ -357,6 +367,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// otherwise they stack up on quiet channels
 	// record the successful case, if any.
 	// We singly-linked up the SudoGs in lock order.
+	// 注释：从不成功的通道中通过3-出列，否则它们会堆积在安静的通道上，记录成功的情况（如果有的话）。我们把SudoG单独按锁定顺序连接起来。
 	casi = -1
 	cas = nil
 	caseSuccess = false
@@ -429,7 +440,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	selunlock(scases, lockorder)
 	goto retc
 
-bufrecv:
+bufrecv: // 注释：跳到处理管道缓冲区代码位置，读取管道数据
 	// can receive from buffer
 	if raceenabled {
 		if cas.elem != nil {
@@ -454,7 +465,7 @@ bufrecv:
 	selunlock(scases, lockorder)
 	goto retc
 
-bufsend:
+bufsend: // 注释：向缓冲区里添加元素
 	// can send to buffer
 	if raceenabled {
 		racenotify(c, c.sendx, nil)
@@ -472,7 +483,7 @@ bufsend:
 	selunlock(scases, lockorder)
 	goto retc
 
-recv:
+recv: // 注释：处理接收管道数据的代码位置
 	// can receive from sleeping sender (sg)
 	recv(c, sg, cas.elem, func() { selunlock(scases, lockorder) }, 2)
 	if debugSelect {
@@ -481,7 +492,7 @@ recv:
 	recvOK = true
 	goto retc
 
-rclose:
+rclose: // 注释：跳到度关闭管道代码位置
 	// read at end of closed channel
 	selunlock(scases, lockorder)
 	recvOK = false
@@ -493,7 +504,7 @@ rclose:
 	}
 	goto retc
 
-send:
+send: // 注释：执行发送到接收阻塞队列G里
 	// can send to a sleeping receiver (sg)
 	if raceenabled {
 		raceReadObjectPC(c.elemtype, cas.elem, casePC(casi), chansendpc)
@@ -507,15 +518,15 @@ send:
 	}
 	goto retc
 
-retc:
+retc: // 注释：执行返回代码，返回case下标和读取时的状态
 	if caseReleaseTime > 0 {
 		blockevent(caseReleaseTime-t0, 1)
 	}
 	return casi, recvOK
 
-sclose:
+sclose: // 注释：处理向已经关闭的管道写数据(会触发panic)
 	// send on closed channel
-	selunlock(scases, lockorder)
+	selunlock(scases, lockorder) // 注释：解锁
 	panic(plainError("send on closed channel"))
 }
 

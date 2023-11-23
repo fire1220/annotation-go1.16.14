@@ -381,7 +381,7 @@ type sudog struct {
 
 	// isSelect indicates g is participating in a select, so
 	// g.selectDone must be CAS'd to win the wake-up race.
-	isSelect bool // 注释：是否参与select
+	isSelect bool // 注释：（是否是select导致的阻塞）是否参与select
 
 	// success indicates whether communication over channel c
 	// succeeded. It is true if the goroutine was awoken because a
@@ -391,9 +391,9 @@ type sudog struct {
 	success bool // 注释：是否因通道唤醒
 
 	parent   *sudog // semaRoot binary tree
-	waitlink *sudog // g.waiting list or semaRoot
+	waitlink *sudog // 注释：阻塞链表 // g.waiting list or semaRoot
 	waittail *sudog // semaRoot
-	c        *hchan // 注释：所在管道channel的地址 // channel
+	c        *hchan // 注释：（阻塞时存放管道的地址）所在管道channel的地址 // channel
 }
 
 type libcall struct {

@@ -12,17 +12,21 @@ import (
 )
 
 // A spanSet is a set of *mspans.
+// 注释：spanSet是设置*mspan
 //
 // spanSet is safe for concurrent push and pop operations.
+// 注释：spanSet对于并发的推送和弹出操作是安全的。
 type spanSet struct {
 	// A spanSet is a two-level data structure consisting of a
 	// growable spine that points to fixed-sized blocks. The spine
 	// can be accessed without locks, but adding a block or
 	// growing it requires taking the spine lock.
+	// 注释：spanSet是一个两级数据结构，由指向固定大小块的可增长spine组成。spine可以在没有锁的情况下访问，但添加块或增长块需要使用spine锁。
 	//
 	// Because each mspan covers at least 8K of heap and takes at
 	// most 8 bytes in the spanSet, the growth of the spine is
 	// quite limited.
+	// 注释：因为每个mspan至少覆盖8K的堆，并且在spanSet中最多占用8个字节，所以spine的增长非常有限。
 	//
 	// The spine and all blocks are allocated off-heap, which
 	// allows this to be used in the memory manager and avoids the
@@ -31,6 +35,8 @@ type spanSet struct {
 	// system. We never release spine memory because there could be
 	// concurrent lock-free access and we're likely to reuse it
 	// anyway. (In principle, we could do this during STW.)
+	// 注释：spine和所有blocks块都是堆外分配的，这允许在内存管理器中使用它，并避免了在所有这些块上都需要写屏障。 spanSetBlocks在池中进行管理，
+	//		但从未释放回操作系统。我们从不释放spine内存，因为可能存在并发的无锁访问，而且我们很可能会重用它。（原则上，我们可以在STW期间这样做。）
 
 	spineLock mutex
 	spine     unsafe.Pointer // *[N]*spanSetBlock, accessed atomically
@@ -52,7 +58,7 @@ type spanSet struct {
 }
 
 const (
-	spanSetBlockEntries = 512 // 4KB on 64-bit
+	spanSetBlockEntries = 512 // 注释：span块的总个数 // 4KB on 64-bit
 	spanSetInitSpineCap = 256 // Enough for 1GB heap on 64-bit
 )
 

@@ -200,13 +200,16 @@ type mheap struct {
 	_ uint32 // ensure 64-bit alignment of central
 
 	// central free lists for small size classes.
+	// 注释：central是空闲的小型对象列表
 	// the padding makes sure that the mcentrals are
 	// spaced CacheLinePadSize bytes apart, so that each mcentral.lock
 	// gets its own cache line.
+	// 注释：填充确保mcentrals的CacheLinePadSize字节间隔开，这样每个mcentral.lock都有自己的缓存行
 	// central is indexed by spanClass.
+	// 注释：堆里空闲的mcentral，
 	central [numSpanClasses]struct { // 注释：是class对象表的两倍(每种class对应的两个mcentral)
-		mcentral mcentral
-		pad      [cpu.CacheLinePadSize - unsafe.Sizeof(mcentral{})%cpu.CacheLinePadSize]byte
+		mcentral mcentral                                                                    // 注释：
+		pad      [cpu.CacheLinePadSize - unsafe.Sizeof(mcentral{})%cpu.CacheLinePadSize]byte // 注释：用来数据对其
 	}
 
 	spanalloc             fixalloc // allocator for span*
@@ -535,6 +538,7 @@ func recordspan(vh unsafe.Pointer, p unsafe.Pointer) {
 // pointers and thus do not need to be scanned by the garbage
 // collector.
 // 注释：每个尺寸类都有一个noscan spanClass和一个scan spanClass。noscan spanClass只包含noscan对象，这些对象不包含指针，因此不需要垃圾收集器扫描。
+// 注释：spanClass是class对象的ID目前是0到67，一共有68个span个对象分类，spanClass代表每个分类的ID（classId）
 type spanClass uint8
 
 const (

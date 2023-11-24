@@ -80,7 +80,7 @@ type stackfreelist struct {
 }
 
 // dummy mspan that contains no free objects.
-var emptymspan mspan
+var emptymspan mspan // 注释：不包含空闲对象的mspan。
 
 func allocmcache() *mcache {
 	var c *mcache

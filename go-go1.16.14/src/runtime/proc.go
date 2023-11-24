@@ -81,9 +81,9 @@ var modinfo string
 // for nmspinning manipulation.
 
 var (
-	m0           m // 注释：代表进程的主线程
-	g0           g // 注释：m0的g0，也就是m0.g0 = &g0
-	mcache0      *mcache
+	m0           m       // 注释：代表进程的主线程
+	g0           g       // 注释：m0的g0，也就是m0.g0 = &g0
+	mcache0      *mcache // 注释：（P0的内存缓存）引导程序mcache0。P的ID为0的将获得mcache0
 	raceprocctx0 uintptr
 )
 
@@ -4832,6 +4832,7 @@ func (pp *p) init(id int32) {
 			}
 			// Use the bootstrap mcache0. Only one P will get
 			// mcache0: the one with ID 0.
+			// 注释：使用引导程序mcache0。只有一个P将获得mcache0：ID为0的那个。
 			pp.mcache = mcache0
 		} else {
 			pp.mcache = allocmcache()
@@ -5045,7 +5046,7 @@ func procresize(nprocs int32) *p {
 	}
 
 	// g.m.p is now set, so we no longer need mcache0 for bootstrapping.
-	mcache0 = nil
+	mcache0 = nil // 注释：g.m.p现已设置，因此我们不再需要mcache0进行引导。
 
 	// release resources from unused P's
 	for i := nprocs; i < old; i++ {

@@ -15,7 +15,7 @@ import (
 //
 // mcaches are allocated from non-GC'd memory, so any heap pointers
 // must be specially handled.
-// 每个线程M下的内存缓存
+// 注释：每个逻辑处理P下的内存缓存，同一时刻P只能处理一个G所以不需要加锁
 //
 //go:notinheap
 type mcache struct {

@@ -472,6 +472,7 @@ type mspan struct {
 	specials    *special      // linked list of special records sorted by offset.
 }
 
+// 注释：获取其实地址
 func (s *mspan) base() uintptr {
 	return s.startAddr
 }

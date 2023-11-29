@@ -417,7 +417,7 @@ type mspan struct {
 	// 注释：nelems对应class表(/src/runtime/sizeclasses.go)【objects】字段；【objects字段】 = 【bytes/span字段】 / 【bytes/obj字段】
 	// 注释：【bytes/span字段】表示一个span的大小
 	// 注释：【bytes/obj字段】表示span可以存放的对象大小
-	// 注释：一共有67种span每个span有自己的块个数
+	// 注释：一共有68种span每个span有自己的块个数(classId=0除外，这个span是存放大对象的时候使用的)
 	nelems uintptr // 注释：span中对象的数量(块个数)，也即有多少个块可供分配（对应class表【objects】字段） // number of object in the span.
 
 	// Cache of the allocBits at freeindex. allocCache is shifted
@@ -429,7 +429,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64
+	allocCache uint64 // 注释：allocCache保存allocBits的补码
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.

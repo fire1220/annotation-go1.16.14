@@ -414,14 +414,21 @@ type mspan struct {
 	freeindex uintptr
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.
+	// 注释：nelems对应class表(/src/runtime/sizeclasses.go)【objects】字段；【objects字段】 = 【bytes/span字段】 / 【bytes/obj字段】
+	// 注释：【bytes/span字段】表示一个span的大小
+	// 注释：【bytes/obj字段】表示span可以存放的对象大小
+	// 注释：一共有67种span每个span有自己的块个数
 	nelems uintptr // 注释：span中对象的数量(块个数)，也即有多少个块可供分配（对应class表【objects】字段） // number of object in the span.
 
 	// Cache of the allocBits at freeindex. allocCache is shifted
 	// such that the lowest bit corresponds to the bit freeindex.
+	// 注释：freeindex处allocBits的缓存。allocCache被移位，使得最低比特对应于比特空闲索引。
 	// allocCache holds the complement of allocBits, thus allowing
 	// ctz (count trailing zero) to use it directly.
+	// 注释：allocCache保存allocBits的补码，因此允许ctz（计数尾随零）直接使用它。
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
+	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
 	allocCache uint64
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and

@@ -3,6 +3,8 @@
 
 package runtime
 
+// 注释：【objects】字段 = 【bytes/span】字段 /【bytes/obj】字段
+// 对象ID   对象大小    span大小   对象(块)个数   碎片大小
 // class  bytes/obj  bytes/span  objects  tail waste  max waste
 //     1          8        8192     1024           0     87.50%
 //     2         16        8192      512           0     43.75%

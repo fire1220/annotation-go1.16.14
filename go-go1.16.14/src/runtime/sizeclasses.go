@@ -75,7 +75,7 @@ package runtime
 //    67      32768       32768        1           0     12.50%
 
 const (
-	_MaxSmallSize   = 32768
+	_MaxSmallSize   = 32768 // 注释：小对象容量最大值32KB
 	smallSizeDiv    = 8
 	smallSizeMax    = 1024
 	largeSizeDiv    = 128

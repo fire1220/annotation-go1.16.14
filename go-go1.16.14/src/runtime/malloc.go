@@ -110,9 +110,9 @@ import (
 const (
 	debugMalloc = false
 
-	maxTinySize   = _TinySize
+	maxTinySize   = _TinySize // 注释：微小对象最大容量16KB
 	tinySizeClass = _TinySizeClass
-	maxSmallSize  = _MaxSmallSize
+	maxSmallSize  = _MaxSmallSize // 注释：小对象最大容量32KB
 
 	pageShift = _PageShift
 	pageSize  = _PageSize
@@ -130,7 +130,7 @@ const (
 	_64bit = 1 << (^uintptr(0) >> 63) / 2 // 注释：系统位数1是64位0是32位；可以直接用更简洁的方式：^uintptr(0) >> 63
 
 	// Tiny allocator parameters, see "Tiny allocator" comment in malloc.go.
-	_TinySize      = 16
+	_TinySize      = 16 // 注释：微小对象阈值
 	_TinySizeClass = int8(2)
 
 	_FixAllocChunk = 16 << 10 // Chunk size for FixAlloc
@@ -985,16 +985,17 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 
 	shouldhelpgc := false
 	dataSize := size // 注释：临时存储要分配的内存大小
-	c := getMCache()
-	if c == nil {
+	c := getMCache() // 注释：从P中获取mcache指针
+	if c == nil {    // 注释：如果没有找到则报错
 		throw("mallocgc called without a P or outside bootstrapping")
 	}
-	var span *mspan
+	var span *mspan // 注释：定义span
 	var x unsafe.Pointer
 	noscan := typ == nil || typ.ptrdata == 0
-	if size <= maxSmallSize {
-		if noscan && size < maxTinySize {
+	if size <= maxSmallSize { // 注释：如果小于等于32KB是表示为小对象或者微小对象分配
+		if noscan && size < maxTinySize { // 注释：如果小于16KB表示是微小对象分配
 			// Tiny allocator.
+			// 注释：微型分配器。
 			//
 			// Tiny allocator combines several tiny allocation requests
 			// into a single memory block. The resulting memory block
@@ -1065,7 +1066,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				c.tinyoffset = size
 			}
 			size = maxTinySize
-		} else {
+		} else { // 注释：大于等于16小于等于32KB表示小对象处理
 			var sizeclass uint8
 			if size <= smallSizeMax-8 {
 				sizeclass = size_to_class8[divRoundUp(size, smallSizeDiv)]

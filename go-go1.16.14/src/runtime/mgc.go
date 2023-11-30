@@ -248,17 +248,18 @@ func setGCPercent(in int32) (out int32) {
 
 // Garbage collector phase.
 // Indicates to write barrier and synchronization task to perform.
-var gcphase uint32
+var gcphase uint32 // 注释：GC的阶段变量，用来看当前GC处于什么阶段
 
 // The compiler knows about this variable.
 // If you change it, you must change builtin/runtime.go, too.
 // If you change the first four bytes, you must also change the write
 // barrier insertion code.
+// 注释：写屏障结构体
 var writeBarrier struct {
-	enabled bool    // compiler emits a check of this before calling write barrier
+	enabled bool    // 注释：是否开启写屏障(根据needed和cgo来判断的) // compiler emits a check of this before calling write barrier
 	pad     [3]byte // compiler uses 32-bit load for "enabled" field
-	needed  bool    // 注释：当前GC阶段是否需要写入屏障 // whether we need a write barrier for current GC phase
-	cgo     bool    // 注释：cgo检查是否需要写屏障 // whether we need a write barrier for a cgo check
+	needed  bool    // 注释：GC阶段是否需要写入屏障(通过上面gcphase变量值判断) // whether we need a write barrier for current GC phase
+	cgo     bool    // 注释：cgo是否需要写屏障 // whether we need a write barrier for a cgo check
 	alignme uint64  // guarantee alignment so that compiler can use a 32 or 64-bit load
 }
 
@@ -268,16 +269,17 @@ var writeBarrier struct {
 var gcBlackenEnabled uint32 // 注释：如果mutator协助并允许背景标记工作人员涂黑对象，则gcBlackenEnabled为1。只有当gcphase=_GCmark时才必须设置此项。
 
 const (
-	_GCoff             = iota // GC not running; sweeping in background, write barrier disabled
-	_GCmark                   // GC marking roots and workbufs: allocate black, write barrier ENABLED
-	_GCmarktermination        // GC mark termination: allocate black, P's help GC, write barrier ENABLED
+	_GCoff             = iota // 注释：GC阶段：(关闭写屏障)没有运行GC // GC not running; sweeping in background, write barrier disabled
+	_GCmark                   // 注释：GC阶段：(开启写屏障)标记工作区 // GC marking roots and workbufs: allocate black, write barrier ENABLED
+	_GCmarktermination        // 注释：GC阶段：(开启写屏障)标记终端 // GC mark termination: allocate black, P's help GC, write barrier ENABLED
 )
 
+// 注释：设置GC阶段标记
 //go:nosplit
 func setGCPhase(x uint32) {
-	atomic.Store(&gcphase, x)
-	writeBarrier.needed = gcphase == _GCmark || gcphase == _GCmarktermination
-	writeBarrier.enabled = writeBarrier.needed || writeBarrier.cgo
+	atomic.Store(&gcphase, x)                                                 // 注释：设置GC阶段标记
+	writeBarrier.needed = gcphase == _GCmark || gcphase == _GCmarktermination // 注释：设置是否需要写屏障
+	writeBarrier.enabled = writeBarrier.needed || writeBarrier.cgo            // 注释：是否开启写屏障
 }
 
 // gcMarkWorkerMode represents the mode that a concurrent mark worker
@@ -1625,9 +1627,10 @@ top:
 
 // World must be stopped and mark assists and background workers must be
 // disabled.
+// 注释：世界必须停止，标记辅助和后台工作人员必须被禁用。
 func gcMarkTermination(nextTriggerRatio float64) {
 	// Start marktermination (write barrier remains enabled for now).
-	setGCPhase(_GCmarktermination)
+	setGCPhase(_GCmarktermination) // 注释：设置GC阶段标记成_GCmarktermination
 
 	work.heap1 = memstats.heap_live
 	startTime := nanotime()

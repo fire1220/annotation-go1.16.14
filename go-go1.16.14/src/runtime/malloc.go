@@ -845,7 +845,7 @@ retry:
 }
 
 // base address for all 0-byte allocations
-var zerobase uintptr
+var zerobase uintptr // 注释：所有0字节分配的基地址
 
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
@@ -909,17 +909,17 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
-// 注释：分配对象（处理分配对象和GC一些标记工作）
+// 注释：（所有申请内存的入口）分配对象（处理分配对象和GC一些标记工作）
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
-	if gcphase == _GCmarktermination {
+	if gcphase == _GCmarktermination { // 注释：如果GC标记为_GCmarktermination则报错
 		throw("mallocgc called with gcphase == _GCmarktermination")
 	}
 
 	if size == 0 {
-		return unsafe.Pointer(&zerobase)
+		return unsafe.Pointer(&zerobase) // 注释：如果没有设置大小则:分配所有0字节分配的基地址
 	}
 
-	if debug.malloc {
+	if debug.malloc { // 注释：如果debug开启则走下面代码
 		if debug.sbrk != 0 {
 			align := uintptr(16)
 			if typ != nil {
@@ -953,30 +953,32 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	// GC is not currently active.
 	// 注释：assistG是为此分配收费的G，如果GC当前未处于活动状态，则为零。
 	var assistG *g
-	if gcBlackenEnabled != 0 {
+	if gcBlackenEnabled != 0 { // 注释：允许标记成黑色时
 		// Charge the current user G for this allocation.
-		assistG = getg()
-		if assistG.m.curg != nil {
-			assistG = assistG.m.curg
+		assistG = getg()           // 注释：获取当前G
+		if assistG.m.curg != nil { // 注释：如果当前G对应M里的绑定的当前G有值的时候，重新获取当前G
+			assistG = assistG.m.curg // 注释：重新获取当前G
 		}
 		// Charge the allocation against the G. We'll account
 		// for internal fragmentation at the end of mallocgc.
+		// 注释：根据G收取分配内存。我们将在mallocgc结束时说明内部碎片。
 		assistG.gcAssistBytes -= int64(size)
 
 		if assistG.gcAssistBytes < 0 {
 			// This G is in debt. Assist the GC to correct
 			// this before allocating. This must happen
 			// before disabling preemption.
+			// 注释：这个G负债了。在分配之前，协助GC纠正此问题。这必须在禁用抢占之前发生。
 			gcAssistAlloc(assistG)
 		}
 	}
 
 	// Set mp.mallocing to keep from being preempted by GC.
-	mp := acquirem()
-	if mp.mallocing != 0 {
+	mp := acquirem()       // 注释：获取M
+	if mp.mallocing != 0 { // 注释：如果M已经正在申请内存，则报死锁错误
 		throw("malloc deadlock")
 	}
-	if mp.gsignal == getg() {
+	if mp.gsignal == getg() { // 注释：如果M下处理信号的G正好是当前G则报错，错误信息是当前申请内存的G正在处理信号
 		throw("malloc during signal")
 	}
 	mp.mallocing = 1

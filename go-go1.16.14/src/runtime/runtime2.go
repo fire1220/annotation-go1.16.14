@@ -510,6 +510,8 @@ type g struct {
 	// scan work. We track this in bytes to make it fast to update
 	// and check for debt in the malloc hot path. The assist ratio
 	// determines how this corresponds to scan work debt.
+	// 注释：gcAssistBytes是根据分配的字节数计算的G的GC辅助信用。如果这是肯定的，那么G可以在没有辅助的情况下分配gcAssistBytes字节。 如果结果为阴性，则G必须通过执行扫描工作来纠正此问题。
+	//		我们以字节为单位跟踪它，以便在malloc热路径中快速更新和检查债务。协助比率决定了这与扫描工作债务的对应程度。
 	gcAssistBytes int64 // 注释：与GC相关
 }
 
@@ -522,7 +524,7 @@ type m struct {
 
 	// Fields not known to debuggers.
 	procid     uint64       // 注释：p的ID,用来调试时使用,一般是协成ID，初始化m时是线程ID // for debuggers, but offset not hard-coded
-	gsignal    *g           // 注释：运行中的g(信号处理) // signal-handling g
+	gsignal    *g           // 注释：M中正在处理信号的G(信号处理) // signal-handling g
 	goSigStack gsignalStack // Go-allocated signal handling stack
 	sigmask    sigset       // storage for saved signal mask
 	// 注释：go在新建M时候设置FS寄存器的值为M.tls的地址，运行中每个M的FS寄存器都会指向对应的M.tls，内核调度线程时FS寄存器会跟着线程一起切换，这样go代码只需要访问FS寄存器就可以获取到线程本地的数据
@@ -534,11 +536,11 @@ type m struct {
 	p             puintptr // 注释：记录与当前工作线程绑定的p结构体对象 // attached p for executing go code (nil if not executing go code)
 	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定),其他M把P抢走后会设置这个字段告诉当前M如果执行时应该绑定其他的P
 	oldp          puintptr // 注释：在系统调用的时候把当前的P存放到这里，系统调用结束后拿出来 // the p that was attached before executing a syscall // 注释：在执行系统调用之前附加的p
-	id            int64
-	mallocing     int32
-	throwing      int32  // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）
-	preemptoff    string // if != "", keep curg running on this m
-	locks         int32  // 注释：给M加锁;(禁用抢占)大于0时说明正在g正在被使用，系统调用后置函数的时候有使用（获取时++，释放是--）
+	id            int64    // 注释：M的ID
+	mallocing     int32    // 注释：正在申请内存，当申请内存的开头会检查这个字段，如果已经在申请了，则报错，
+	throwing      int32    // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）
+	preemptoff    string   // if != "", keep curg running on this m
+	locks         int32    // 注释：给M加锁;(禁用抢占)大于0时说明正在g正在被使用，系统调用后置函数的时候有使用（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
 	spinning      bool // 注释：是否自旋，自旋就表示M正在找G来运行，表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work

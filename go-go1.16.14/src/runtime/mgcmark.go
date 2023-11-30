@@ -381,12 +381,16 @@ func markrootSpans(gcw *gcWork, shard int) {
 }
 
 // gcAssistAlloc performs GC work to make gp's assist debt positive.
+// 注释：gcAssistAlloc执行GC工作，使gp的援助债务为正。
 // gp must be the calling user gorountine.
+// 注释：gp必须是调用用户gorountine。
 //
 // This must be called with preemption enabled.
+// 注释：这必须在启用抢占的情况下调用。
 func gcAssistAlloc(gp *g) {
 	// Don't assist in non-preemptible contexts. These are
 	// generally fragile and won't allow the assist to block.
+	// 注释：不要在不可抢占的情况下提供帮助。这些通常都很脆弱，不允许辅助阻挡。
 	if getg() == gp.m.g0 {
 		return
 	}
@@ -400,6 +404,7 @@ retry:
 	// balance positive. When the required amount of work is low,
 	// we over-assist to build up credit for future allocations
 	// and amortize the cost of assisting.
+	// 注释：计算我们需要做的扫描工作量，以使平衡为正。当所需工作量较低时，我们会过度协助，为未来的分配建立信贷，并摊销协助成本。
 	assistWorkPerByte := float64frombits(atomic.Load64(&gcController.assistWorkPerByte))
 	assistBytesPerWork := float64frombits(atomic.Load64(&gcController.assistBytesPerWork))
 	debtBytes := -gp.gcAssistBytes

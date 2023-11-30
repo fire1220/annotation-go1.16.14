@@ -981,10 +981,10 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if mp.gsignal == getg() { // 注释：如果M下处理信号的G正好是当前G则报错，错误信息是当前申请内存的G正在处理信号
 		throw("malloc during signal")
 	}
-	mp.mallocing = 1
+	mp.mallocing = 1 // 注释：设置M标记为正在申请分配内存标识
 
 	shouldhelpgc := false
-	dataSize := size
+	dataSize := size // 注释：临时存储要分配的内存大小
 	c := getMCache()
 	if c == nil {
 		throw("mallocgc called without a P or outside bootstrapping")

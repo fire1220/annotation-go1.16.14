@@ -537,7 +537,7 @@ type m struct {
 	nextp         puintptr // 注释：新线程m要绑定的p（起始任务函数）(其他的m给新m设置该字段，当新m启动时会和当前字段的p进行绑定),其他M把P抢走后会设置这个字段告诉当前M如果执行时应该绑定其他的P
 	oldp          puintptr // 注释：在系统调用的时候把当前的P存放到这里，系统调用结束后拿出来 // the p that was attached before executing a syscall // 注释：在执行系统调用之前附加的p
 	id            int64    // 注释：M的ID
-	mallocing     int32    // 注释：正在申请内存，当申请内存的开头会检查这个字段，如果已经在申请了，则报错，
+	mallocing     int32    // 注释：正在申请内存标识(0否1是)，当申请内存的开头会检查这个字段，如果已经在申请了，则报错，
 	throwing      int32    // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）
 	preemptoff    string   // if != "", keep curg running on this m
 	locks         int32    // 注释：给M加锁;(禁用抢占)大于0时说明正在g正在被使用，系统调用后置函数的时候有使用（获取时++，释放是--）
@@ -621,7 +621,7 @@ type p struct {
 	syscalltick uint32     // 注释：系统调度计数器，每一次系统调用加1 // incremented on every system call
 	sysmontick  sysmontick // 注释：系统监控 // last tick observed by sysmon
 	m           muintptr   // 回链到关联的m // back-link to associated m (nil if idle)
-	mcache      *mcache
+	mcache      *mcache    // 注释：记录申请(分配)内存的虚拟内存span的缓存，由于G同时只能在一个逻辑处理器P上运行，所已这个不需要锁
 	pcache      pageCache
 	raceprocctx uintptr
 

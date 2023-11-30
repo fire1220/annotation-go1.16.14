@@ -17,27 +17,33 @@ import (
 // must be specially handled.
 // 注释：每个逻辑处理P下的内存缓存，同一时刻P只能处理一个G所以不需要加锁
 //
+// 注释：逻辑处理P里缓存的span
 //go:notinheap
 type mcache struct {
 	// The following members are accessed on every malloc,
 	// so they are grouped here for better caching.
-	nextSample uintptr // trigger heap sample after allocating this many bytes
-	scanAlloc  uintptr // bytes of scannable heap allocated
+	// 注释：以下成员在每个malloc上都可以访问，因此在这里对它们进行分组以获得更好的缓存。
+	nextSample uintptr // 注释：分配这么多字节后触发堆示例 // trigger heap sample after allocating this many bytes
+	scanAlloc  uintptr // 注释：已分配的可扫描堆的字节数 // bytes of scannable heap allocated
 
 	// Allocator cache for tiny objects w/o pointers.
 	// See "Tiny allocator" comment in malloc.go.
+	// 注释：用于不带指针的微小对象的分配器缓存。请参阅malloc.go中的“微小分配器”注释。
 
 	// tiny points to the beginning of the current tiny block, or
 	// nil if there is no current tiny block.
+	// 注释：微小点指向当前微小块的开始，如果没有当前微小块，则为零。
 	//
 	// tiny is a heap pointer. Since mcache is in non-GC'd memory,
 	// we handle it by clearing it in releaseAll during mark
 	// termination.
+	// 注释：tiny是一个堆指针。由于mcache在非GC的内存中，我们通过在标记终止期间在releaseAll中清除它来处理它。
 	//
 	// tinyAllocs is the number of tiny allocations performed
 	// by the P that owns this mcache.
+	// 注释：tinyAllocs是拥有此mcache的P执行的微小分配的数量。
 	tiny       uintptr
-	tinyoffset uintptr
+	tinyoffset uintptr // 注释：微对象的偏移量
 	tinyAllocs uintptr
 
 	// The rest is not accessed on every malloc.
@@ -123,18 +129,20 @@ func freemcache(c *mcache) {
 //
 // Returns nil if we're not bootstrapping or we don't have a P. The caller's
 // P must not change, so we must be in a non-preemptible state.
+// 注释：把P中的mcache指针返回，如果P中的值是nil说明是P0，返回全局的P0对应的全局mcache0指针
+// 注释：mcache是绑定到P上的
 func getMCache() *mcache {
 	// Grab the mcache, since that's where stats live.
-	pp := getg().m.p.ptr()
+	pp := getg().m.p.ptr() // 注释：获取当前G对应的M下的P地址
 	var c *mcache
-	if pp == nil {
+	if pp == nil { // 注释：如果为nil说明当前是P0，则返回P0对应的全局mcache0
 		// We will be called without a P while bootstrapping,
 		// in which case we use mcache0, which is set in mallocinit.
 		// mcache0 is cleared when bootstrapping is complete,
 		// by procresize.
 		c = mcache0
 	} else {
-		c = pp.mcache
+		c = pp.mcache // 注释：返回P下的mcache
 	}
 	return c
 }

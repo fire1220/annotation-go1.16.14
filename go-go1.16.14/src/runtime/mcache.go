@@ -42,13 +42,13 @@ type mcache struct {
 	// tinyAllocs is the number of tiny allocations performed
 	// by the P that owns this mcache.
 	// 注释：tinyAllocs是拥有此mcache的P执行的微小分配的数量。
-	tiny       uintptr
-	tinyoffset uintptr // 注释：微对象的偏移量
-	tinyAllocs uintptr
+	tiny       uintptr // 注释：一个微对象基地址
+	tinyoffset uintptr // 注释：一个微对象的偏移量(已经分配的偏移量)（小于等于tinyoffset的表示已分配过了）
+	tinyAllocs uintptr // 注释：一个微对象分配的次数
 
 	// The rest is not accessed on every malloc.
 
-	alloc [numSpanClasses]*mspan // 注释：按class分组的mspan列表 // spans to allocate from, indexed by spanClass
+	alloc [numSpanClasses]*mspan // 注释：按class分组的mspan列表,对象注释在/src/runtime/sizeclasses.go里 // spans to allocate from, indexed by spanClass
 
 	stackcache [_NumStackOrders]stackfreelist
 

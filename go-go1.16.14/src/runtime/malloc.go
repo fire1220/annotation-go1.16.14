@@ -110,9 +110,9 @@ import (
 const (
 	debugMalloc = false
 
-	maxTinySize   = _TinySize // 注释：微小对象最大容量16KB
-	tinySizeClass = _TinySizeClass
-	maxSmallSize  = _MaxSmallSize // 注释：小对象最大容量32KB
+	maxTinySize   = _TinySize      // 注释：微小对象最大容量16KB
+	tinySizeClass = _TinySizeClass // 注释：微小对象的ClassID
+	maxSmallSize  = _MaxSmallSize  // 注释：小对象最大容量32KB
 
 	pageShift = _PageShift
 	pageSize  = _PageSize
@@ -130,8 +130,8 @@ const (
 	_64bit = 1 << (^uintptr(0) >> 63) / 2 // 注释：系统位数1是64位0是32位；可以直接用更简洁的方式：^uintptr(0) >> 63
 
 	// Tiny allocator parameters, see "Tiny allocator" comment in malloc.go.
-	_TinySize      = 16 // 注释：微小对象阈值
-	_TinySizeClass = int8(2)
+	_TinySize      = 16      // 注释：微小对象阈值(小于这个数表示为微小对象)
+	_TinySizeClass = int8(2) // 注释：微小对象的ClassID,对象注释在/src/runtime/sizeclasses.go里
 
 	_FixAllocChunk = 16 << 10 // Chunk size for FixAlloc
 
@@ -850,7 +850,7 @@ var zerobase uintptr // 注释：所有0字节分配的基地址
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
 func nextFreeFast(s *mspan) gclinkptr {
-	theBit := sys.Ctz64(s.allocCache) // Is there a free object in the allocCache?
+	theBit := sys.Ctz64(s.allocCache) // 注释：allocCache中是否有空闲对象 // Is there a free object in the allocCache?
 	if theBit < 64 {
 		result := s.freeindex + uintptr(theBit)
 		if result < s.nelems {
@@ -910,6 +910,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
 // 注释：（所有申请内存的入口）分配对象（处理分配对象和GC一些标记工作）
+// 注释：返回申请后的内存首地址
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if gcphase == _GCmarktermination { // 注释：如果GC标记为_GCmarktermination则报错
 		throw("mallocgc called with gcphase == _GCmarktermination")
@@ -974,7 +975,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	}
 
 	// Set mp.mallocing to keep from being preempted by GC.
-	mp := acquirem()       // 注释：获取M
+	mp := acquirem()       // 注释：获取M并锁定
 	if mp.mallocing != 0 { // 注释：如果M已经正在申请内存，则报死锁错误
 		throw("malloc deadlock")
 	}
@@ -1034,31 +1035,33 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			off := c.tinyoffset
 			// Align tiny pointer for required (conservative) alignment.
 			if size&7 == 0 {
-				off = alignUp(off, 8)
+				off = alignUp(off, 8) // 注释：8字节向上对齐
 			} else if sys.PtrSize == 4 && size == 12 {
 				// Conservatively align 12-byte objects to 8 bytes on 32-bit
 				// systems so that objects whose first field is a 64-bit
 				// value is aligned to 8 bytes and does not cause a fault on
 				// atomic access. See issue 37262.
-				// TODO(mknyszek): Remove this workaround if/when issue 36606
+				// 注释：在32位系统上，保守地将12字节对象与8字节对齐，以便第一个字段为64位值的对象与8个字节对齐，并且不会导致原子访问出错。见第37262期。
+				// TODO(mknyszek): Remove this workaround if/when issue 36606 // 注释：如果/当问题36606时，请删除此解决方法
 				// is resolved.
 				off = alignUp(off, 8)
 			} else if size&3 == 0 {
-				off = alignUp(off, 4)
+				off = alignUp(off, 4) // 注释：4字节向上对齐
 			} else if size&1 == 0 {
-				off = alignUp(off, 2)
+				off = alignUp(off, 2) // 注释：2字节向上对齐
 			}
-			if off+size <= maxTinySize && c.tiny != 0 {
-				// The object fits into existing tiny block.
-				x = unsafe.Pointer(c.tiny + off)
-				c.tinyoffset = off + size
-				c.tinyAllocs++
-				mp.mallocing = 0
-				releasem(mp)
-				return x
+			if off+size <= maxTinySize && c.tiny != 0 { // 注释：off+size是要使用的内存大小，小于等于微小对象，并且微对象基地址存在
+				// The object fits into existing tiny block. // 注释：这个物体适合现有的小块。
+				x = unsafe.Pointer(c.tiny + off) // 注释：微小对象首地址(基地址+对齐后的偏移量)
+				c.tinyoffset = off + size        // 注释：微小对象
+				c.tinyAllocs++                   // 注释：分配次数加一
+				mp.mallocing = 0                 // 注释：解除是否分配表示
+				releasem(mp)                     // 注释：解除锁定
+				return x                         // 注释：返回申请后的内存首地址
 			}
-			// Allocate a new maxTinySize block.
-			span = c.alloc[tinySpanClass]
+			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
+			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
+			span = c.alloc[tinySpanClass] // 注释：获取微小对象结构体
 			v := nextFreeFast(span)
 			if v == 0 {
 				v, span, shouldhelpgc = c.nextFree(tinySpanClass)

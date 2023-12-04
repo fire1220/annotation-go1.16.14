@@ -468,6 +468,7 @@ func timediv(v int64, div int32, rem *int32) int32 {
 // Helpers for Go. Must be NOSPLIT, must only call NOSPLIT functions, and must not block.
 
 // 注释：获取当前运行g对应的m(加锁禁止抢占)(关闭GC，因为locks++)(runtime.gcStart判断mp.locks > 1就释放)
+// 注释：禁止抢占(锁定)
 //go:nosplit
 func acquirem() *m {
 	_g_ := getg() // 注释：获取当前运行的g
@@ -475,7 +476,7 @@ func acquirem() *m {
 	return _g_.m  // 注释：返回g对应的m
 }
 
-// 注释：释放当前g对应m的线程
+// 注释：解除禁止抢占(解锁)
 //go:nosplit
 func releasem(mp *m) {
 	_g_ := getg() // 注释：获取当前运行的g

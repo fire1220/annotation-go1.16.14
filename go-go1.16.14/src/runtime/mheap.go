@@ -383,7 +383,7 @@ type mSpanList struct {
 }
 
 // 注释：span是内存管理的基本单位,每个span用于管理特定的class对象, 跟据对象大小，span将一个或多个页拆分成多个块进行管理。
-// 注释：span的结构体
+// 注释：span的结构体(双向链表结构)
 //
 //go:notinheap
 type mspan struct {
@@ -429,7 +429,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：allocCache保存allocBits的补码
+	allocCache uint64 // 注释：保存allocBits的补码
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.

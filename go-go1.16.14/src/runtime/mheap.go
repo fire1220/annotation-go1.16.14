@@ -398,27 +398,32 @@ type mspan struct {
 
 	// freeindex is the slot index between 0 and nelems at which to begin scanning
 	// for the next free object in this span.
+	// 注释：freeindex是介于0和nelem之间的索引下标，在该下标处开始扫描此跨度中的下一个空闲对象。
 	// Each allocation scans allocBits starting at freeindex until it encounters a 0
 	// indicating a free object. freeindex is then adjusted so that subsequent scans begin
 	// just past the newly discovered free object.
+	// 注释：每个分配从freeindex开始扫描allocBits，直到它遇到一个指示空闲对象的0。然后调整freeindex，使得随后的扫描刚好在新发现的自由对象之后开始。
 	//
 	// If freeindex == nelem, this span has no free objects.
+	// 注释：如果freeindex==nelem，则此跨度没有可用对象。
 	//
 	// allocBits is a bitmap of objects in this span.
 	// If n >= freeindex and allocBits[n/8] & (1<<(n%8)) is 0
 	// then object n is free;
 	// otherwise, object n is allocated. Bits starting at nelem are
 	// undefined and should never be referenced.
+	// 注释：allocBits是此跨度中对象的位图。如果n>=freeindex并且allocBits[n/8] & (1<<(n%8))为0，则对象n是空闲的；否则，n已经分配对象了。从nelem开始的位是未定义的，永远不应该被引用。
 	//
 	// Object n starts at address n*elemsize + (start << pageShift).
-	freeindex uintptr
+	// 注释：对象n从地址 n*elemsize + (start << pageShift)。
+	freeindex uintptr // 注释：空闲快的小标（下标范围是0到nelems之间）
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.
 	// 注释：nelems对应class表(/src/runtime/sizeclasses.go)【objects】字段；【objects字段】 = 【bytes/span字段】 / 【bytes/obj字段】
 	// 注释：【bytes/span字段】表示一个span的大小
 	// 注释：【bytes/obj字段】表示span可以存放的对象大小
 	// 注释：一共有68种span每个span有自己的块个数(classId=0除外，这个span是存放大对象的时候使用的)
-	nelems uintptr // 注释：span中对象的数量(块个数)，也即有多少个块可供分配（对应class表【objects】字段） // number of object in the span.
+	nelems uintptr // 注释：span中对象的数量(块个数)，也即有多少个块可供分配（对应class表【objects】字段） (位置：/src/runtime/sizeclasses.go)// number of object in the span.
 
 	// Cache of the allocBits at freeindex. allocCache is shifted
 	// such that the lowest bit corresponds to the bit freeindex.
@@ -429,7 +434,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：保存allocBits的补码(1表示空闲)(默认全部空闲)
+	allocCache uint64 // 注释：保存allocBits的补码(1表示空闲)(默认全部空闲)(感觉0代表空闲)
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.

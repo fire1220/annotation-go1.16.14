@@ -850,7 +850,7 @@ var zerobase uintptr // 注释：所有0字节分配的基地址
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
 // 注释：nextFreeFast返回下一个空闲对象（如果有）。否则返回0。
-// 注释：重新计算空闲位置,返回空闲位置指针
+// 注释：(到缓存里找空闲的指针，一个span只缓存64位)重新计算空闲位置,返回空闲位置指针
 func nextFreeFast(s *mspan) gclinkptr {
 	// 注释：找出已经分配的数量
 	theBit := sys.Ctz64(s.allocCache) // 注释：缓存中已经分配的数量(从右边数0的个数)(0代表已分配)// Is there a free object in the allocCache?
@@ -1065,8 +1065,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
 			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
 			span = c.alloc[tinySpanClass] // 注释：到线程缓存中获取微小对象结构体
-			v := nextFreeFast(span)       // 注释：(看线程缓冲中的span是否有存储空间)重新计算空闲位置,返回空闲位置指针
-			if v == 0 {
+			v := nextFreeFast(span)       // 注释：(到mcache(线程缓存)里的快速缓存(mspan.allocCache)(只缓存64位)中的span是否有存储空间)重新计算空闲位置,返回空闲位置指针
+			if v == 0 {                   // 注释：如果没有找到，则去mcache(线程缓存)里找
 				v, span, shouldhelpgc = c.nextFree(tinySpanClass)
 			}
 			x = unsafe.Pointer(v)

@@ -163,6 +163,7 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 // or after s.freeindex.
 // There are hardware instructions that can be used to make this
 // faster if profiling warrants it.
+// 注释：nextFreeIndex返回s中s.freeindex处或之后的下一个可用对象的索引。如果配置文件允许，可以使用一些硬件指令加快此操作。
 func (s *mspan) nextFreeIndex() uintptr {
 	sfreeindex := s.freeindex
 	snelems := s.nelems
@@ -178,6 +179,7 @@ func (s *mspan) nextFreeIndex() uintptr {
 	bitIndex := sys.Ctz64(aCache)
 	for bitIndex == 64 {
 		// Move index to start of next cached bits.
+		// 注释：将索引移动到下一个缓存位的开头。
 		sfreeindex = (sfreeindex + 64) &^ (64 - 1)
 		if sfreeindex >= snelems {
 			s.freeindex = snelems

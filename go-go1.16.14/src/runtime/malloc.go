@@ -850,19 +850,21 @@ var zerobase uintptr // 注释：所有0字节分配的基地址
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
 // 注释：nextFreeFast返回下一个空闲对象（如果有）。否则返回0。
+// 注释：重新计算空闲位置,返回空闲位置指针
 func nextFreeFast(s *mspan) gclinkptr {
-	theBit := sys.Ctz64(s.allocCache) // 注释：(从右边数0的个数)(0代表空闲)allocCache中是否有空闲对象 // Is there a free object in the allocCache?
+	// 注释：找出已经分配的数量
+	theBit := sys.Ctz64(s.allocCache) // 注释：缓存中已经分配的数量(从右边数0的个数)(0代表已分配)// Is there a free object in the allocCache?
 	if theBit < 64 {                  // 注释：超过最大值64直接返回
-		result := s.freeindex + uintptr(theBit) // 注释：本次使用的空闲下标位置(空闲的下标+空闲的个数=本次需要使用的空闲下标位置)
-		if result < s.nelems {                  // 注释：本次需要使用的空闲下标位置不能超过总下标数量
-			freeidx := result + 1 // 注释：下一个空闲下标位置
+		result := s.freeindex + uintptr(theBit) // 注释：重置空闲位置（theBit是已分配的个数，所以需要跳过这个数才是要分配的空闲位置）
+		if result < s.nelems {                  // 注释：空闲位置不能超过总容量
+			freeidx := result + 1 // 注释：记录下一个空闲下标位置
 			if freeidx%64 == 0 && freeidx != s.nelems {
 				return 0
 			}
-			s.allocCache >>= uint(theBit + 1) // 注释：1表示空闲，默认全是1；这里向右移动左补0，表示分配了theBit+1个
-			s.freeindex = freeidx
-			s.allocCount++
-			return gclinkptr(result*s.elemsize + s.base())
+			s.allocCache >>= uint(theBit + 1)              // 注释：操作时把右侧出现的第一个1的位置到右侧末尾处干掉
+			s.freeindex = freeidx                          // 注释：重置空闲位置(矫正空闲位置偏移量)
+			s.allocCount++                                 // 注释：统计分配次数
+			return gclinkptr(result*s.elemsize + s.base()) // 注释：返回空闲指针地址
 		}
 	}
 	return 0
@@ -1063,7 +1065,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
 			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
 			span = c.alloc[tinySpanClass] // 注释：获取微小对象结构体
-			v := nextFreeFast(span)
+			v := nextFreeFast(span)       // 注释：重新计算空闲位置,返回空闲位置指针
 			if v == 0 {
 				v, span, shouldhelpgc = c.nextFree(tinySpanClass)
 			}

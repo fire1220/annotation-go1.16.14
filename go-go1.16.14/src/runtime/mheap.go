@@ -391,7 +391,7 @@ type mspan struct {
 	prev *mspan     // 注释：列表中的前一个span，如果没有则为nil(用于将span链接起来) // previous span in list, or nil if none
 	list *mSpanList // For debugging. TODO: Remove.
 
-	startAddr uintptr // 注释：起始地址，也即所管理页的地址 // address of first byte of span aka s.base()
+	startAddr uintptr // 注释：mpan管理内存的基地址(起始地址，也即所管理页的地址) // address of first byte of span aka s.base()
 	npages    uintptr // 注释：管理的页数 // number of pages in span
 
 	manualFreeList gclinkptr // list of free objects in mSpanManual spans
@@ -416,7 +416,7 @@ type mspan struct {
 	//
 	// Object n starts at address n*elemsize + (start << pageShift).
 	// 注释：对象n从地址 n*elemsize + (start << pageShift)。
-	freeindex uintptr // 注释：空闲快的小标（下标范围是0到nelems之间）
+	freeindex uintptr // 注释：空闲快的小标（下标范围是0到nelems之间）空闲内存地址是 s.freeindex * s.elemsize + s.base()
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.
 	// 注释：nelems对应class表(/src/runtime/sizeclasses.go)【objects】字段；【objects字段】 = 【bytes/span字段】 / 【bytes/obj字段】
@@ -434,7 +434,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：保存allocBits的补码(1表示空闲)(默认全部空闲)(感觉0代表空闲)
+	allocCache uint64 // 注释：保存allocBits的补码(1表示空闲，0已分配)(默认全部空闲)
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.
@@ -478,13 +478,13 @@ type mspan struct {
 	needzero    uint8         // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2
-	elemsize    uintptr       // 注释：class表中的对象大小，也即对象块大小(对应class表中的【bytes/obj】字段) // computed from sizeclass or from npages
+	elemsize    uintptr       // 注释：存储的单个对象大小；(对应class表中的【bytes/obj】字段,地址:/src/runtime/sizeclasses.go) // computed from sizeclass or from npages
 	limit       uintptr       // end of data in span
 	speciallock mutex         // guards specials list
 	specials    *special      // linked list of special records sorted by offset.
 }
 
-// 注释：获取其实地址
+// 注释：获取基地址
 func (s *mspan) base() uintptr {
 	return s.startAddr
 }

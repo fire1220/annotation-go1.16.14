@@ -876,14 +876,17 @@ func nextFreeFast(s *mspan) gclinkptr {
 // weight allocation. If it is a heavy weight allocation the caller must
 // determine whether a new GC cycle needs to be started or if the GC is active
 // whether this goroutine needs to assist the GC.
+// 注释：nextFree返回缓存跨度中的下一个可用对象（如果有）。否则，它会用一个可用对象的跨度重新填充缓存，并返回该对象以及一个指示这是一个重权重分配的标志。
+//		如果是重权重分配，调用方必须确定是否需要启动新的GC循环，或者GC是否处于活动状态，这个goroutine是否需要帮助GC。
 //
 // Must run in a non-preemptible context since otherwise the owner of
 // c could change.
+// 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bool) {
-	s = c.alloc[spc]
+	s = c.alloc[spc] // 注释：获取span
 	shouldhelpgc = false
-	freeIndex := s.nextFreeIndex()
-	if freeIndex == s.nelems {
+	freeIndex := s.nextFreeIndex() // 注释：返回下一个空闲对象下标位置，可能是等于span的总容量
+	if freeIndex == s.nelems {     // 注释：如果等于span的总容量时
 		// The span is full.
 		if uintptr(s.allocCount) != s.nelems {
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)

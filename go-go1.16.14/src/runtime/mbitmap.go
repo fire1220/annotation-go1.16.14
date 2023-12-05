@@ -145,6 +145,8 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // and negates them so that ctz (count trailing zeros) instructions
 // can be used. It then places these 8 bytes into the cached 64 bit
 // s.allocCache.
+// 注释：relfillAllocCache占用8个字节。allocBits从whichByte开始并取反，以便可以使用ctz（计数尾随零）指令。然后，它将这8个字节放入缓存的64位s.allocCache中
+// 注释：从新把分配的内存填充到mspan.allocCache快速缓存中
 func (s *mspan) refillAllocCache(whichByte uintptr) {
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte)))
 	aCache := uint64(0)
@@ -164,29 +166,31 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 // There are hardware instructions that can be used to make this
 // faster if profiling warrants it.
 // 注释：nextFreeIndex返回s中s.freeindex处或之后的下一个可用对象的索引。如果配置文件允许，可以使用一些硬件指令加快此操作。
+// 注释：返回空闲对象块下标
 func (s *mspan) nextFreeIndex() uintptr {
-	sfreeindex := s.freeindex
-	snelems := s.nelems
-	if sfreeindex == snelems {
+	sfreeindex := s.freeindex  // 注释：获取空闲对象块下标位置
+	snelems := s.nelems        // 注释：获取当前span可容纳的对象个数
+	if sfreeindex == snelems { // 注释：如果当前空闲对象块和最大可容纳的对象块数量相对，则返回最后一个可用对象块空闲下标
 		return sfreeindex
 	}
-	if sfreeindex > snelems {
+	if sfreeindex > snelems { // 注释：如果可用对象块下标大于可容纳的总对象块则报错
 		throw("s.freeindex > s.nelems")
 	}
 
-	aCache := s.allocCache
+	aCache := s.allocCache // 注释：获取span中的快速缓存（只能缓存64位）
 
-	bitIndex := sys.Ctz64(aCache)
-	for bitIndex == 64 {
+	bitIndex := sys.Ctz64(aCache) // 注释：(获取尾部0个数)获取已经分配的内存块数量
+	for bitIndex == 64 {          // 注释：如果全部都已经被分配了
 		// Move index to start of next cached bits.
 		// 注释：将索引移动到下一个缓存位的开头。
-		sfreeindex = (sfreeindex + 64) &^ (64 - 1)
-		if sfreeindex >= snelems {
-			s.freeindex = snelems
-			return snelems
+		sfreeindex = (sfreeindex + 64) &^ (64 - 1) // 注释：强制在64（2的6次方）位置进位，然后清空63位
+		if sfreeindex >= snelems {                 // 注释：如果大于当前span的总容量时
+			s.freeindex = snelems // 注释：下标等于总容量
+			return snelems        // 注释：返回总容量
 		}
-		whichByte := sfreeindex / 8
+		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)
 		// Refill s.allocCache with the next 64 alloc bits.
+		// 注释：用接下来的64个分配位重新填充s.allocCache。
 		s.refillAllocCache(whichByte)
 		aCache = s.allocCache
 		bitIndex = sys.Ctz64(aCache)

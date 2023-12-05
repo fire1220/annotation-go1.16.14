@@ -416,14 +416,14 @@ type mspan struct {
 	//
 	// Object n starts at address n*elemsize + (start << pageShift).
 	// 注释：对象n从地址 n*elemsize + (start << pageShift)。
-	freeindex uintptr // 注释：空闲快的小标（下标范围是0到nelems之间）空闲内存地址是 s.freeindex * s.elemsize + s.base()
+	freeindex uintptr // 注释：空闲对象块的下标（下标范围是[0 - nelems]之间(包含nelems)）空闲内存地址是 s.freeindex * s.elemsize + s.base()
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.
 	// 注释：nelems对应class表(/src/runtime/sizeclasses.go)【objects】字段；【objects字段】 = 【bytes/span字段】 / 【bytes/obj字段】
 	// 注释：【bytes/span字段】表示一个span的大小
 	// 注释：【bytes/obj字段】表示span可以存放的对象大小
 	// 注释：一共有68种span每个span有自己的块个数(classId=0除外，这个span是存放大对象的时候使用的)
-	nelems uintptr // 注释：span中对象的数量(块个数)，也即有多少个块可供分配（对应class表【objects】字段） (位置：/src/runtime/sizeclasses.go)// number of object in the span.
+	nelems uintptr // 注释：span中可容纳的总对象块数量，也即有多少个块可供分配（对应class表【objects】字段） (位置：/src/runtime/sizeclasses.go)// number of object in the span.
 
 	// Cache of the allocBits at freeindex. allocCache is shifted
 	// such that the lowest bit corresponds to the bit freeindex.
@@ -434,7 +434,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：当前span的缓冲，只缓冲64位(实现快速访问)。保存allocBits的补码(1表示空闲，0已分配)(默认全部空闲)
+	allocCache uint64 // 注释：当前span的快速缓存，只缓存64位(实现快速访问)。保存allocBits的补码(1表示空闲，0已分配)(默认全部空闲)
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.

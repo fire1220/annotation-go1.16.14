@@ -36,7 +36,7 @@ var deBruijnIdx32ctz = [32]byte{
 // Ctz64 counts trailing (low-order) zeroes,
 // and if all are zero, then 64.
 // 注释：Ctz64计数结尾（低位）零，如果全部为零，则为64。
-// 注释：返回地位的0的个数
+// 注释：(返回尾部0的个数)返回地位的0的个数
 func Ctz64(x uint64) int {
 	x &= -x                       // 注释：获取到右边第一个1的值(比如：1010100值为100) // isolate low-order bit
 	y := x * deBruijn64ctz >> 58  // 注释：把一个大数字转换成数组的下标(2的n次方减去n,这里是2的6次方减去6等于58) // extract part of deBruijn sequence

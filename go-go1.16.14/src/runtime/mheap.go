@@ -434,7 +434,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：当前span的快速缓存，只缓存64位(实现快速访问)。保存allocBits的补码(1表示空闲，0已分配)(默认全部空闲)
+	allocCache uint64 // 注释：当前span的快速缓存，只缓存64位(实现快速访问)。保存allocBits数组元素(每个元素是8字节的页)的补码(1表示空闲，0已分配)(默认全部空闲)
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.
@@ -466,7 +466,7 @@ type mspan struct {
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
 	// 注释：指针运算是“手动”完成的，而不是使用数组来避免沿关键性能路径进行边界检查。扫描将释放旧的allocBits，并将allocBit设置为gcmarkBits。gcmarkBits将替换为新的清零内存。
-	allocBits  *gcBits // 注释：8字节对齐的位图(每页正好是8字节),每一位控制一个页，代表是否分配；0未分配1分配
+	allocBits  *gcBits // 注释：(没8个一组的位图)8字节对齐的位图(每页正好是8字节),每一位控制一个页，代表是否分配；0未分配1分配
 	gcmarkBits *gcBits
 
 	// sweep generation:
@@ -1906,6 +1906,8 @@ func freespecial(s *special, p unsafe.Pointer, size uintptr) {
 type gcBits uint8
 
 // bytep returns a pointer to the n'th byte of b.
+// 注释：bytep返回指向b的第n个字节的指针。
+// 注释：可以理解为返回b[n]
 func (b *gcBits) bytep(n uintptr) *uint8 {
 	return addb((*uint8)(b), n)
 }

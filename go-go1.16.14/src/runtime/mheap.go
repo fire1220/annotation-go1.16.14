@@ -439,11 +439,16 @@ type mspan struct {
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.
 	// There are three arenas where this data is held.
+	// 注释：allocBits和gcmarkBits保存指向跨度的标记和分配位的指针。指针是8字节对齐的。有三个领域可以保存这些数据。
 	// free: Dirty arenas that are no longer accessed
 	//       and can be reused.
 	// next: Holds information to be used in the next GC cycle.
 	// current: Information being used during this GC cycle.
 	// previous: Information being used during the last GC cycle.
+	// 注释：free：肮脏的竞技场不再被访问，可以重复使用。
+	// 		next：保存要在下一个GC周期中使用的信息。
+	// 		current：此GC周期中使用的信息。
+	// 		previous：在上一个GC周期中使用的信息。
 	// A new GC cycle starts with the call to finishsweep_m.
 	// finishsweep_m moves the previous arena to the free arena,
 	// the current arena to the previous arena, and
@@ -451,6 +456,8 @@ type mspan struct {
 	// The next arena is populated as the spans request
 	// memory to hold gcmarkBits for the next GC cycle as well
 	// as allocBits for newly allocated spans.
+	// 注释：一个新的GC循环从调用finishsweep_m开始。finishsweep_m将上一个arena移到free arena，将当前arena移到上一个，将下一个arena移动到当前arena。
+	//		当跨度请求内存为下一个GC周期保存gcmarkBits以及为新分配的跨度保存allocBits时，会填充下一个arena。
 	//
 	// The pointer arithmetic is done "by hand" instead of using
 	// arrays to avoid bounds checks along critical performance
@@ -458,7 +465,8 @@ type mspan struct {
 	// The sweep will free the old allocBits and set allocBits to the
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
-	allocBits  *gcBits // 注释：分配位图，每一位代表一个块是否已分配
+	// 注释：指针运算是“手动”完成的，而不是使用数组来避免沿关键性能路径进行边界检查。扫描将释放旧的allocBits，并将allocBit设置为gcmarkBits。gcmarkBits将替换为新的清零内存。
+	allocBits  *gcBits // 注释：8字节对齐的位图(每页正好是8字节),每一位控制一个页，代表是否分配；0未分配1分配
 	gcmarkBits *gcBits
 
 	// sweep generation:

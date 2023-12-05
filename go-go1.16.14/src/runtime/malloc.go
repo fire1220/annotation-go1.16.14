@@ -1064,8 +1064,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
 			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
-			span = c.alloc[tinySpanClass] // 注释：获取微小对象结构体
-			v := nextFreeFast(span)       // 注释：重新计算空闲位置,返回空闲位置指针
+			span = c.alloc[tinySpanClass] // 注释：到线程缓存中获取微小对象结构体
+			v := nextFreeFast(span)       // 注释：(看线程缓冲中的span是否有存储空间)重新计算空闲位置,返回空闲位置指针
 			if v == 0 {
 				v, span, shouldhelpgc = c.nextFree(tinySpanClass)
 			}

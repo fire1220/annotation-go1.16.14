@@ -62,20 +62,21 @@ func Ctz8(x uint8) int {
 
 // Bswap64 returns its input with byte order reversed
 // 0x0102030405060708 -> 0x0807060504030201
+// 注释：字节翻转
 func Bswap64(x uint64) uint64 {
-	c8 := uint64(0x00ff00ff00ff00ff)
-	a := x >> 8 & c8
-	b := (x & c8) << 8
-	x = a | b
-	c16 := uint64(0x0000ffff0000ffff)
-	a = x >> 16 & c16
-	b = (x & c16) << 16
-	x = a | b
-	c32 := uint64(0x00000000ffffffff)
-	a = x >> 32 & c32
-	b = (x & c32) << 32
-	x = a | b
-	return x
+	c8 := uint64(0x00ff00ff00ff00ff)  // 注释：8位的奇偶数掩码
+	a := x >> 8 & c8                  // 注释：获取偶数并右移8位
+	b := (x & c8) << 8                // 注释：取出奇数并且左移8位
+	x = a | b                         // 注释：8位的奇数和偶数调换位置
+	c16 := uint64(0x0000ffff0000ffff) // 注释：16位的奇偶数掩码
+	a = x >> 16 & c16                 // 注释：获取偶数并右移16位
+	b = (x & c16) << 16               // 注释：获取奇数并左移16位
+	x = a | b                         // 注释：16位的奇数和偶数调换位置
+	c32 := uint64(0x00000000ffffffff) // 注释：32位的奇偶数掩码
+	a = x >> 32 & c32                 // 注释：获取偶数并右移32位
+	b = (x & c32) << 32               // 注释：获取奇数并左移32位
+	x = a | b                         // 注释：32位的奇数和偶数调换位置
+	return x                          // 注释：返回翻转结果
 }
 
 // Bswap32 returns its input with byte order reversed

@@ -39,9 +39,9 @@ var deBruijnIdx32ctz = [32]byte{
 // 注释：返回地位的0的个数
 func Ctz64(x uint64) int {
 	x &= -x                       // 注释：获取到右边第一个1的值 // isolate low-order bit
-	y := x * deBruijn64ctz >> 58  // 注释：把一个大数字转换成数组的下标 // extract part of deBruijn sequence
+	y := x * deBruijn64ctz >> 58  // 注释：把一个大数字转换成数组的下标(2的n次方减去n,这里是2的6次方减去6等于58) // extract part of deBruijn sequence
 	i := int(deBruijnIdx64ctz[y]) // 注释：用数组映射对应的位数 // convert to bit index
-	z := int((x - 1) >> 57 & 64)  // 注释：大数特殊处理 // adjustment if zero
+	z := int((x - 1) >> 57 & 64)  // 注释：对0单独处理，如果是0则返回64（这个方式省去了用if语句了） // adjustment if zero
 	return i + z
 }
 
@@ -49,7 +49,7 @@ func Ctz64(x uint64) int {
 // and if all are zero, then 32.
 func Ctz32(x uint32) int {
 	x &= -x                       // isolate low-order bit
-	y := x * deBruijn32ctz >> 27  // extract part of deBruijn sequence
+	y := x * deBruijn32ctz >> 27  // 注释：把一个大数字转换成数组的下标(2的n次方减去n,这里是2的5次方减去5等于27) // extract part of deBruijn sequence
 	i := int(deBruijnIdx32ctz[y]) // convert to bit index
 	z := int((x - 1) >> 26 & 32)  // adjustment if zero
 	return i + z

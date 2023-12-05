@@ -429,7 +429,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：保存allocBits的补码
+	allocCache uint64 // 注释：保存allocBits的补码(1表示空闲)(默认全部空闲)
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.

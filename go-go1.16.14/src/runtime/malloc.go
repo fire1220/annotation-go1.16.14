@@ -849,6 +849,7 @@ var zerobase uintptr // 注释：所有0字节分配的基地址
 
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
+// 注释：nextFreeFast返回下一个空闲对象（如果有）。否则返回0。
 func nextFreeFast(s *mspan) gclinkptr {
 	theBit := sys.Ctz64(s.allocCache) // 注释：allocCache中是否有空闲对象 // Is there a free object in the allocCache?
 	if theBit < 64 {
@@ -858,7 +859,7 @@ func nextFreeFast(s *mspan) gclinkptr {
 			if freeidx%64 == 0 && freeidx != s.nelems {
 				return 0
 			}
-			s.allocCache >>= uint(theBit + 1)
+			s.allocCache >>= uint(theBit + 1) // 注释：1表示空闲，默认全是1；这里向右移动左补0，表示分配了theBit+1个
 			s.freeindex = freeidx
 			s.allocCount++
 			return gclinkptr(result*s.elemsize + s.base())

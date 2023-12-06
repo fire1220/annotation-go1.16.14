@@ -467,7 +467,8 @@ type mspan struct {
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
 	// 注释：指针运算是“手动”完成的，而不是使用数组来避免沿关键性能路径进行边界检查。扫描将释放旧的allocBits，并将allocBit设置为gcmarkBits。gcmarkBits将替换为新的清零内存。
-	allocBits  *gcBits // 注释：(对应的是一个uint8数组的首指针)(在申请时是个大的连续空间里截取出一段连续的gcBits空间)8字节对齐的位图(每页正好是8字节),每一位控制一个页，代表是否分配；0未分配1分配
+	// 注释：连续数组空间首指针(对应的是一个uint8数组的首指针)(在申请时是个大的连续空间里截取出一段连续的gcBits空间)每8个字节一组，8字节对齐的位图
+	allocBits  *gcBits // 注释：位图0未分配1已分配(uint8中每一位控制一个当前span的1块，会把其中64位补码放到缓存allocCache里，每种sapn的块数量固定【objects】位置：/src/runtime/sizeclasses.go)
 	gcmarkBits *gcBits
 
 	// sweep generation:
@@ -482,7 +483,7 @@ type mspan struct {
 	divMul      uint16        // for divide by elemsize - divMagic.mul
 	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
 	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects
-	spanclass   spanClass     // 注释：class表中的【class】字段，就是class id // size class and noscan (uint8)
+	spanclass   spanClass     // 注释：span的ID(也叫做对象ID，对应【class】字段，位置：/src/runtime/sizeclasses.go) // size class and noscan (uint8)
 	state       mSpanStateBox // mSpanInUse etc; accessed atomically (get/set methods)
 	needzero    uint8         // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift

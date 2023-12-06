@@ -468,7 +468,7 @@ type mspan struct {
 	// out memory.
 	// 注释：指针运算是“手动”完成的，而不是使用数组来避免沿关键性能路径进行边界检查。扫描将释放旧的allocBits，并将allocBit设置为gcmarkBits。gcmarkBits将替换为新的清零内存。
 	// 注释：连续数组空间首指针(对应的是一个uint8数组的首指针)(在申请时是个大的连续空间里截取出一段连续的gcBits空间)每8个字节一组，8字节对齐的位图
-	allocBits  *gcBits // 注释：8字节对齐的位图0未分配1已分配(uint8中每一位控制一个当前span的1块，会把其中64位补码放到缓存allocCache里，每种sapn的块数量固定【objects】位置：/src/runtime/sizeclasses.go)
+	allocBits  *gcBits // 注释：8字节对齐的位图0未分配1已分配(uint8中每一位控制一个当前span的1块，会把其中64位补码放到缓存allocCache里，每种span的块数量固定【objects】位置：/src/runtime/sizeclasses.go)
 	gcmarkBits *gcBits
 
 	// sweep generation:

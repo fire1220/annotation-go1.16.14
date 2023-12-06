@@ -855,7 +855,7 @@ func nextFreeFast(s *mspan) gclinkptr {
 	// 注释：找出已经分配的数量
 	theBit := sys.Ctz64(s.allocCache) // 注释：缓存中已经分配的数量(从右边数0的个数)(0代表已分配)// Is there a free object in the allocCache?
 	if theBit < 64 {                  // 注释：超过最大值64直接返回
-		result := s.freeindex + uintptr(theBit) // 注释：重置空闲位置（theBit是已分配的个数，所以需要跳过这个数才是要分配的空闲位置）
+		result := s.freeindex + uintptr(theBit) // 注释：(块数，第几块是空闲的)重置空闲位置（theBit是已分配的个数，所以需要跳过这个数才是要分配的空闲位置）
 		if result < s.nelems {                  // 注释：空闲位置不能超过总容量
 			freeidx := result + 1 // 注释：记录下一个空闲下标位置
 			if freeidx%64 == 0 && freeidx != s.nelems {
@@ -864,7 +864,7 @@ func nextFreeFast(s *mspan) gclinkptr {
 			s.allocCache >>= uint(theBit + 1)              // 注释：操作时把右侧出现的第一个1的位置到右侧末尾处干掉
 			s.freeindex = freeidx                          // 注释：重置空闲位置(矫正空闲位置偏移量)
 			s.allocCount++                                 // 注释：统计分配次数
-			return gclinkptr(result*s.elemsize + s.base()) // 注释：返回空闲指针地址
+			return gclinkptr(result*s.elemsize + s.base()) // 注释：返回空闲指针地址(第几块*对象大小+基地址)
 		}
 	}
 	return 0

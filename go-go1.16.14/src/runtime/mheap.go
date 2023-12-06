@@ -434,18 +434,19 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	allocCache uint64 // 注释：当前span的快速缓存，只缓存64位(实现快速访问)。保存allocBits数组元素(每个元素是8字节的页)的补码(1表示空闲，0已分配)(默认全部空闲)
+	// 注释：allocCache是allocBits的补码，为了方便ctz
+	allocCache uint64 // 注释：(当前span的快速缓存)位图0已分配1空闲(默认1)(每一位控制一个span的1块，最大控制64块，每种sapn的块数量固定【objects】位置：/src/runtime/sizeclasses.go)。
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
 	// allocation bits. The pointers are 8 byte aligned.
 	// There are three arenas where this data is held.
-	// 注释：allocBits和gcmarkBits保存指向跨度的标记和分配位的指针。指针是8字节对齐的。有三个领域可以保存这些数据。
+	// 注释：allocBits和gcmarkBits保存指向span's的标记和分配位的指针。指针是8字节对齐的。有三个领域可以保存这些数据。
 	// free: Dirty arenas that are no longer accessed
 	//       and can be reused.
 	// next: Holds information to be used in the next GC cycle.
 	// current: Information being used during this GC cycle.
 	// previous: Information being used during the last GC cycle.
-	// 注释：free：肮脏的竞技场不再被访问，可以重复使用。
+	// 注释：free：肮脏的arenas不再被访问，可以重复使用。
 	// 		next：保存要在下一个GC周期中使用的信息。
 	// 		current：此GC周期中使用的信息。
 	// 		previous：在上一个GC周期中使用的信息。
@@ -466,7 +467,7 @@ type mspan struct {
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
 	// 注释：指针运算是“手动”完成的，而不是使用数组来避免沿关键性能路径进行边界检查。扫描将释放旧的allocBits，并将allocBit设置为gcmarkBits。gcmarkBits将替换为新的清零内存。
-	allocBits  *gcBits // 注释：(没8个一组的位图)8字节对齐的位图(每页正好是8字节),每一位控制一个页，代表是否分配；0未分配1分配
+	allocBits  *gcBits // 注释：(对应的是一个uint8数组的首指针)(在申请时是个大的连续空间里截取出一段连续的gcBits空间)8字节对齐的位图(每页正好是8字节),每一位控制一个页，代表是否分配；0未分配1分配
 	gcmarkBits *gcBits
 
 	// sweep generation:
@@ -1901,15 +1902,17 @@ func freespecial(s *special, p unsafe.Pointer, size uintptr) {
 }
 
 // gcBits is an alloc/mark bitmap. This is always used as *gcBits.
+// 注释：gcBits是一个分配/标记位图。这总是被用作*gcBits。
 //
 //go:notinheap
 type gcBits uint8
 
 // bytep returns a pointer to the n'th byte of b.
 // 注释：bytep返回指向b的第n个字节的指针。
+// 注释：指针b偏移n个
 // 注释：可以理解为返回b[n]
 func (b *gcBits) bytep(n uintptr) *uint8 {
-	return addb((*uint8)(b), n)
+	return addb((*uint8)(b), n) // 注释：返回 b + n
 }
 
 // bitp returns a pointer to the byte containing bit n and a mask for

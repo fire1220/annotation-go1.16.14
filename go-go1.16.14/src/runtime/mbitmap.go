@@ -150,8 +150,9 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // 注释：relfillAllocCache占用8个字节。allocBits从whichByte开始并取反，以便可以使用ctz（计数尾随零）指令。然后，它将这8个字节放入缓存的64位s.allocCache中
 // 注释：把空闲位置对应的页缓存到mspan.allocCache快速缓存中
 func (s *mspan) refillAllocCache(whichByte uintptr) {
-	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
+	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：从数组指针中，偏移whichByte(是8的倍数)个的位置指针向后拿出8个元素，把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
 	// 注释：把空闲位置的对应的页取出来缓存到mspan.allocCache快速缓存中
+	// 注释：把数组[8]uint8组合成一个uint64的值
 	aCache := uint64(0)
 	aCache |= uint64(bytes[0])
 	aCache |= uint64(bytes[1]) << (1 * 8)
@@ -161,7 +162,7 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 	aCache |= uint64(bytes[5]) << (5 * 8)
 	aCache |= uint64(bytes[6]) << (6 * 8)
 	aCache |= uint64(bytes[7]) << (7 * 8)
-	s.allocCache = ^aCache // 注释：为了方便ctz所以缓存allocBits的补码
+	s.allocCache = ^aCache // 注释：一共缓存64位，为了方便ctz所以缓存allocBits的补码
 }
 
 // nextFreeIndex returns the index of the next free object in s at
@@ -186,15 +187,15 @@ func (s *mspan) nextFreeIndex() uintptr {
 	for bitIndex == 64 {          // 注释：如果全部都已经被分配了
 		// Move index to start of next cached bits.
 		// 注释：将索引移动到下一个缓存位的开头。
-		sfreeindex = (sfreeindex + 64) &^ (64 - 1) // 注释：(强制进位)强制在64（2的6次方）位置进位，然后清空63位
+		sfreeindex = (sfreeindex + 64) &^ (64 - 1) // 注释：(强制进位)强制在64（2的6次方）位置进位，然后清空63位(得到一个大于等于64的值)
 		if sfreeindex >= snelems {                 // 注释：如果大于当前span的总容量时
 			s.freeindex = snelems // 注释：下标等于总容量
 			return snelems        // 注释：返回总容量
 		}
-		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)
+		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)(得到一个大于等于8, 小于等于128的值)
 		// Refill s.allocCache with the next 64 alloc bits.
 		// 注释：用接下来的64个分配位重新填充s.allocCache。
-		s.refillAllocCache(whichByte)
+		s.refillAllocCache(whichByte) // 注释：whichByte大于等于8小于等于128
 		aCache = s.allocCache
 		bitIndex = sys.Ctz64(aCache)
 		// nothing available in cached bits

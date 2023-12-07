@@ -86,7 +86,7 @@ type stackfreelist struct {
 }
 
 // dummy mspan that contains no free objects.
-var emptymspan mspan // 注释：不包含空闲对象的mspan。
+var emptymspan mspan // 注释：(所有块都被分配完)不包含空闲对象的mspan。
 
 func allocmcache() *mcache {
 	var c *mcache
@@ -158,12 +158,12 @@ func getMCache() *mcache {
 // 注释：从新填装空span，确保mcache缓存中只要有一个可以使用的span里的空闲块
 func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
-	s := c.alloc[spc]
+	s := c.alloc[spc] // 注释：在mcache中取出span（此时span中的块都已经分配完了）
 
-	if uintptr(s.allocCount) != s.nelems {
+	if uintptr(s.allocCount) != s.nelems { // 注释：校验如果全部的块没有分配完则报错
 		throw("refill of span with free space remaining")
 	}
-	if s != &emptymspan {
+	if s != &emptymspan { // 注释：校验span是否全部都已经分配完成了
 		// Mark this span as no longer cached.
 		if s.sweepgen != mheap_.sweepgen+3 {
 			throw("bad sweepgen in refill")
@@ -172,6 +172,7 @@ func (c *mcache) refill(spc spanClass) {
 	}
 
 	// Get a new cached span from the central lists.
+	// 注释：从中心列表中获取新的缓存span。
 	s = mheap_.central[spc].mcentral.cacheSpan()
 	if s == nil {
 		throw("out of memory")

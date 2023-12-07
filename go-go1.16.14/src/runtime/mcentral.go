@@ -18,7 +18,7 @@ import "runtime/internal/atomic"
 //
 //go:notinheap
 type mcentral struct {
-	spanclass spanClass // 注释：每个mcentral管理着一组有相同class的span列表(span class ID)
+	spanclass spanClass // 注释：spanId,每个mcentral管理着一组有相同class的span列表(span class ID)
 
 	// partial and full contain two mspan sets: one of swept in-use
 	// spans, and one of unswept in-use spans. These two trade
@@ -82,9 +82,12 @@ func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
 }
 
 // Allocate a span to use in an mcache.
+// 注释：分配要在mcache中使用的span
+//
 func (c *mcentral) cacheSpan() *mspan {
 	// Deduct credit for this span allocation and sweep if necessary.
-	spanBytes := uintptr(class_to_allocnpages[c.spanclass.sizeclass()]) * _PageSize
+	// 注释：扣除此span分配的贷项，如有必要，进行扫掠。
+	spanBytes := uintptr(class_to_allocnpages[c.spanclass.sizeclass()]) * _PageSize // 注释：获取span的大小，是个配置
 	deductSweepCredit(spanBytes, 0)
 
 	sg := mheap_.sweepgen

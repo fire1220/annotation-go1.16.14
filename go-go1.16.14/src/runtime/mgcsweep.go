@@ -620,15 +620,19 @@ func (s *mspan) reportZombies() {
 // performs sweeping to prevent going in to debt. If the caller will
 // also sweep pages (e.g., for a large allocation), it can pass a
 // non-zero callerSweepPages to leave that many pages unswept.
+// 注释：reduceSweepCredit扣除分配大小为spanBytes的span的扫描信用。这必须在分配span之前执行，以确保系统有足够的信用。
+//		如有必要，它会进行彻底的清理，以防止陷入债务。如果调用方还将扫描页面（例如，对于大的分配），则它可以传递一个非零的callerWeepPages，使许多页面不被扫描。
 //
 // deductSweepCredit makes a worst-case assumption that all spanBytes
 // bytes of the ultimately allocated span will be available for object
 // allocation.
+// 注释：reduceSweepCredit做了一个最坏的假设，即最终分配的跨度的所有spanBytes字节都将可用于对象分配。
 //
 // deductSweepCredit is the core of the "proportional sweep" system.
 // It uses statistics gathered by the garbage collector to perform
 // enough sweeping so that all pages are swept during the concurrent
 // sweep phase between GC cycles.
+// 注释：reduceSweepCredit是“比例扫描”系统的核心。它使用垃圾收集器收集的统计信息来执行足够的扫描，以便在GC周期之间的并发扫描阶段扫描所有页面。
 //
 // mheap_ must NOT be locked.
 func deductSweepCredit(spanBytes uintptr, callerSweepPages uintptr) {
@@ -637,8 +641,8 @@ func deductSweepCredit(spanBytes uintptr, callerSweepPages uintptr) {
 		return
 	}
 
-	if trace.enabled {
-		traceGCSweepStart()
+	if trace.enabled { // 注释：是否开启链路追踪
+		traceGCSweepStart() // 注释：GC链路追踪
 	}
 
 retry:

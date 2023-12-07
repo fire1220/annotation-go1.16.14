@@ -84,16 +84,19 @@ type mheap struct {
 	_ uint32 // align uint64 fields on 32-bit for atomics
 
 	// Proportional sweep
+	// 注释：比例扫描
 	//
 	// These parameters represent a linear function from heap_live
 	// to page sweep count. The proportional sweep system works to
 	// stay in the black by keeping the current page sweep count
 	// above this line at the current heap_live.
+	// 注释：这些参数代表了从 heap_live 到页面扫描计数的线性函数。比例扫描系统的工作原理是通过保持当前堆存活量下的页面扫描计数高于该线条来保持在良好状态。
 	//
 	// The line has slope sweepPagesPerByte and passes through a
 	// basis point at (sweepHeapLiveBasis, pagesSweptBasis). At
 	// any given time, the system is at (memstats.heap_live,
 	// pagesSwept) in this space.
+	// 注释：这条线的斜率为 sweepPagesPerByte，并通过一个基础点 (sweepHeapLiveBasis, pagesSweptBasis)。在任何给定的时刻，系统在这个空间中处于 (memstats.heap_live, pagesSwept) 的位置。
 	//
 	// It's important that the line pass through a point we
 	// control rather than simply starting at a (0,0) origin
@@ -101,6 +104,7 @@ type mheap struct {
 	// accounting for current progress. If we could only adjust
 	// the slope, it would create a discontinuity in debt if any
 	// progress has already been made.
+	// 注释：重要的是，该线条通过我们控制的一个点而不是简单地从 (0,0) 原点开始，因为这样可以让我们在任何时候调整扫描步调，同时考虑当前的进展。如果我们只能调整斜率，那么如果已经取得了任何进展，将会产生债务上的不连续性。
 	pagesInUse         uint64  // pages of spans in stats mSpanInUse; updated atomically
 	pagesSwept         uint64  // pages swept this cycle; updated atomically
 	pagesSweptBasis    uint64  // pagesSwept to use as the origin of the sweep ratio; updated atomically
@@ -207,8 +211,8 @@ type mheap struct {
 	// 注释：填充确保mcentrals的CacheLinePadSize字节间隔开，这样每个mcentral.lock都有自己的缓存行
 	// central is indexed by spanClass.
 	// 注释：堆里空闲的mcentral，
-	central [numSpanClasses]struct { // 注释：是class对象表的两倍(每种class对应的两个mcentral)
-		mcentral mcentral                                                                    // 注释：
+	central [numSpanClasses]struct { // 注释：是class对象表的两倍(每种class对应的两个mcentral,分别表示已经被mcache缓存了和没有被mcache缓存)
+		mcentral mcentral                                                                    // 注释：mcentral缓存，操作时需要对mheap加锁
 		pad      [cpu.CacheLinePadSize - unsafe.Sizeof(mcentral{})%cpu.CacheLinePadSize]byte // 注释：用来数据对其
 	}
 

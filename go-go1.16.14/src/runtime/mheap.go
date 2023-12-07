@@ -434,7 +434,7 @@ type mspan struct {
 	// allocCache may contain bits beyond s.nelems; the caller must ignore
 	// these.
 	// 注释：allocCache可能包含超出s.nelems的位；调用者必须忽略这些。
-	// 注释：allocCache是allocBits的补码，为了方便ctz
+	// 注释：allocCache是allocBits的补码(是8个一组，每组前后调换位置，第一组放在allocCache的低8位上面)，为了方便ctz
 	allocCache uint64 // 注释：(当前span的快速缓存)位图0已分配1空闲(默认1)(每一位控制一个span的1块，最大控制64块，每种sapn的块数量固定【objects】位置：/src/runtime/sizeclasses.go)。
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and
@@ -467,9 +467,10 @@ type mspan struct {
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
 	// 注释：指针运算是“手动”完成的，而不是使用数组来避免沿关键性能路径进行边界检查。扫描将释放旧的allocBits，并将allocBit设置为gcmarkBits。gcmarkBits将替换为新的清零内存。
+	//
 	// 注释：连续数组空间首指针(对应的是一个uint8数组的首指针)(在申请时是个大的连续空间里截取出一段连续的gcBits空间)每8个字节一组，8字节对齐的位图
-	allocBits  *gcBits // 注释：8字节对齐的位图0未分配1已分配(uint8中每一位控制一个当前span的1块，会把其中64位补码放到缓存allocCache里，每种span的块数量固定【objects】位置：/src/runtime/sizeclasses.go)
-	gcmarkBits *gcBits
+	allocBits  *gcBits // 注释：(标记内存占用情况）8字节对齐的位图0未分配1已分配(uint8中每一位控制一个当前span的1块，会把其中64位补码放到缓存allocCache里，每种span的块数量固定【objects】位置：/src/runtime/sizeclasses.go)
+	gcmarkBits *gcBits // 注释：标记内存GC回收情况
 
 	// sweep generation:
 	// if sweepgen == h->sweepgen - 2, the span needs sweeping

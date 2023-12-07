@@ -48,7 +48,7 @@ type mcache struct {
 
 	// The rest is not accessed on every malloc.
 
-	alloc [numSpanClasses]*mspan // 注释：按class分组的mspan列表,对象注释在/src/runtime/sizeclasses.go里 // spans to allocate from, indexed by spanClass
+	alloc [numSpanClasses]*mspan // 注释：存储着所有类型的span数据链表，按class分组的mspan列表,对象注释在/src/runtime/sizeclasses.go里 // spans to allocate from, indexed by spanClass
 
 	stackcache [_NumStackOrders]stackfreelist
 
@@ -149,9 +149,13 @@ func getMCache() *mcache {
 
 // refill acquires a new span of span class spc for c. This span will
 // have at least one free object. The current span in c must be full.
+// 注释：relfill为c获取一个span类spc的新span。这个span将至少有一个空闲对象。c中的当前跨度必须是满的。
 //
 // Must run in a non-preemptible context since otherwise the owner of
 // c could change.
+// 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
+//
+// 注释：从新填装空span，确保mcache缓存中只要有一个可以使用的span里的空闲块
 func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
 	s := c.alloc[spc]

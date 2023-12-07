@@ -883,16 +883,16 @@ func nextFreeFast(s *mspan) gclinkptr {
 // c could change.
 // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bool) {
-	s = c.alloc[spc] // 注释：获取span
+	s = c.alloc[spc] // 注释：获取mcache中缓存的span(mcache中会保证span都是有空闲块的，如果全部分配后悔继续填装新的空span)
 	shouldhelpgc = false
 	freeIndex := s.nextFreeIndex() // 注释：返回下一个空闲对象下标位置
-	if freeIndex == s.nelems {     // 注释：如果等于span的总容量时
+	if freeIndex == s.nelems {     // 注释：如果等于span的总容量时,说明当前span已经用完了，需要再次申请一个span
 		// The span is full.
-		if uintptr(s.allocCount) != s.nelems {
+		if uintptr(s.allocCount) != s.nelems { // 注释：如果已分配的总数不等于总数，说明程序出了问题
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
-		c.refill(spc)
+		c.refill(spc) // 注释：从新填装空span，确保mcache缓存中只要有一个可以使用的span里的空闲块
 		shouldhelpgc = true
 		s = c.alloc[spc]
 

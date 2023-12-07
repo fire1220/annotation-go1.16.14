@@ -152,7 +152,7 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 func (s *mspan) refillAllocCache(whichByte uintptr) {
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：从数组指针中，偏移whichByte(是8的倍数)个的位置指针向后拿出8个元素，把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
 	// 注释：把空闲位置的对应的页取出来缓存到mspan.allocCache快速缓存中
-	// 注释：把数组[8]uint8组合成一个uint64的值
+	// 注释：把数组[8]uint8组合成一个uint64的值，每8个一组调换顺序
 	aCache := uint64(0)
 	aCache |= uint64(bytes[0])
 	aCache |= uint64(bytes[1]) << (1 * 8)
@@ -195,19 +195,19 @@ func (s *mspan) nextFreeIndex() uintptr {
 		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)(得到一个大于等于8, 小于等于128的值)
 		// Refill s.allocCache with the next 64 alloc bits.
 		// 注释：用接下来的64个分配位重新填充s.allocCache。
-		s.refillAllocCache(whichByte) // 注释：whichByte大于等于8小于等于128
-		aCache = s.allocCache
-		bitIndex = sys.Ctz64(aCache)
+		s.refillAllocCache(whichByte) // 注释：把空闲的放到快速缓存s.allocCache里，whichByte大于等于8小于等于128
+		aCache = s.allocCache         // 注释：从缓存中拿出来
+		bitIndex = sys.Ctz64(aCache)  // 注释：取出末尾0数量(拿出已经使用的块的数量)
 		// nothing available in cached bits
 		// grab the next 8 bytes and try again.
 	}
-	result := sfreeindex + uintptr(bitIndex)
-	if result >= snelems {
-		s.freeindex = snelems
-		return snelems
+	result := sfreeindex + uintptr(bitIndex) // 注释：重新计算空闲块位置
+	if result >= snelems {                   // 注释：如果空闲的位置大于总块数时
+		s.freeindex = snelems // 注释：空闲下标设置成最大值
+		return snelems        // 注释：返回最大块数
 	}
 
-	s.allocCache >>= uint(bitIndex + 1)
+	s.allocCache >>= uint(bitIndex + 1) // 注释：踢出已经分配的
 	sfreeindex = result + 1
 
 	if sfreeindex%64 == 0 && sfreeindex != snelems {

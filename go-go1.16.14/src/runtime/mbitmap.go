@@ -148,7 +148,9 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // can be used. It then places these 8 bytes into the cached 64 bit
 // s.allocCache.
 // 注释：relfillAllocCache占用8个字节。allocBits从whichByte开始并取反，以便可以使用ctz（计数尾随零）指令。然后，它将这8个字节放入缓存的64位s.allocCache中
-// 注释：把空闲位置对应的页缓存到mspan.allocCache快速缓存中
+//
+// 注释：接着从allocBits中拿出64个位作为快速缓存块(前面的已经别分配了，所以需要继续拿出64位放到快速缓存里)
+// 注释：(重新缓存64个空的块到快速缓冲区里)把空闲位置对应的页缓存到mspan.allocCache快速缓存中
 func (s *mspan) refillAllocCache(whichByte uintptr) {
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：从数组指针中，偏移whichByte(是8的倍数)个的位置指针向后拿出8个元素，把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
 	// 注释：把空闲位置的对应的页取出来缓存到mspan.allocCache快速缓存中
@@ -170,7 +172,7 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 // There are hardware instructions that can be used to make this
 // faster if profiling warrants it.
 // 注释：nextFreeIndex返回s中s.freeindex处或之后的下一个可用对象的索引。如果配置文件允许，可以使用一些硬件指令加快此操作。
-// 注释：返回空闲对象块下标
+// 注释：返回空闲对象块下标，并把空闲下标块指针向后移动一位(因为本次拿出来认为已经被使用),如果快速缓存区已经用完了，会继续向后缓存64个块到快速缓存区里
 func (s *mspan) nextFreeIndex() uintptr {
 	sfreeindex := s.freeindex  // 注释：获取空闲对象块下标位置
 	snelems := s.nelems        // 注释：获取当前span可容纳的对象个数
@@ -195,7 +197,7 @@ func (s *mspan) nextFreeIndex() uintptr {
 		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)(得到一个大于等于8, 小于等于128的值)
 		// Refill s.allocCache with the next 64 alloc bits.
 		// 注释：用接下来的64个分配位重新填充s.allocCache。
-		s.refillAllocCache(whichByte) // 注释：把空闲的放到快速缓存s.allocCache里，whichByte大于等于8小于等于128
+		s.refillAllocCache(whichByte) // 注释：(重新缓存64个空的块到快速缓冲区里)把空闲位置对应的页缓存到mspan.allocCache快速缓存中，whichByte大于等于8小于等于128
 		aCache = s.allocCache         // 注释：从缓存中拿出来
 		bitIndex = sys.Ctz64(aCache)  // 注释：取出末尾0数量(拿出已经使用的块的数量)
 		// nothing available in cached bits
@@ -207,20 +209,22 @@ func (s *mspan) nextFreeIndex() uintptr {
 		return snelems        // 注释：返回最大块数
 	}
 
-	s.allocCache >>= uint(bitIndex + 1) // 注释：踢出已经分配的
-	sfreeindex = result + 1
+	s.allocCache >>= uint(bitIndex + 1) // 注释：踢出已经分配的，并踢出一个空块位
+	sfreeindex = result + 1             // 注释：记录下一个空块位置
 
-	if sfreeindex%64 == 0 && sfreeindex != snelems {
+	if sfreeindex%64 == 0 && sfreeindex != snelems { // 注释：如果sfreeindex是64的整数倍,并且不最后一个块时，从新缓存64个块提供未来使用
 		// We just incremented s.freeindex so it isn't 0.
 		// As each 1 in s.allocCache was encountered and used for allocation
 		// it was shifted away. At this point s.allocCache contains all 0s.
 		// Refill s.allocCache so that it corresponds
 		// to the bits at s.allocBits starting at s.freeindex.
+		// 注释：我们刚刚增加了s.freeindex，所以它不是0。当s.allocCache中的每个1都被遇到并用于分配时，它被移走了。
+		//		此时s.allocCache包含所有0。重新填充s.allocCache，使其对应于从s.freeindex开始的s.allocBits处的位。
 		whichByte := sfreeindex / 8
-		s.refillAllocCache(whichByte)
+		s.refillAllocCache(whichByte) // 注释：重新缓存64个空的块到快速缓冲区里
 	}
-	s.freeindex = sfreeindex
-	return result
+	s.freeindex = sfreeindex // 注释：保存下一个空块的下标
+	return result            // 注释：返回本次的一个空块下标位置
 }
 
 // isFree reports whether the index'th object in s is unallocated.

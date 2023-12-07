@@ -416,7 +416,7 @@ type mspan struct {
 	//
 	// Object n starts at address n*elemsize + (start << pageShift).
 	// 注释：对象n从地址 n*elemsize + (start << pageShift)。
-	freeindex uintptr // 注释：空闲对象块的下标（下标范围是[0 - nelems]之间(包含nelems)）空闲内存地址是 s.freeindex * s.elemsize + s.base()
+	freeindex uintptr // 注释：空闲对象块的下标位置（下标范围是[0 - nelems]之间(包含nelems)）空闲内存地址是 s.freeindex * s.elemsize + s.base()
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.
 	// 注释：nelems对应class表(/src/runtime/sizeclasses.go)【objects】字段；【objects字段】 = 【bytes/span字段】 / 【bytes/obj字段】

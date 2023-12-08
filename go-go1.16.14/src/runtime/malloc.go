@@ -915,6 +915,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
+//
 // 注释：（所有申请内存的入口）分配对象（处理分配对象和GC一些标记工作）
 // 注释：返回申请后的内存首地址
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
@@ -1067,7 +1068,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
 			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
-			span = c.alloc[tinySpanClass] // 注释：到线程缓存中获取微小对象结构体
+			span = c.alloc[tinySpanClass] // 注释：(到mcache里拿对应的span)到线程缓存中获取微小对象结构体
 			v := nextFreeFast(span)       // 注释：(到mcache(线程缓存)里的快速缓存(mspan.allocCache)(只缓存64位)中的span是否有存储空间)重新计算空闲位置,返回空闲位置指针
 			if v == 0 {                   // 注释：如果没有找到，则去mcache(线程缓存)里找
 				v, span, shouldhelpgc = c.nextFree(tinySpanClass)

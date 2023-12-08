@@ -32,6 +32,7 @@ import (
 var sweep sweepdata
 
 // State of background sweep.
+// 注释：后台扫描（background sweep）的状态
 type sweepdata struct {
 	lock    mutex
 	g       *g
@@ -45,10 +46,13 @@ type sweepdata struct {
 	// It represents an index into the mcentral span
 	// sets. Accessed and updated via its load and
 	// update methods. Not protected by a lock.
+	// 注释：centralIndex 是当前未扫描的 span 类。它表示 mcentral span 集中的一个索引。通过其加载和更新方法访问和更新。不受锁的保护。
 	//
 	// Reset at mark termination.
 	// Used by mheap.nextSpanForSweep.
-	centralIndex sweepClass
+	// 注释：在标记终止时重置。由 mheap.nextSpanForSweep 使用。
+	//
+	centralIndex sweepClass // 注释：(当前未清理)需要清扫mcentral中的span对象ID
 }
 
 // sweepClass is a spanClass and one bit to represent whether we're currently
@@ -86,6 +90,7 @@ func (s *sweepClass) clear() {
 // whether we're interested in the full or partial
 // unswept lists for that class, indicated as a boolean
 // (true means "full").
+// 注释：span对象ID的前7位表示ID，最后一位表示是否需要扫描，0是1否(需要扫描说明span存在指针)
 func (s sweepClass) split() (spc spanClass, full bool) {
 	return spanClass(s >> 1), s&1 == 0
 }
@@ -93,10 +98,12 @@ func (s sweepClass) split() (spc spanClass, full bool) {
 // nextSpanForSweep finds and pops the next span for sweeping from the
 // central sweep buffers. It returns ownership of the span to the caller.
 // Returns nil if no such span exists.
+//
+// 注释：找一下个要清理的span，如果没有要清理的则返回nil
 func (h *mheap) nextSpanForSweep() *mspan {
 	sg := h.sweepgen
-	for sc := sweep.centralIndex.load(); sc < numSweepClasses; sc++ {
-		spc, full := sc.split()
+	for sc := sweep.centralIndex.load(); sc < numSweepClasses; sc++ { // 注释：获取spanClass的ID，从这个ID开始循环所有ID(numSweepClasses是4倍的span对象ID总数)
+		spc, full := sc.split() // 注释：分隔成cpan对象ID和是否需要扫描标识
 		c := &h.central[spc].mcentral
 		var s *mspan
 		if full {
@@ -185,24 +192,27 @@ func bgsweep(c chan int) {
 
 // sweepone sweeps some unswept heap span and returns the number of pages returned
 // to the heap, or ^uintptr(0) if there was nothing to sweep.
+// 注释：是清理（sweep）未清理的堆跨度（heap span），并返回归还给堆的页面数量。如果没有需要清理的内容，则返回^uintptr(0)。
+// 注释：清理一个
 func sweepone() uintptr {
 	_g_ := getg()
 	sweepRatio := mheap_.sweepPagesPerByte // For debugging
 
 	// increment locks to ensure that the goroutine is not preempted
 	// in the middle of sweep thus leaving the span in an inconsistent state for next GC
-	_g_.m.locks++
-	if atomic.Load(&mheap_.sweepdone) != 0 {
+	_g_.m.locks++                            // 注释：加锁
+	if atomic.Load(&mheap_.sweepdone) != 0 { // 注释：如果所有的span都被扫描过了则解锁并返回没有需要清理标识
 		_g_.m.locks--
 		return ^uintptr(0)
 	}
-	atomic.Xadd(&mheap_.sweepers, +1)
+	atomic.Xadd(&mheap_.sweepers, +1) // 注释：标记活动数加一
 
 	// Find a span to sweep.
-	var s *mspan
+	// 注释：查找一个span并且清理
+	var s *mspan // 注释：准备存储下一个要被清理的span
 	sg := mheap_.sweepgen
 	for {
-		s = mheap_.nextSpanForSweep()
+		s = mheap_.nextSpanForSweep() // 注释：找一下个要清理的span，如果没有要清理的则返回nil
 		if s == nil {
 			atomic.Store(&mheap_.sweepdone, 1)
 			break

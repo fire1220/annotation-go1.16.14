@@ -101,15 +101,15 @@ func makechan(t *chantype, size int) *hchan {
 		c = (*hchan)(mallocgc(hchanSize, nil, true)) // 注释：分配管道地址
 		// Race detector uses this location for synchronization.
 		c.buf = c.raceaddr()
-	case elem.ptrdata == 0: // 注释：元素不包含指针，不是指针数据，开辟连续的空间
+	case elem.ptrdata == 0: // 注释：元素不包含指针，不是指针数据，开辟连续的空间(因为没有指针所以GC并不关系，放在栈里可提高性能)
 		// Elements do not contain pointers.
 		// Allocate hchan and buf in one call.
 		c = (*hchan)(mallocgc(hchanSize+mem, nil, true)) // 注释：分配管道地址
 		c.buf = add(unsafe.Pointer(c), hchanSize)
-	default: // 注释：元素包含指针的情况下（默认情况），实例化channel类型指针，然后单独申请地址给c.buf
+	default: // 注释：元素包含指针的情况下（因为包含指针GC需要关心，所以要通知GC防止被GC掉），实例化channel类型指针，然后单独申请地址给c.buf
 		// Elements contain pointers.
-		c = new(hchan) // 注释：分配管道地址
-		c.buf = mallocgc(mem, elem, true)
+		c = new(hchan)                    // 注释：分配管道地址
+		c.buf = mallocgc(mem, elem, true) // 注释：在堆中申请（在堆中申请会通知GC）
 	}
 
 	c.elemsize = uint16(elem.size)   // 注释：每个元素的类型大小

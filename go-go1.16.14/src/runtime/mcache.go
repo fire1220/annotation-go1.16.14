@@ -155,7 +155,7 @@ func getMCache() *mcache {
 // c could change.
 // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 //
-// 注释：从新填装空span，确保mcache缓存中只要有一个可以使用的span里的空闲块
+// 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
 func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
 	s := c.alloc[spc] // 注释：在mcache中取出span（此时span中的块都已经分配完了）

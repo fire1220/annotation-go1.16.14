@@ -353,7 +353,7 @@ func systemstack_switch()
 
 // alignUp rounds n up to a multiple of a. a must be a power of 2.
 // 注释：alignUp将n向上取整到a的倍数。a必须是2的幂。
-// 注释：向上取整a倍数
+// 注释：(常用于内存对齐【(n + 7)&^ 7)】向上取整a倍数
 func alignUp(n, a uintptr) uintptr {
 	return (n + a - 1) &^ (a - 1)
 }

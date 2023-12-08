@@ -82,8 +82,7 @@ func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
 }
 
 // Allocate a span to use in an mcache.
-// 注释：分配要在mcache中使用的span
-//
+// 注释：分配一个span到mcache中
 func (c *mcentral) cacheSpan() *mspan {
 	// Deduct credit for this span allocation and sweep if necessary.
 	// 注释：扣除此span分配的贷项，如有必要，进行扫掠。

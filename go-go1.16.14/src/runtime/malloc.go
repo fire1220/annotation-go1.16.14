@@ -882,17 +882,20 @@ func nextFreeFast(s *mspan) gclinkptr {
 // Must run in a non-preemptible context since otherwise the owner of
 // c could change.
 // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
+//
+// 注释：尝试到mcache下span的allocBits里找，如果找到了则拿出一个块，并把后面的64个块放到mcache.allocCache快速缓存里；
+// 注释：如果没有找到或是最后一个块时则到mcental里获取一个新的span，并缓存到mcache里，确保mcache里必须有空的块提供使用
 func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bool) {
 	s = c.alloc[spc] // 注释：获取mcache中缓存的span(mcache中会保证span都是有空闲块的，如果全部分配后悔继续填装新的空span)
 	shouldhelpgc = false
-	freeIndex := s.nextFreeIndex() // 注释：返回下一个空闲对象下标位置
+	freeIndex := s.nextFreeIndex() // 注释：返回下一个空闲对象下标位置(尝试到mcache里找下一个span)
 	if freeIndex == s.nelems {     // 注释：如果等于span的总容量时,说明当前span已经用完了，需要再次申请一个span
 		// The span is full.
 		if uintptr(s.allocCount) != s.nelems { // 注释：如果已分配的总数不等于总数，说明程序出了问题
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
-		c.refill(spc) // 注释：从新填装空span，确保mcache缓存中只要有一个可以使用的span里的空闲块
+		c.refill(spc) // 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
 		shouldhelpgc = true
 		s = c.alloc[spc]
 
@@ -1042,7 +1045,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			off := c.tinyoffset
 			// Align tiny pointer for required (conservative) alignment.
 			if size&7 == 0 {
-				off = alignUp(off, 8) // 注释：8字节向上对齐
+				off = alignUp(off, 8) // 注释：8字节内存对齐
 			} else if sys.PtrSize == 4 && size == 12 {
 				// Conservatively align 12-byte objects to 8 bytes on 32-bit
 				// systems so that objects whose first field is a 64-bit
@@ -1053,9 +1056,9 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				// is resolved.
 				off = alignUp(off, 8)
 			} else if size&3 == 0 {
-				off = alignUp(off, 4) // 注释：4字节向上对齐
+				off = alignUp(off, 4) // 注释：4字节内存对齐
 			} else if size&1 == 0 {
-				off = alignUp(off, 2) // 注释：2字节向上对齐
+				off = alignUp(off, 2) // 注释：2字节内存对齐
 			}
 			if off+size <= maxTinySize && c.tiny != 0 { // 注释：off+size是要使用的内存大小，小于等于微小对象，并且微对象基地址存在
 				// The object fits into existing tiny block. // 注释：这个物体适合现有的小块。
@@ -1071,7 +1074,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			span = c.alloc[tinySpanClass] // 注释：(到mcache里拿对应的span)到线程缓存中获取微小对象结构体
 			v := nextFreeFast(span)       // 注释：(到mcache(线程缓存)里的快速缓存(mspan.allocCache)(只缓存64位)中的span是否有存储空间)重新计算空闲位置,返回空闲位置指针
 			if v == 0 {                   // 注释：如果没有找到，则去mcache(线程缓存)里找
-				v, span, shouldhelpgc = c.nextFree(tinySpanClass)
+				v, span, shouldhelpgc = c.nextFree(tinySpanClass) // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 			}
 			x = unsafe.Pointer(v)
 			(*[2]uint64)(x)[0] = 0

@@ -172,6 +172,7 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 // There are hardware instructions that can be used to make this
 // faster if profiling warrants it.
 // 注释：nextFreeIndex返回s中s.freeindex处或之后的下一个可用对象的索引。如果配置文件允许，可以使用一些硬件指令加快此操作。
+//
 // 注释：返回空闲对象块下标，并把空闲下标块指针向后移动一位(因为本次拿出来认为已经被使用),如果快速缓存区已经用完了，会继续向后缓存64个块到快速缓存区里
 func (s *mspan) nextFreeIndex() uintptr {
 	sfreeindex := s.freeindex  // 注释：获取空闲对象块下标位置

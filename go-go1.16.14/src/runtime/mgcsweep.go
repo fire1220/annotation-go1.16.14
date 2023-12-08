@@ -635,6 +635,8 @@ func (s *mspan) reportZombies() {
 // 注释：reduceSweepCredit是“比例扫描”系统的核心。它使用垃圾收集器收集的统计信息来执行足够的扫描，以便在GC周期之间的并发扫描阶段扫描所有页面。
 //
 // mheap_ must NOT be locked.
+//
+// 注释：减低清扫积分spanBytes是一个span的大小
 func deductSweepCredit(spanBytes uintptr, callerSweepPages uintptr) {
 	if mheap_.sweepPagesPerByte == 0 {
 		// Proportional sweep is done or disabled.
@@ -646,7 +648,7 @@ func deductSweepCredit(spanBytes uintptr, callerSweepPages uintptr) {
 	}
 
 retry:
-	sweptBasis := atomic.Load64(&mheap_.pagesSweptBasis)
+	sweptBasis := atomic.Load64(&mheap_.pagesSweptBasis) // 注释：清扫扫描的起始位置
 
 	// Fix debt if necessary.
 	newHeapLive := uintptr(atomic.Load64(&memstats.heap_live)-mheap_.sweepHeapLiveBasis) + spanBytes

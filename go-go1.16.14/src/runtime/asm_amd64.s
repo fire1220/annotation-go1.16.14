@@ -232,12 +232,12 @@ ok:
 	MOVQ	$runtime·mainPC(SB), AX	 // 注释：(runtime.main函数指针放到AX里)访问全局变量runtime·mainPC，内容是runtime.main函数指针	// entry
 	PUSHQ	AX                       // 注释：参数2入栈(值是&runtime.main)，把AX作为下个函数第2个参数，相当于subq $8,SP；movq AX,SP
 	PUSHQ	$0                       // 注释：参数1入栈，把0作为下个函数第1个参数，相当于subq $8,SP；movq $0,SP		// arg size
-	CALL	runtime·newproc(SB)      // 注释：新建一个g，也叫main goroutine，它的任务函数是runtime.main函数，建好后插入m0绑定的p的本地队列
+	CALL	runtime·newproc(SB)      // 注释：(此时还没有执行只是添加队列)新建一个g，也叫main goroutine，它的任务函数是runtime.main函数，建好后插入m0绑定的p的本地队列
 	POPQ	AX                       // 注释：出栈，去除上面的参数位置
 	POPQ	AX                       // 注释：出栈，去除上面的参数位置
 
 	// start this M
-	CALL	runtime·mstart(SB)       // 注释：启动线程m，进入启动调度系统
+	CALL	runtime·mstart(SB)       // 注释：启动线程m，进入启动调度系统（开始执行调度和业务代码）
 
 	CALL	runtime·abort(SB)	// mstart should never return
 	RET

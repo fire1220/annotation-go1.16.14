@@ -48,6 +48,7 @@ type mcache struct {
 
 	// The rest is not accessed on every malloc.
 
+	// 注释：这里存储的是：每种span类型只存储一个(至少含有一个空块的span)，会把分配完成是span放到中心缓存mcentral中，然后再从中心缓存mcentral中拿含有空块的span放到这里(mcache.alloc)
 	alloc [numSpanClasses]*mspan // 注释：存储着所有类型的span数据链表，按class分组的mspan列表,对象注释在/src/runtime/sizeclasses.go里 // spans to allocate from, indexed by spanClass
 
 	stackcache [_NumStackOrders]stackfreelist
@@ -169,12 +170,12 @@ func (c *mcache) refill(spc spanClass) {
 		if s.sweepgen != mheap_.sweepgen+3 {
 			throw("bad sweepgen in refill")
 		}
-		mheap_.central[spc].mcentral.uncacheSpan(s)
+		mheap_.central[spc].mcentral.uncacheSpan(s) // 注释：把已经分配完的span放到中心缓存mcentral中去
 	}
 
 	// Get a new cached span from the central lists.
 	// 注释：从中心列表中获取新的缓存span。
-	s = mheap_.central[spc].mcentral.cacheSpan() // 注释：从mcental中获取span并缓存起来
+	s = mheap_.central[spc].mcentral.cacheSpan() // 注释：从中心缓存mcental中获取span并缓存起来
 	if s == nil {
 		throw("out of memory")
 	}

@@ -163,8 +163,9 @@ func (c *mcache) refill(spc spanClass) {
 	if uintptr(s.allocCount) != s.nelems { // 注释：校验如果全部的块没有分配完则报错
 		throw("refill of span with free space remaining")
 	}
-	if s != &emptymspan { // 注释：校验span是否全部都已经分配完成了
+	if s != &emptymspan { // 注释：初始化的时候会赋值为&emptymspan
 		// Mark this span as no longer cached.
+		// 注释：将此跨度标记为不再缓存。
 		if s.sweepgen != mheap_.sweepgen+3 {
 			throw("bad sweepgen in refill")
 		}

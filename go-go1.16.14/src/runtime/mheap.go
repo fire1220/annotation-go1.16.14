@@ -64,7 +64,7 @@ type mheap struct {
 	// could self-deadlock if its stack grows with the lock held.
 	lock      mutex     // 注释：互斥锁
 	pages     pageAlloc // 注释：指向spans区域，用于映射span和page的关系(页面分配数据结构) // page allocation data structure
-	sweepgen  uint32    // 注释：清理阶段 // sweep generation, see comment in mspan; written during STW
+	sweepgen  uint32    // 注释：GC扫描的计数器（每次GC完成后加2）// sweep generation, see comment in mspan; written during STW
 	sweepdone uint32    // 注释：所有的内存区块（span）都已经被扫描和清理了 // all spans are swept
 	sweepers  uint32    // 注释：活动的处理sweepdone的数量 // number of active sweepone calls
 

@@ -51,8 +51,9 @@ type mcentral struct {
 	// 注释：	1.向未被GC扫描的partial(有空闲)中查找
 	// 注释：	2.向已被GC扫描的partial(有空闲)中查找
 	// 注释：	3.向已被GC扫描的full(无空闲)中查找
-	partial [2]spanSet // 注释：有空闲的span链表(数组两个元素表示GC未扫描和已扫描的span链表) // list of spans with a free object
-	full    [2]spanSet // 注释：无空闲的span链表(数组两个元素表示GC未扫描和已扫描的span链表) // list of spans with no free objects
+	// 注释：数组两个元素表示GC未扫描和已扫描的span链表，通过GC计数器进行数据含义切换(未扫描变成已扫码，已扫码变成为扫描)
+	partial [2]spanSet // 注释：有空闲的span链表 // list of spans with a free object
+	full    [2]spanSet // 注释：无空闲的span链表(数组两个元素表示GC未扫描和已扫描的span链表，通过GC计数器进行数据含义切换) // list of spans with no free objects
 }
 
 // Initialize a single central free list.
@@ -68,6 +69,7 @@ func (c *mcentral) init(spc spanClass) {
 // unswept spans for this sweepgen.
 // 注释：（有空闲、未扫描）有空闲并且未被GC扫描的span
 // 注释：每两个为一组（舍去一位然后取模）
+// 注释：sweepgena为GC扫描的计数器，每次GC扫描完成后自增2，实现已扫描和未扫描的数组下标切换
 func (c *mcentral) partialUnswept(sweepgen uint32) *spanSet {
 	return &c.partial[1-sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.partial[sweepgen>>1&1 ^ 1]
 }
@@ -76,6 +78,7 @@ func (c *mcentral) partialUnswept(sweepgen uint32) *spanSet {
 // swept spans for this sweepgen.
 // 注释：（有空闲、已扫描）有空闲并且被GC扫描的span
 // 注释：每两个为一组（舍去一位然后取模）
+// 注释：sweepgena为GC扫描的计数器，每次GC扫描完成后自增2，实现已扫描和未扫描的数组下标切换
 func (c *mcentral) partialSwept(sweepgen uint32) *spanSet {
 	return &c.partial[sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.partial[sweepgen>>1&1]
 }
@@ -84,6 +87,7 @@ func (c *mcentral) partialSwept(sweepgen uint32) *spanSet {
 // free slots for this sweepgen.
 // 注释：(无空闲、未扫描)无空闲并且未被GC扫描的span
 // 注释：每两个为一组（舍去一位然后取模）
+// 注释：sweepgena为GC扫描的计数器，每次GC扫描完成后自增2，实现已扫描和未扫描的数组下标切换
 func (c *mcentral) fullUnswept(sweepgen uint32) *spanSet {
 	return &c.full[1-sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.full[sweepgen>>1&1 ^ 1]
 }
@@ -92,6 +96,7 @@ func (c *mcentral) fullUnswept(sweepgen uint32) *spanSet {
 // free slots for this sweepgen.
 // 注释：(无空闲、已扫描)无空闲并且被GC扫描的span
 // 注释：每两个为一组（舍去一位然后取模）
+// 注释：sweepgena为GC扫描的计数器，每次GC扫描完成后自增2，实现已扫描和未扫描的数组下标切换
 func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
 	return &c.full[sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.full[sweepgen>>1&1]
 }

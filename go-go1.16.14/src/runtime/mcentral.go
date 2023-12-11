@@ -213,6 +213,8 @@ havespan:
 //
 // s must have a span class corresponding to this
 // mcentral and it must not be empty.
+//
+// 注释：把已经分配完的span放到中心缓存mcentral中去
 func (c *mcentral) uncacheSpan(s *mspan) {
 	if s.allocCount == 0 {
 		throw("uncaching span but s.allocCount == 0")

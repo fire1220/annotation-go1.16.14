@@ -64,14 +64,17 @@ const (
 
 type spanSetBlock struct {
 	// Free spanSetBlocks are managed via a lock-free stack.
+	// 注释：空闲spanSetBlocks通过无锁堆栈进行管理。
 	lfnode
 
 	// popped is the number of pop operations that have occurred on
 	// this block. This number is used to help determine when a block
 	// may be safely recycled.
+	// 注释：poped是在此块上发生的pop操作数。此数字用于帮助确定块何时可以安全回收。
 	popped uint32
 
 	// spans is the set of spans in this block.
+	// 注释：span是此块中的一组span。
 	spans [spanSetBlockEntries]*mspan
 }
 

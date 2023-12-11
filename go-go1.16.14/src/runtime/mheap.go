@@ -213,7 +213,7 @@ type mheap struct {
 	// central is indexed by spanClass.
 	// 注释：堆里空闲的mcentral，
 	central [numSpanClasses]struct { // 注释：是class对象表的两倍(每种class对应的两个mcentral,分别表示已经被mcache缓存了和没有被mcache缓存)
-		mcentral mcentral                                                                    // 注释：mcentral缓存，操作时需要对mheap加锁
+		mcentral mcentral                                                                    // 注释：中心缓存mcentral，操作时需要对mheap加锁，包含有空闲和无空闲两个结构，每个结构包含GC已扫描和未扫描的两个span链表
 		pad      [cpu.CacheLinePadSize - unsafe.Sizeof(mcentral{})%cpu.CacheLinePadSize]byte // 注释：用来数据对其
 	}
 

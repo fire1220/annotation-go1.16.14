@@ -16,6 +16,8 @@ import "runtime/internal/atomic"
 
 // Central list of free objects of a given size.
 //
+// 注释：中心缓存(属于mheap堆内存结构图的mcentral属性，由mheap锁控制)
+// 注释：包含有空闲和无空闲两个结构，每个结构包含GC已扫描和未扫描的两个span链表
 //go:notinheap
 type mcentral struct {
 	spanclass spanClass // 注释：spanId,每个mcentral管理着一组有相同class的span列表(span class ID)
@@ -44,8 +46,13 @@ type mcentral struct {
 	// encounter swept spans, and these should be ignored.
 	// 注释：清扫器的某些部分可以清扫任意spans，因此无法将其从未清扫集中删除，但会将span添加到相应的清扫列表中。
 	//		因此，清除器和mcentral中从未清除列表中消耗的部分可能会遇到已清除的spans，应忽略这些跨度。
-	partial [2]spanSet // 注释：还有内存可用的span列表 // list of spans with a free object
-	full    [2]spanSet // 注释：没有内存可用的span列表 // list of spans with no free objects
+	//
+	// 注释：向mcentral中获取span时会到这里看是否有空闲的span,步骤如下：
+	// 注释：	1.向未被GC扫描的partial(有空闲)中查找
+	// 注释：	2.向已被GC扫描的partial(有空闲)中查找
+	// 注释：	3.向已被GC扫描的full(无空闲)中查找
+	partial [2]spanSet // 注释：有空闲的span链表(数组两个元素表示GC未扫描和已扫描的span链表) // list of spans with a free object
+	full    [2]spanSet // 注释：无空闲的span链表(数组两个元素表示GC未扫描和已扫描的span链表) // list of spans with no free objects
 }
 
 // Initialize a single central free list.

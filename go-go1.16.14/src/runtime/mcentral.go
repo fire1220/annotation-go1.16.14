@@ -221,10 +221,10 @@ func (c *mcentral) uncacheSpan(s *mspan) {
 	}
 
 	sg := mheap_.sweepgen       // 注释：获取mheap.sweepgen
-	stale := s.sweepgen == sg+1 // 注释：获取状态，是否是中间态（扫描中）
+	stale := s.sweepgen == sg+1 // 注释：获取状态，是否是中间态（是否是扫描中）
 
 	// Fix up sweepgen.
-	if stale {
+	if stale { // 注释：是扫描中
 		// Span was cached before sweep began. It's our
 		// responsibility to sweep it.
 		//

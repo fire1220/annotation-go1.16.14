@@ -64,7 +64,7 @@ type mheap struct {
 	// could self-deadlock if its stack grows with the lock held.
 	lock      mutex     // 注释：互斥锁
 	pages     pageAlloc // 注释：指向spans区域，用于映射span和page的关系(页面分配数据结构) // page allocation data structure
-	sweepgen  uint32    // 注释：GC扫描的计数器（每次GC完成后加2）// sweep generation, see comment in mspan; written during STW
+	sweepgen  uint32    // 注释：GC扫描的计数器(GC扫描版本)（每次GC开始处加2）// sweep generation, see comment in mspan; written during STW
 	sweepdone uint32    // 注释：所有的内存区块（span）都已经被扫描和清理了 // all spans are swept
 	sweepers  uint32    // 注释：活动的处理sweepdone的数量 // number of active sweepone calls
 
@@ -485,14 +485,14 @@ type mspan struct {
 	// if sweepgen == h->sweepgen + 3, the span was swept and then cached and is still cached
 	// h->sweepgen is incremented by 2 after every GC
 	// 注释：清理阶段
-	// 如果'sweepgen'等于'h->sweepgen - 2'，表示该内存区域需要进行清理。(注释：理解为重新清扫一下，因为每次清扫完成后会自动加2)
-	// 如果'sweepgen'等于'h->sweepgen - 1'，表示当前正在对该内存区域进行清理。(注释：理解为重新清理过程中的状态，从新清理是-2,过程中会+1，所以状态为-1)
-	// 如果'sweepgen'等于'h->sweepgen'，表示该内存区域已经被清理并可以使用。
-	// 如果'sweepgen'等于'h->sweepgen + 1'，表示在清理开始之前该内存区域已经被缓存，仍然处于缓存状态，需要进行清理。
-	// 如果'sweepgen'等于'h->sweepgen + 3'，表示该内存区域已经被清理过并且被缓存，仍然处于缓存状态。
-	// 'h->sweepgen'在每次垃圾回收后会增加2。
+	// 如果sweepgen == h->sweepgen - 2，【需要清理、未缓存】span(跨度)需要清扫。(注释：理解为重新清扫一下，因为每次清扫完成后会自动加2)
+	// 如果sweepgen == h->sweepgen - 1，【正在清理、未缓存】span(跨度)正在扫描。(注释：理解为重新清理过程中的状态，从新清理是-2,过程中会+1，所以状态为-1)
+	// 如果sweepgen == h->sweepgen，    【已经清理、未缓存】span(跨度)已扫过并准备使用。
+	// 如果sweepgen == h->sweepgen + 1，【需要清理、已缓存】span(跨度)在扫描开始前在mcache缓存中，现在仍在mchche缓存中，需要扫描
+	// 如果sweepgen == h->sweepgen + 3，【无需清理、已缓存】span(跨度)已经被扫描，并放到mcache缓存中
+	// h->sweepgen在每次垃圾回收后会增加2。
 
-	sweepgen    uint32        // 注释：备份mheap的sweepgen字段，用于加3操作(s.sweepgen = mheap_.sweepgen + 3)，mheap.sweepgen 中是每次清扫完成后会加2
+	sweepgen    uint32        // 注释：向 mheap.sweepgen 标记看齐
 	divMul      uint16        // for divide by elemsize - divMagic.mul
 	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
 	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects

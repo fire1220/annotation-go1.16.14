@@ -147,6 +147,7 @@ retry:
 
 // pop removes and returns a span from buffer b, or nil if b is empty.
 // pop is safe to call concurrently with other pop and push operations.
+// 注释：从spanSet中出栈（获取）一个span(spanSet类型用于有空闲/无空闲的sapn，这两个字段中分别包含被GC扫描和未扫描两部分的span链表，pop这个方法是针对span链表出栈使用)
 func (b *spanSet) pop() *mspan {
 	var head, tail uint32
 claimLoop:

@@ -107,9 +107,9 @@ func (h *mheap) nextSpanForSweep() *mspan {
 		c := &h.central[spc].mcentral
 		var s *mspan
 		if full {
-			s = c.fullUnswept(sg).pop()
+			s = c.fullUnswept(sg).pop() // 注释：从无空闲span并且未被GC扫描的链表中的获取
 		} else {
-			s = c.partialUnswept(sg).pop()
+			s = c.partialUnswept(sg).pop() // 注释：从有空闲span并且未被GC扫描的链表中的获取
 		}
 		if s != nil {
 			// Write down that we found something so future sweepers

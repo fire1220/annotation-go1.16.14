@@ -66,26 +66,34 @@ func (c *mcentral) init(spc spanClass) {
 
 // partialUnswept returns the spanSet which holds partially-filled
 // unswept spans for this sweepgen.
+// 注释：（有空闲、未扫描）有空闲并且未被GC扫描的span
+// 注释：每两个为一组（舍去一位然后取模）
 func (c *mcentral) partialUnswept(sweepgen uint32) *spanSet {
-	return &c.partial[1-sweepgen/2%2]
+	return &c.partial[1-sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.partial[sweepgen>>1&1 ^ 1]
 }
 
 // partialSwept returns the spanSet which holds partially-filled
 // swept spans for this sweepgen.
+// 注释：（有空闲、已扫描）有空闲并且被GC扫描的span
+// 注释：每两个为一组（舍去一位然后取模）
 func (c *mcentral) partialSwept(sweepgen uint32) *spanSet {
-	return &c.partial[sweepgen/2%2]
+	return &c.partial[sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.partial[sweepgen>>1&1]
 }
 
 // fullUnswept returns the spanSet which holds unswept spans without any
 // free slots for this sweepgen.
+// 注释：(无空闲、未扫描)无空闲并且未被GC扫描的span
+// 注释：每两个为一组（舍去一位然后取模）
 func (c *mcentral) fullUnswept(sweepgen uint32) *spanSet {
-	return &c.full[1-sweepgen/2%2]
+	return &c.full[1-sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.full[sweepgen>>1&1 ^ 1]
 }
 
 // fullSwept returns the spanSet which holds swept spans without any
 // free slots for this sweepgen.
+// 注释：(无空闲、已扫描)无空闲并且被GC扫描的span
+// 注释：每两个为一组（舍去一位然后取模）
 func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
-	return &c.full[sweepgen/2%2]
+	return &c.full[sweepgen/2%2] // 注释：代码贡献者大意了！安装之前的惯例写法应该是  return &c.full[sweepgen>>1&1]
 }
 
 // Allocate a span to use in an mcache.

@@ -221,29 +221,30 @@ func (c *mcentral) uncacheSpan(s *mspan) {
 	}
 
 	sg := mheap_.sweepgen       // 注释：获取mheap.sweepgen
-	stale := s.sweepgen == sg+1 // 注释：获取状态，是否是中间态（是否是扫描中）
+	stale := s.sweepgen == sg+1 // 注释：是否需要清理【需要清扫、已缓存】
 
 	// Fix up sweepgen.
-	if stale { // 注释：是扫描中
+	// 注释：根据清扫状态修改清扫标识
+	if stale { // 注释：需要清扫
 		// Span was cached before sweep began. It's our
 		// responsibility to sweep it.
 		//
 		// Set sweepgen to indicate it's not cached but needs
 		// sweeping and can't be allocated from. sweep will
 		// set s.sweepgen to indicate s is swept.
-		atomic.Store(&s.sweepgen, sg-1)
-	} else {
+		atomic.Store(&s.sweepgen, sg-1) // 注释：设置标识【正在清扫、未缓存】
+	} else { // 注释：不需要清理
 		// Indicate that s is no longer cached.
-		atomic.Store(&s.sweepgen, sg)
+		atomic.Store(&s.sweepgen, sg) // 注释：设置标识【已经清扫、未缓存】
 	}
 
 	// Put the span in the appropriate place.
-	if stale {
+	if stale { // 注释：需要清扫
 		// It's stale, so just sweep it. Sweeping will put it on
 		// the right list.
-		s.sweep(false)
+		s.sweep(false) // 注释：执行清扫标记工作
 	} else {
-		if int(s.nelems)-int(s.allocCount) > 0 {
+		if int(s.nelems)-int(s.allocCount) > 0 { // 注释：存在未分配的块(如果span(跨度)里的块 - 已经分配的块 > 0)
 			// Put it back on the partial swept list.
 			c.partialSwept(sg).push(s)
 		} else {

@@ -220,8 +220,8 @@ func (c *mcentral) uncacheSpan(s *mspan) {
 		throw("uncaching span but s.allocCount == 0")
 	}
 
-	sg := mheap_.sweepgen
-	stale := s.sweepgen == sg+1
+	sg := mheap_.sweepgen       // 注释：获取mheap.sweepgen
+	stale := s.sweepgen == sg+1 // 注释：获取状态，是否是中间态（扫描中）
 
 	// Fix up sweepgen.
 	if stale {

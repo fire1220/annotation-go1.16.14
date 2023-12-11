@@ -485,14 +485,14 @@ type mspan struct {
 	// if sweepgen == h->sweepgen + 3, the span was swept and then cached and is still cached
 	// h->sweepgen is incremented by 2 after every GC
 	// 注释：清理阶段
-	// 如果'sweepgen'等于'h->sweepgen - 2'，表示该内存区域需要进行清理。
-	// 如果'sweepgen'等于'h->sweepgen - 1'，表示当前正在对该内存区域进行清理。
+	// 如果'sweepgen'等于'h->sweepgen - 2'，表示该内存区域需要进行清理。(注释：理解为重新清扫一下，因为每次清扫完成后会自动加2)
+	// 如果'sweepgen'等于'h->sweepgen - 1'，表示当前正在对该内存区域进行清理。(注释：理解为重新清理过程中的状态，从新清理是-2,过程中会+1，所以状态为-1)
 	// 如果'sweepgen'等于'h->sweepgen'，表示该内存区域已经被清理并可以使用。
 	// 如果'sweepgen'等于'h->sweepgen + 1'，表示在清理开始之前该内存区域已经被缓存，仍然处于缓存状态，需要进行清理。
 	// 如果'sweepgen'等于'h->sweepgen + 3'，表示该内存区域已经被清理过并且被缓存，仍然处于缓存状态。
 	// 'h->sweepgen'在每次垃圾回收后会增加2。
 
-	sweepgen    uint32
+	sweepgen    uint32        // 注释：备份mheap的sweepgen字段，用于加3操作(s.sweepgen = mheap_.sweepgen + 3)，mheap.sweepgen 中是每次清扫完成后会加2
 	divMul      uint16        // for divide by elemsize - divMagic.mul
 	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
 	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects

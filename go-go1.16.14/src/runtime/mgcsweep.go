@@ -57,17 +57,19 @@ type sweepdata struct {
 
 // sweepClass is a spanClass and one bit to represent whether we're currently
 // sweeping partial or full spans.
-type sweepClass uint32
+type sweepClass uint32 // 注释：span的对象ID和所属队列标识，最有一位是1表示无空闲(full)队列，0表示有空闲(partial)队列
 
 const (
 	numSweepClasses            = numSpanClasses * 2
 	sweepClassDone  sweepClass = sweepClass(^uint32(0))
 )
 
+// 注释：获取数据
 func (s *sweepClass) load() sweepClass {
 	return sweepClass(atomic.Load((*uint32)(s)))
 }
 
+// 注释：更新数据
 func (s *sweepClass) update(sNew sweepClass) {
 	// Only update *s if its current value is less than sNew,
 	// since *s increases monotonically.
@@ -82,6 +84,7 @@ func (s *sweepClass) update(sNew sweepClass) {
 	// like RISC-V however have native support for an atomic max.
 }
 
+// 注释：清楚数据
 func (s *sweepClass) clear() {
 	atomic.Store((*uint32)(s), 0)
 }
@@ -90,7 +93,8 @@ func (s *sweepClass) clear() {
 // whether we're interested in the full or partial
 // unswept lists for that class, indicated as a boolean
 // (true means "full").
-// 注释：span对象ID的前7位表示ID，最后一位表示是否需要扫描，0是1否(需要扫描说明span存在指针)
+// 注释：拆分数据
+// 注释：返回span的对象ID和所属队列标识，最有一位是1表示无空闲(full)队列，0表示有空闲(partial)队列
 func (s sweepClass) split() (spc spanClass, full bool) {
 	return spanClass(s >> 1), s&1 == 0
 }
@@ -106,7 +110,7 @@ func (h *mheap) nextSpanForSweep() *mspan {
 		spc, full := sc.split() // 注释：分隔成cpan对象ID和是否需要扫描标识
 		c := &h.central[spc].mcentral
 		var s *mspan
-		if full {
+		if full { // 注释：比较是否未被GC扫描
 			s = c.fullUnswept(sg).pop() // 注释：从无空闲span并且未被GC扫描的链表中的获取
 		} else {
 			s = c.partialUnswept(sg).pop() // 注释：从有空闲span并且未被GC扫描的链表中的获取

@@ -18,6 +18,7 @@ import (
 //
 // Many of these fields are updated on the fly, while others are only
 // updated when updatememstats is called.
+// 注释：全局统计数据
 type mstats struct {
 	// General statistics.
 	alloc       uint64 // bytes allocated and not yet freed

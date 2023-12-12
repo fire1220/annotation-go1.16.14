@@ -1077,6 +1077,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				releasem(mp)                     // 注释：解除锁定
 				return x                         // 注释：返回申请后的内存首地址
 			}
+			// 注释：上面是旧的块，下面是新的块
 			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
 			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
 			span = c.alloc[tinySpanClass] // 注释：(到mcache里拿对应的span)到线程缓存中获取微小对象结构体
@@ -1085,13 +1086,13 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				v, span, shouldhelpgc = c.nextFree(tinySpanClass) // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 			}
 			x = unsafe.Pointer(v)
-			(*[2]uint64)(x)[0] = 0
-			(*[2]uint64)(x)[1] = 0
+			(*[2]uint64)(x)[0] = 0 // 注释：清理地址对应的元素内存
+			(*[2]uint64)(x)[1] = 0 // 注释：清理地址对应的元素内存
 			// See if we need to replace the existing tiny block with the new one
 			// based on amount of remaining free space.
-			if size < c.tinyoffset || c.tiny == 0 {
-				c.tiny = uintptr(x)
-				c.tinyoffset = size
+			if size < c.tinyoffset || c.tiny == 0 { // 注释：size表示新块偏移量，新块偏移量如果小于旧块的偏移量说明新块剩余空间大，则用新块进行分配，否则沿用旧块数据
+				c.tiny = uintptr(x) // 注释：重置新块地址
+				c.tinyoffset = size // 注释：重置新块偏移量
 			}
 			size = maxTinySize
 		} else { // 注释：大于等于16小于等于32KB表示小对象处理

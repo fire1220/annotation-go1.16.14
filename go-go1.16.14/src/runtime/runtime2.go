@@ -725,7 +725,8 @@ type p struct {
 
 	// statsSeq is a counter indicating whether this P is currently
 	// writing any stats. Its value is even when not, odd when it is.
-	statsSeq uint32
+	// 注释：译：statsSeq是一个计数器，指示此P当前是否正在写入任何统计数据。它的值不是偶数时为偶数，是奇数时为奇数。
+	statsSeq uint32 // 注释：给consistentHeapStats加锁（这个字段是P计数器锁，奇数是给consistentHeapStats加锁，偶数是给consistentHeapStats解锁）memstats.heapStats.acquire()加锁，release解锁
 
 	// Lock for timers. We normally access the timers while running
 	// on this P, but the scheduler can also do it from a different P.

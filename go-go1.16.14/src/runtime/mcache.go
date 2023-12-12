@@ -162,7 +162,7 @@ func getMCache() *mcache {
 //		2.把旧span放到中心缓存mcentral的已清里队列中
 //		3.从中心缓存获取一个新的span
 //		4.设置span状态为【无需清理、已缓存】
-//		5.
+//		5.重新设置mcache的span值
 func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
 	s := c.alloc[spc] // 注释：获取旧span，在mcache中取出span（此时span中的块都已经分配完了）
@@ -221,9 +221,9 @@ func (c *mcache) refill(spc spanClass) {
 		// heap_live changed.
 		traceHeapAlloc()
 	}
-	if gcBlackenEnabled != 0 { // 注释：如果不延迟标记，则立刻标记涂黑色
+	if gcBlackenEnabled != 0 { // 注释：如果GC正在标记
 		// heap_live and heap_scan changed.
-		gcController.revise() // 注释：GC标记涂黑色
+		gcController.revise() // 注释：【ing】
 	}
 
 	c.alloc[spc] = s

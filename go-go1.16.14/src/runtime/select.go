@@ -315,7 +315,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	}
 
 	// pass 2 - enqueue on all chans
-	// 注释：情况2 【ing...】
+	// 注释：情况2 【ing】
 	gp = getg()
 	if gp.waiting != nil {
 		throw("gp.waiting != nil")

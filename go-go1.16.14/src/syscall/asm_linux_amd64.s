@@ -35,7 +35,7 @@ TEXT ·Syscall(SB),NOSPLIT,$0-56         // 注释：函数名Syscall；NOSPLIT�
 	MOVQ	$0, r2+40(FP)               // 注释：把0放到第二个返回值里
 	NEGQ	AX                          // 注释：把AX寄存器的值取反（AX = -AX）
 	MOVQ	AX, err+48(FP)              // 注释：把取反后的AX值放到第三个返回值里
-	CALL	runtime·exitsyscall(SB)     // 注释：执行系统后的后置动作【ing...】
+	CALL	runtime·exitsyscall(SB)     // 注释：执行系统后的后置动作【ing】
 	RET                                 // 注释：函数返回
 ok:                                     // 注释：该标签表示系统调用成功
 	MOVQ	AX, r1+32(FP)               // 注释：把AX(系统调用的第1个返回值)的值放到第一个返回值里

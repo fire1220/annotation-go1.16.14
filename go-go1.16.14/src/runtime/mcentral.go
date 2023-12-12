@@ -151,7 +151,7 @@ func (c *mcentral) cacheSpan() *mspan {
 		}
 		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) { // 注释：如果需要清理，则更改为正在清理
 			// We got ownership of the span, so let's sweep it and use it.
-			s.sweep(true) // 注释：执行清理动作
+			s.sweep(true) // 注释：执行清理动作 【ing】
 			goto havespan
 		}
 		// We failed to get ownership of the span, which means it's being or

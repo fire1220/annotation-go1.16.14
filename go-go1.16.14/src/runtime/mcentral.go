@@ -163,16 +163,16 @@ func (c *mcentral) cacheSpan() *mspan {
 	}
 	// Now try full unswept spans, sweeping them and putting them into the
 	// right list if we fail to get a span.
-	for ; spanBudget >= 0; spanBudget-- {
-		s = c.fullUnswept(sg).pop()
-		if s == nil {
+	for ; spanBudget >= 0; spanBudget-- { // 注释：如果【有空间、未清理】里没有找到并且还没有达到阀值时
+		s = c.fullUnswept(sg).pop() // 注释：到【无空闲、为清理】队列中出栈一个span
+		if s == nil {               // 注释：如果没有找到跳过
 			break
 		}
-		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
+		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) { // 注释：如果状态是【需要清理、未缓存】时设置状态为【正在清理、未缓存】
 			// We got ownership of the span, so let's sweep it.
-			s.sweep(true)
+			s.sweep(true) // 注释：执行清理动作，并且把清理后的位图放到 mheap.allocBits 里
 			// Check if there's any free space.
-			freeIndex := s.nextFreeIndex()
+			freeIndex := s.nextFreeIndex() // 注释：重新到mheap.allocBits中获取，并缓存到mheap.allocCache快速缓存中
 			if freeIndex != s.nelems {
 				s.freeindex = freeIndex
 				goto havespan

@@ -885,6 +885,12 @@ func nextFreeFast(s *mspan) gclinkptr {
 //
 // 注释：尝试到mcache下span的allocBits里找，如果找到了则拿出一个块，并把后面的64个块放到mcache.allocCache快速缓存里；
 // 注释：如果没有找到或是最后一个块时则到mcental里获取一个新的span，并缓存到mcache里，确保mcache里必须有空的块提供使用
+// 注释：函数步骤
+// 		1.尝试从旧span中获取空块
+//		2.获取新的span，并获取空块
+//		3.新span替换旧span放到mcache线程缓存中
+// 		4.从新span中获取空块，并且自增已分配的块的数量
+// 		5.返回：空块的指针、新span地址、是否申请新的span
 func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bool) {
 	s = c.alloc[spc] // 注释：获取mcache中缓存的span(mcache中会保证span都是有空闲块的，如果全部分配后悔继续填装新的空span)
 	shouldhelpgc = false
@@ -895,19 +901,19 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
-		c.refill(spc) // 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
-		shouldhelpgc = true
-		s = c.alloc[spc]
+		c.refill(spc)       // 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
+		shouldhelpgc = true // 注释：是否申请新的span
+		s = c.alloc[spc]    //	注释：新span地址
 
-		freeIndex = s.nextFreeIndex()
+		freeIndex = s.nextFreeIndex() // 注释：重新获取空块下标
 	}
 
 	if freeIndex >= s.nelems {
 		throw("freeIndex is not valid")
 	}
 
-	v = gclinkptr(freeIndex*s.elemsize + s.base())
-	s.allocCount++
+	v = gclinkptr(freeIndex*s.elemsize + s.base()) // 注释：返回空块对应的指针
+	s.allocCount++                                 // 注释：已分配的块自增
 	if uintptr(s.allocCount) > s.nelems {
 		println("s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 		throw("s.allocCount > s.nelems")

@@ -174,9 +174,14 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 // 注释：nextFreeIndex返回s中s.freeindex处或之后的下一个可用对象的索引。如果配置文件允许，可以使用一些硬件指令加快此操作。
 //
 // 注释：返回空闲对象块下标，并把空闲下标块指针向后移动一位(因为本次拿出来认为已经被使用),如果快速缓存区已经用完了，会继续向后缓存64个块到快速缓存区里
+// 注释：函数执行动作(当前函数只是在一个span中获取空块，优先去快速缓存找，如果没有找到则去allocBits中拿出一批放到快速缓存里继续找)
+//		1.获取span的数据（包括：下一个空块下标、已分配的个数、span分配位图）
+//		2.如果span所有块全部分配，则到allocBits中拿出64位放到快速缓存allocCache里，并且重新计算尾0
+// 		3.如果下一个空闲块下标大于总块数，则返回总块数，（外层会判断处理）
+// 		4.返回空闲块下标
 func (s *mspan) nextFreeIndex() uintptr {
-	sfreeindex := s.freeindex  // 注释：获取空闲对象块下标位置
-	snelems := s.nelems        // 注释：获取当前span可容纳的对象个数
+	sfreeindex := s.freeindex  // 注释：下一个空闲块下标
+	snelems := s.nelems        // 注释：已分配的块数量（获取当前span可容纳的对象个数）
 	if sfreeindex == snelems { // 注释：如果当前空闲对象块和最大可容纳的对象块数量相对，则返回最后一个可用对象块空闲下标
 		return sfreeindex
 	}
@@ -184,9 +189,9 @@ func (s *mspan) nextFreeIndex() uintptr {
 		throw("s.freeindex > s.nelems")
 	}
 
-	aCache := s.allocCache // 注释：获取span中的快速缓存（只能缓存64位）
+	aCache := s.allocCache // 注释：快速缓存
 
-	bitIndex := sys.Ctz64(aCache) // 注释：(获取尾部0个数)获取已经分配的内存块数量
+	bitIndex := sys.Ctz64(aCache) // 注释：快速缓存尾0个数，如果全部分配完成则为64(获取已经分配的内存块数量)
 	for bitIndex == 64 {          // 注释：如果全部都已经被分配了
 		// Move index to start of next cached bits.
 		// 注释：将索引移动到下一个缓存位的开头。
@@ -205,7 +210,7 @@ func (s *mspan) nextFreeIndex() uintptr {
 		// grab the next 8 bytes and try again.
 	}
 	result := sfreeindex + uintptr(bitIndex) // 注释：重新计算空闲块位置
-	if result >= snelems {                   // 注释：如果空闲的位置大于总块数时
+	if result >= snelems {                   // 注释：新span已分配的块和旧span已分配的块比较(result是空闲的位置，新span是从0开始，所以也是新span的已分配的块数量)
 		s.freeindex = snelems // 注释：空闲下标设置成最大值
 		return snelems        // 注释：返回最大块数
 	}

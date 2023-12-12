@@ -158,7 +158,7 @@ type mheap struct {
 	// platforms (even 64-bit), arenaL1Bits is 0, making this
 	// effectively a single-level map. In this case, arenas[0]
 	// will never be nil.
-	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena
+	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena // 注释：arenas[1]*[1<<22]*heapArena ，每个heapArena是64M，所以这里管理了 64M << 22 = 256TB
 
 	// heapArenaAlloc is pre-reserved space for allocating heapArena
 	// objects. This is only used on 32-bit, where we pre-reserve

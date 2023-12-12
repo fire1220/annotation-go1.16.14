@@ -157,14 +157,20 @@ func getMCache() *mcache {
 // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 //
 // 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
+// 注释：函数步骤：
+//		1.获取旧span
+//		2.把旧span放到中心缓存mcentral的已清里队列中
+//		3.从中心缓存获取一个新的span
+//		4.设置span状态为【无需清理、已缓存】
+//		5.
 func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
-	s := c.alloc[spc] // 注释：在mcache中取出span（此时span中的块都已经分配完了）
+	s := c.alloc[spc] // 注释：获取旧span，在mcache中取出span（此时span中的块都已经分配完了）
 
 	if uintptr(s.allocCount) != s.nelems { // 注释：校验如果全部的块没有分配完则报错
 		throw("refill of span with free space remaining")
 	}
-	if s != &emptymspan { // 注释：初始化的时候会赋值为&emptymspan
+	if s != &emptymspan { // 注释：如果非空，初始化的时候会赋值为&emptymspan
 		// Mark this span as no longer cached.
 		// 注释：将此跨度标记为不再缓存。
 		if s.sweepgen != mheap_.sweepgen+3 {
@@ -175,7 +181,7 @@ func (c *mcache) refill(spc spanClass) {
 
 	// Get a new cached span from the central lists.
 	// 注释：从中心列表中获取新的缓存span。
-	s = mheap_.central[spc].mcentral.cacheSpan() // 注释：从中心缓存mcental中获取span并缓存起来
+	s = mheap_.central[spc].mcentral.cacheSpan() // 注释：从中心缓存mcental中获取span并缓存起来【ing】
 	if s == nil {
 		throw("out of memory")
 	}
@@ -186,10 +192,12 @@ func (c *mcache) refill(spc spanClass) {
 
 	// Indicate that this span is cached and prevent asynchronous
 	// sweeping in the next sweep phase.
-	s.sweepgen = mheap_.sweepgen + 3
+	// 注释：译：指示此跨度已缓存，并在下一个扫描阶段阻止异步扫描。
+	s.sweepgen = mheap_.sweepgen + 3 // 注释：设置状态【无需清理、已缓存】
 
 	// Assume all objects from this span will be allocated in the
 	// mcache. If it gets uncached, we'll adjust this.
+	// 注释：译：假设此跨度中的所有对象都将被分配到mcache中。如果它被解开，我们会调整它。
 	stats := memstats.heapStats.acquire()
 	atomic.Xadduintptr(&stats.smallAllocCount[spc.sizeclass()], uintptr(s.nelems)-uintptr(s.allocCount))
 	memstats.heapStats.release()
@@ -213,9 +221,9 @@ func (c *mcache) refill(spc spanClass) {
 		// heap_live changed.
 		traceHeapAlloc()
 	}
-	if gcBlackenEnabled != 0 {
+	if gcBlackenEnabled != 0 { // 注释：如果不延迟标记，则立刻标记涂黑色
 		// heap_live and heap_scan changed.
-		gcController.revise()
+		gcController.revise() // 注释：GC标记涂黑色
 	}
 
 	c.alloc[spc] = s

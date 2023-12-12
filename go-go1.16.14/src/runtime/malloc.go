@@ -213,6 +213,7 @@ const (
 	// to a 48-bit address space like every other arm64 platform.
 	//
 	// WebAssembly currently has a limit of 4GB linear memory.
+	// 注释：heapAddrBits = 48
 	heapAddrBits = (_64bit*(1-sys.GoarchWasm)*(1-sys.GoosIos*sys.GoarchArm64))*48 + (1-_64bit+sys.GoarchWasm)*(32-(sys.GoarchMips+sys.GoarchMipsle)) + 40*sys.GoosIos*sys.GoarchArm64
 
 	// maxAlloc is the maximum size of an allocation. On 64-bit,
@@ -254,6 +255,7 @@ const (
 	// prefer using heapArenaBytes where possible (we need the
 	// constant to compute some other constants).
 	// 注释：logHeapArenaBytes是heapArenaBytes的log_2。为了清楚起见，尽可能使用heapArenaBytes（我们需要常数来计算其他一些常数）。
+	// 注释：logHeapArenaBytes = 26
 	logHeapArenaBytes = (6+20)*(_64bit*(1-sys.GoosWindows)*(1-sys.GoarchWasm)) + (2+20)*(_64bit*sys.GoosWindows) + (2+20)*(1-_64bit) + (2+20)*sys.GoarchWasm
 
 	// heapArenaBitmapBytes is the size of each heap arena's bitmap.
@@ -283,7 +285,7 @@ const (
 	// 1<<arenaL2Bits, so it's important that this not be too
 	// large. 48 bits leads to 32MB arena index allocations, which
 	// is about the practical threshold.
-	arenaL2Bits = heapAddrBits - logHeapArenaBytes - arenaL1Bits
+	arenaL2Bits = heapAddrBits - logHeapArenaBytes - arenaL1Bits // 注释：48 - 26 - 0 = 22
 
 	// arenaL1Shift is the number of bits to shift an arena frame
 	// number by to compute an index into the first level arena map.

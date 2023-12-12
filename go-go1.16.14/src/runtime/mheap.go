@@ -64,7 +64,7 @@ type mheap struct {
 	// could self-deadlock if its stack grows with the lock held.
 	lock      mutex     // 注释：互斥锁
 	pages     pageAlloc // 注释：指向spans区域，用于映射span和page的关系(页面分配数据结构) // page allocation data structure
-	sweepgen  uint32    // 注释：GC扫描的计数器(GC扫描版本)（每次GC开始处加2）// sweep generation, see comment in mspan; written during STW
+	sweepgen  uint32    // 注释：GC清理的计数器(GC清理版本)（每次GC清理开始处自增2）// sweep generation, see comment in mspan; written during STW
 	sweepdone uint32    // 注释：所有的内存区块（span）都已经被扫描和清理了 // all spans are swept
 	sweepers  uint32    // 注释：活动的处理sweepdone的数量 // number of active sweepone calls
 
@@ -313,6 +313,7 @@ type arenaHint struct {
 }
 
 // An mspan is a run of pages.
+// 注释：译：mspan是一组页面。
 //
 // When a mspan is in the heap free treap, state == mSpanFree
 // and heapmap(s->start) == span, heapmap(s->start+s->npages-1) == span.
@@ -347,21 +348,23 @@ type arenaHint struct {
 // before depending on other fields. This allows the garbage collector
 // to safely deal with potentially invalid pointers, since resolving
 // such pointers may race with a span being allocated.
-type mSpanState uint8
+type mSpanState uint8 // 注释：span的状态（内存管理单元的状态）
 
+// 注释：span的状态，一共有4中状态，这里第四中状态没有定义，第四中状态值为3，下面状态码映射名称的map里有定义
 const (
-	mSpanDead   mSpanState = iota
-	mSpanInUse             // allocated for garbage collected heap
-	mSpanManual            // allocated for manual management (e.g., stack allocator)
+	mSpanDead   mSpanState = iota // 注释：内存已回收，初始化时或将跨度span释放回堆中时设置
+	mSpanInUse                    // 注释：无空闲（已经被分配）// allocated for garbage collected heap
+	mSpanManual                   // 注释：无空闲（已经被分配）分配用于手动管理 // allocated for manual management (e.g., stack allocator)
 )
 
 // mSpanStateNames are the names of the span states, indexed by
 // mSpanState.
+// 注释：span状态名称：一共有4中状态
 var mSpanStateNames = []string{
-	"mSpanDead",
-	"mSpanInUse",
-	"mSpanManual",
-	"mSpanFree",
+	"mSpanDead",   // 注释：内存已回收，初始化时或将跨度span释放回堆中时设置
+	"mSpanInUse",  // 注释：无空闲（已经被分配）
+	"mSpanManual", // 注释：无空闲（已经被分配）分配用于手动管理
+	"mSpanFree",   // 注释：有空闲（在空闲堆中）
 }
 
 // mSpanStateBox holds an mSpanState and provides atomic operations on
@@ -485,11 +488,11 @@ type mspan struct {
 	// if sweepgen == h->sweepgen + 3, the span was swept and then cached and is still cached
 	// h->sweepgen is incremented by 2 after every GC
 	// 注释：清理阶段
-	// 如果sweepgen == h->sweepgen - 2，【需要清扫、未缓存】span(跨度)需要清扫标记。(注释：理解为重新清扫一下，因为每次清扫完成后会自动加2)
-	// 如果sweepgen == h->sweepgen - 1，【正在清扫、未缓存】span(跨度)正在扫描标记。(注释：理解为重新清理过程中的状态，从新清理是-2,过程中会+1，所以状态为-1)
-	// 如果sweepgen == h->sweepgen，    【已经清扫、未缓存】span(跨度)清扫标记完成，准备使用。
-	// 如果sweepgen == h->sweepgen + 1，【需要清扫、已缓存】span(跨度)在扫描开始前在mcache缓存中，现在仍在mchche缓存中，需要扫描
-	// 如果sweepgen == h->sweepgen + 3，【无需清扫、已缓存】span(跨度)已经被扫描，并放到mcache缓存中
+	// 如果sweepgen == h->sweepgen - 2，【需要清理、未缓存】span(跨度)需要清扫标记。(注释：理解为重新清扫一下，因为每次清扫完成后会自动加2)
+	// 如果sweepgen == h->sweepgen - 1，【正在清理、未缓存】span(跨度)正在扫描标记。(注释：理解为重新清理过程中的状态，从新清理是-2,过程中会+1，所以状态为-1)
+	// 如果sweepgen == h->sweepgen，    【已经清理、未缓存】span(跨度)清扫标记完成，准备使用。
+	// 如果sweepgen == h->sweepgen + 1，【需要清理、已缓存】span(跨度)在扫描开始前在mcache缓存中，现在仍在mchche缓存中，需要扫描
+	// 如果sweepgen == h->sweepgen + 3，【无需清理、已缓存】span(跨度)已经被扫描，并放到mcache缓存中
 	// h->sweepgen在每次垃圾回收后会增加2。
 
 	sweepgen    uint32        // 注释：向 mheap.sweepgen 标记看齐
@@ -497,7 +500,7 @@ type mspan struct {
 	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
 	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects
 	spanclass   spanClass     // 注释：span的ID(也叫做对象ID，对应【class】字段，位置：/src/runtime/sizeclasses.go) // size class and noscan (uint8)
-	state       mSpanStateBox // mSpanInUse etc; accessed atomically (get/set methods)
+	state       mSpanStateBox // 注释：span的状态 // mSpanInUse etc; accessed atomically (get/set methods)
 	needzero    uint8         // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2

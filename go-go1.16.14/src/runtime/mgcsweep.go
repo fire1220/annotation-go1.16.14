@@ -331,15 +331,15 @@ func (s *mspan) ensureSwept() {
 // Returns true if the span was returned to heap.
 // If preserve=true, don't return it to heap nor relink in mcentral lists;
 // caller takes care of it.
-// 注释：执行清扫标记工作
+// 注释：执行清理动作
 func (s *mspan) sweep(preserve bool) bool {
 	// It's critical that we enter this function with preemption disabled,
 	// GC must not start while we are in the middle of this function.
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前G
 	if _g_.m.locks == 0 && _g_.m.mallocing == 0 && _g_ != _g_.m.g0 {
 		throw("mspan.sweep: m is not locked")
 	}
-	sweepgen := mheap_.sweepgen
+	sweepgen := mheap_.sweepgen // 注释：获取GC清理计数器
 	if state := s.state.get(); state != mSpanInUse || s.sweepgen != sweepgen-1 {
 		print("mspan.sweep: state=", state, " sweepgen=", s.sweepgen, " mheap.sweepgen=", sweepgen, "\n")
 		throw("mspan.sweep: bad span state")
@@ -651,7 +651,7 @@ func (s *mspan) reportZombies() {
 //
 // mheap_ must NOT be locked.
 //
-// 注释：减低清扫积分spanBytes是一个span的大小
+// 注释：减低清理积分spanBytes是一个span的大小
 func deductSweepCredit(spanBytes uintptr, callerSweepPages uintptr) {
 	if mheap_.sweepPagesPerByte == 0 {
 		// Proportional sweep is done or disabled.

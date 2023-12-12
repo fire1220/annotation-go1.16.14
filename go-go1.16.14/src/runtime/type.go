@@ -38,7 +38,7 @@ type _type struct {
 	tflag      tflag   // 注释：标志
 	align      uint8   // 注释：类型的内存对齐
 	fieldAlign uint8   // 注释：字段内存对齐
-	kind       uint8   // 注释：基础类型
+	kind       uint8   // 注释：基础类型（包含GC程序类型）
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
 	equal func(unsafe.Pointer, unsafe.Pointer) bool // 注释：比较函数(map中有使用这个对比key是否相等)

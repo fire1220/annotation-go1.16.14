@@ -32,8 +32,8 @@ const (
 	kindStruct
 	kindUnsafePointer
 
-	kindDirectIface = 1 << 5 // 注释：标记接口 eface.data 存储的是值
-	kindGCProg      = 1 << 6
+	kindDirectIface = 1 << 5       // 注释：标记接口 eface.data 存储的是值
+	kindGCProg      = 1 << 6       // 注释：GC程序（GC program）
 	kindMask        = (1 << 5) - 1 // 注释：类型掩码
 )
 

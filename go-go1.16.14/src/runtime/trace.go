@@ -1037,6 +1037,7 @@ func traceGCSTWDone() {
 //
 // traceGCSweepStart must be paired with traceGCSweepDone and there
 // must be no preemption points between these two calls.
+// 注释：标记GC清扫的链路最终开始
 func traceGCSweepStart() {
 	// Delay the actual GCSweepStart event until the first span
 	// sweep. If we don't sweep anything, don't emit any events.

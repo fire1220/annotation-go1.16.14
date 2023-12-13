@@ -65,7 +65,7 @@ type mheap struct {
 	lock      mutex     // 注释：互斥锁
 	pages     pageAlloc // 注释：指向spans区域，用于映射span和page的关系(页面分配数据结构) // page allocation data structure
 	sweepgen  uint32    // 注释：GC清理的计数器(GC清理版本)（每次GC清理开始处自增2）// sweep generation, see comment in mspan; written during STW
-	sweepdone uint32    // 注释：所有的内存区块（span）都已经被扫描和清理了 // all spans are swept
+	sweepdone uint32    // 注释：清理完成标识1是0否(所有的内存区块（span）都已经被清理了) // all spans are swept
 	sweepers  uint32    // 注释：活动的处理sweepdone的数量 // number of active sweepone calls
 
 	// allspans is a slice of all mspans ever created. Each mspan
@@ -205,15 +205,16 @@ type mheap struct {
 	_ uint32 // ensure 64-bit alignment of central
 
 	// central free lists for small size classes.
-	// 注释：central是空闲的小型对象列表
+	// 注释：译：central是空闲的小型对象列表
 	// the padding makes sure that the mcentrals are
 	// spaced CacheLinePadSize bytes apart, so that each mcentral.lock
 	// gets its own cache line.
-	// 注释：填充确保mcentrals的CacheLinePadSize字节间隔开，这样每个mcentral.lock都有自己的缓存行
+	// 注释：译：填充确保mcentrals的CacheLinePadSize字节间隔开，这样每个mcentral.lock都有自己的缓存行
 	// central is indexed by spanClass.
-	// 注释：堆里空闲的mcentral，
+	//
+	// 注释：中心缓存(mcentral)，存在在堆里(mheap)，大对象（对象ID=0）也会缓存到中心缓存里
 	central [numSpanClasses]struct { // 注释：是class对象表的两倍(每种class对应的两个mcentral,分别表示已经被mcache缓存了和没有被mcache缓存)
-		mcentral mcentral                                                                    // 注释：中心缓存mcentral，操作时需要对mheap加锁，包含有空闲和无空闲两个结构，每个结构包含GC已扫描和未扫描的两个span链表
+		mcentral mcentral                                                                    // 注释：中心缓存mcentral，操作时需要对mheap加锁，包含【有空闲】和【无空闲】两个结构，每个结构包含GC【已清理】和【未清理】的两个span链表
 		pad      [cpu.CacheLinePadSize - unsafe.Sizeof(mcentral{})%cpu.CacheLinePadSize]byte // 注释：用来数据对其
 	}
 
@@ -946,15 +947,16 @@ func (s spanAllocType) manual() bool {
 // spanclass indicates the span's size class and scannability.
 //
 // If needzero is true, the memory for the returned span will be zeroed.
+// 注释：申请内存，npages 页数, spanclass 对象ID（包含是否不需要扫描标识）, needzero 是否0填充，返回新的span
 func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan {
 	// Don't do any operations that lock the heap on the G stack.
 	// It might trigger stack growth, and the stack growth code needs
 	// to be able to allocate heap.
 	var s *mspan
-	systemstack(func() {
+	systemstack(func() { // 注释：切换到系统栈执行
 		// To prevent excessive heap growth, before allocating n pages
 		// we need to sweep and reclaim at least n pages.
-		if h.sweepdone == 0 {
+		if h.sweepdone == 0 { // 注释：如果存在没有清理的的数据
 			h.reclaim(npages)
 		}
 		s = h.allocSpan(npages, spanAllocHeap, spanclass)

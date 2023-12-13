@@ -48,8 +48,8 @@ type mcentral struct {
 	//		因此，清除器和mcentral中从未清除列表中消耗的部分可能会遇到已清除的spans，应忽略这些跨度。
 	//
 	// 注释：数组两个元素表示GC未扫描和已扫描的span链表，通过GC计数器进行数据含义切换(未扫描变成已扫码，已扫码变成为扫描)
-	partial [2]spanSet // 注释：有空闲的span链表 // list of spans with a free object
-	full    [2]spanSet // 注释：无空闲的span链表(数组两个元素表示GC未扫描和已扫描的span链表，通过GC计数器进行数据含义切换) // list of spans with no free objects
+	partial [2]spanSet // 注释：【有空闲】的span链表(两个元素分别表示GC【已清理】和【未清理】两类数组，通过清理计数器来区分，清理开始的时候计数器自增2) // list of spans with a free object
+	full    [2]spanSet // 注释：【无空闲】的span链表(两个元素分别表示GC【已清理】和【未清理】两类数组，通过清理计数器来区分，清理开始的时候计数器自增2) // list of spans with no free objects
 }
 
 // Initialize a single central free list.

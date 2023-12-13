@@ -651,7 +651,7 @@ func (s *mspan) reportZombies() {
 //
 // mheap_ must NOT be locked.
 //
-// 注释：减低清理积分spanBytes是一个span的大小
+// 注释：减低清理积分spanBytes是一个span的大小【ing】
 func deductSweepCredit(spanBytes uintptr, callerSweepPages uintptr) {
 	if mheap_.sweepPagesPerByte == 0 {
 		// Proportional sweep is done or disabled.

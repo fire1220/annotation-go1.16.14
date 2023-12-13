@@ -501,7 +501,7 @@ type mspan struct {
 	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects
 	spanclass   spanClass     // 注释：span的ID(也叫做对象ID，对应【class】字段，位置：/src/runtime/sizeclasses.go) // size class and noscan (uint8)
 	state       mSpanStateBox // 注释：span的状态 // mSpanInUse etc; accessed atomically (get/set methods)
-	needzero    uint8         // needs to be zeroed before allocation
+	needzero    uint8         // 注释：需要在分配前归零(零填充)，1是0否 // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2
 	elemsize    uintptr       // 注释：存储的单个对象大小；(对应class表中的【bytes/obj】字段,地址:/src/runtime/sizeclasses.go) // computed from sizeclass or from npages

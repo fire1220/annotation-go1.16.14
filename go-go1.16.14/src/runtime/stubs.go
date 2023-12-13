@@ -92,10 +92,8 @@ func badsystemstack() {
 //
 // The (CPU-specific) implementations of this function are in memclr_*.s.
 //
-// 注释：ptr指针向后删除n个字节
-//
 //go:noescape
-func memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr)
+func memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) // 注释：0填充ptr指针向后n个字节，初始化内存（清空内存，用于申请后的0填充动作，汇编实现）
 
 //go:linkname reflect_memclrNoHeapPointers reflect.memclrNoHeapPointers
 func reflect_memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) {
@@ -359,11 +357,13 @@ func alignUp(n, a uintptr) uintptr {
 }
 
 // alignDown rounds n down to a multiple of a. a must be a power of 2.
+// 注释：向下取a整
 func alignDown(n, a uintptr) uintptr {
 	return n &^ (a - 1)
 }
 
 // divRoundUp returns ceil(n / a).
+// 注释：向上取a整
 func divRoundUp(n, a uintptr) uintptr {
 	// a is generally a power of two. This will get inlined and
 	// the compiler will optimize the division.

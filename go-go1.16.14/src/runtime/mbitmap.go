@@ -173,6 +173,7 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 // faster if profiling warrants it.
 // 注释：nextFreeIndex返回s中s.freeindex处或之后的下一个可用对象的索引。如果配置文件允许，可以使用一些硬件指令加快此操作。
 //
+// 注释：尝试从mcache下smspan.allocBits中拿出64个放到快速缓存mspan.allocCache中并且踢出一个空块，返回空块位置下标
 // 注释：返回空闲对象块下标，并把空闲下标块指针向后移动一位(因为本次拿出来认为已经被使用),如果快速缓存区已经用完了，会继续向后缓存64个块到快速缓存区里
 // 注释：函数执行动作(当前函数只是在一个span中获取空块，优先去快速缓存找，如果没有找到则去allocBits中拿出一批放到快速缓存里继续找)
 //		1.获取span的数据（包括：下一个空块下标、已分配的个数、span分配位图）

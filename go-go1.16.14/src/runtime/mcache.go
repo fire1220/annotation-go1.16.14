@@ -232,7 +232,7 @@ func (c *mcache) refill(spc spanClass) {
 // allocLarge allocates a span for a large object.
 // 注释：大对象分配，size 分配的大小, needzero 是否需要0填充内存, noscan 是否不包含指针, 返回span对象指针，span对象ID为0
 // 注释：步骤
-// 		1.
+// 		1.计算需要的页数量
 // 		2.
 // 		3.
 // 		4.

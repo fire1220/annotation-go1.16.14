@@ -177,17 +177,20 @@ type mheap struct {
 
 	// allArenas is the arenaIndex of every mapped arena. This can
 	// be used to iterate through the address space.
+	// 注释：译：allArenas是每个映射竞技场的竞技场索引。这可以用于在地址空间中进行迭代。
 	//
 	// Access is protected by mheap_.lock. However, since this is
 	// append-only and old backing arrays are never freed, it is
 	// safe to acquire mheap_.lock, copy the slice header, and
 	// then release mheap_.lock.
+	// 注释：译：访问受到mheap_lock的保护。但是，由于这是仅追加的，并且永远不会释放旧的备份数组，因此可以安全地获取mheap_lock，复制切片标头，然后释放mheap_lock。
 	allArenas []arenaIdx
 
 	// sweepArenas is a snapshot of allArenas taken at the
 	// beginning of the sweep cycle. This can be read safely by
 	// simply blocking GC (by disabling preemption).
-	sweepArenas []arenaIdx
+	// 注释：译：sweepArenas是在扫描周期开始时拍摄的所有Arenas的快照。这可以通过简单地阻塞GC（通过禁用抢占）来安全地读取。
+	sweepArenas []arenaIdx // 注释：是allArenas的快照
 
 	// markArenas is a snapshot of allArenas taken at the beginning
 	// of the mark cycle. Because allArenas is append-only, neither
@@ -779,8 +782,10 @@ func (h *mheap) init() {
 
 // reclaim sweeps and reclaims at least npage pages into the heap.
 // It is called before allocating npage pages to keep growth in check.
+// 注释：译：reclaim将至少npage页扫掠并回收到堆中。它是在分配npage页面之前调用的，以控制增长。
 //
 // reclaim implements the page-reclaimer half of the sweeper.
+// 注释：译：reclaim实现了页面回收器的一半。
 //
 // h.lock must NOT be held.
 func (h *mheap) reclaim(npage uintptr) {
@@ -797,7 +802,7 @@ func (h *mheap) reclaim(npage uintptr) {
 	// Disable preemption so the GC can't start while we're
 	// sweeping, so we can read h.sweepArenas, and so
 	// traceGCSweepStart/Done pair on the P.
-	mp := acquirem()
+	mp := acquirem() // 注释：获取M加锁禁止抢占
 
 	if trace.enabled {
 		traceGCSweepStart()
@@ -948,6 +953,11 @@ func (s spanAllocType) manual() bool {
 //
 // If needzero is true, the memory for the returned span will be zeroed.
 // 注释：申请内存，npages 页数, spanclass 对象ID（包含是否不需要扫描标识）, needzero 是否0填充，返回新的span
+// 注释：步骤
+// 		1.系统栈执行
+// 		2.如果存在没有清理的数据时，执行回收动作
+// 		3.分配内存
+// 		4.如果需要0填充，则0填充初始化内存
 func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan {
 	// Don't do any operations that lock the heap on the G stack.
 	// It might trigger stack growth, and the stack growth code needs
@@ -957,14 +967,14 @@ func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan
 		// To prevent excessive heap growth, before allocating n pages
 		// we need to sweep and reclaim at least n pages.
 		if h.sweepdone == 0 { // 注释：如果存在没有清理的的数据
-			h.reclaim(npages)
+			h.reclaim(npages) // 注释：回收内存(如果存在没有清理的数据时需要回收内存，重新分配)【ing】
 		}
-		s = h.allocSpan(npages, spanAllocHeap, spanclass)
+		s = h.allocSpan(npages, spanAllocHeap, spanclass) // 注释：申请（分配）内存【ing】
 	})
 
 	if s != nil {
-		if needzero && s.needzero != 0 {
-			memclrNoHeapPointers(unsafe.Pointer(s.base()), s.npages<<_PageShift)
+		if needzero && s.needzero != 0 { // 注释：如果需要0填充，并且span.needzero同时也需要0填充时，执行0填充
+			memclrNoHeapPointers(unsafe.Pointer(s.base()), s.npages<<_PageShift) // 注释：初始化内存，0填充，汇编执行
 		}
 		s.needzero = 0
 	}

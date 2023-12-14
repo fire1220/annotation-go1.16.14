@@ -90,13 +90,13 @@ type mheap struct {
 	// to page sweep count. The proportional sweep system works to
 	// stay in the black by keeping the current page sweep count
 	// above this line at the current heap_live.
-	// 注释：这些参数代表了从 heap_live 到页面扫描计数的线性函数。比例扫描系统的工作原理是通过保持当前堆存活量下的页面扫描计数高于该线条来保持在良好状态。
+	// 注释：译：这些参数代表了从heap_live到页面扫描计数的线性函数。比例扫描系统的工作原理是通过保持当前堆存活量下的页面扫描计数高于该线条来保持在良好状态。
 	//
 	// The line has slope sweepPagesPerByte and passes through a
 	// basis point at (sweepHeapLiveBasis, pagesSweptBasis). At
 	// any given time, the system is at (memstats.heap_live,
 	// pagesSwept) in this space.
-	// 注释：这条线的斜率为 sweepPagesPerByte，并通过一个基础点 (sweepHeapLiveBasis, pagesSweptBasis)。在任何给定的时刻，系统在这个空间中处于 (memstats.heap_live, pagesSwept) 的位置。
+	// 注释：译：这条线的斜率为sweepPagesPerByte，并通过一个基础点 (sweepHeapLiveBasis, pagesSweptBasis)。在任何给定的时刻，系统在这个空间中处于 (memstats.heap_live, pagesSwept) 的位置。
 	//
 	// It's important that the line pass through a point we
 	// control rather than simply starting at a (0,0) origin
@@ -104,12 +104,13 @@ type mheap struct {
 	// accounting for current progress. If we could only adjust
 	// the slope, it would create a discontinuity in debt if any
 	// progress has already been made.
-	// 注释：重要的是，该线条通过我们控制的一个点而不是简单地从 (0,0) 原点开始，因为这样可以让我们在任何时候调整扫描步调，同时考虑当前的进展。如果我们只能调整斜率，那么如果已经取得了任何进展，将会产生债务上的不连续性。
+	// 注释：译：重要的是，该线条通过我们控制的一个点而不是简单地从 (0,0) 原点开始，因为这样可以让我们在任何时候调整扫描步调，同时考虑当前的进展。
+	//		如果我们只能调整斜率，那么如果已经取得了任何进展，将会产生债务上的不连续性。
 	pagesInUse         uint64  // 注释：stats 结构中的 mSpanInUse 字段中跟踪的 span 页数；这些页数是以原子方式更新的。 // pages of spans in stats mSpanInUse; updated atomically
 	pagesSwept         uint64  // 注释：页面扫过了这个周期；以原子方式更新 // pages swept this cycle; updated atomically
 	pagesSweptBasis    uint64  // 注释：（清扫扫描的基点）用作扫描比的原点；以原子方式更新 // pagesSwept to use as the origin of the sweep ratio; updated atomically
-	sweepHeapLiveBasis uint64  // 注释：heap_live的值用作扫掠比的原点；写入带锁，读取不带锁 // value of heap_live to use as the origin of sweep ratio; written with lock, read without
-	sweepPagesPerByte  float64 // 注释：平衡(均衡)清扫比例；写入带锁，读取不带锁 // proportional sweep ratio; written with lock, read without
+	sweepHeapLiveBasis uint64  // 注释：heap_live的值用作清扫比的基地址；写入带锁，读取不带锁 // value of heap_live to use as the origin of sweep ratio; written with lock, read without
+	sweepPagesPerByte  float64 // 注释：GC触发清扫的比例，0表示不触发，大于0则是比例值，写入带锁，读取不带锁 // proportional sweep ratio; written with lock, read without
 	// TODO(austin): pagesInUse should be a uintptr, but the 386
 	// compiler can't 8-byte align fields.
 
@@ -134,6 +135,7 @@ type mheap struct {
 	// the page reclaimer works in large chunks, it may reclaim
 	// more than requested. Any spare pages released go to this
 	// credit pool.
+	// 注释：译：reclaimCredit是额外页面扫描的备用信用。由于页面回收器工作在大块中，它可能会回收比请求的更多的内容。释放的任何备用页面都将进入此信用池。
 	//
 	// This is accessed atomically.
 	reclaimCredit uintptr
@@ -788,6 +790,13 @@ func (h *mheap) init() {
 // 注释：译：reclaim实现了页面回收器的一半。
 //
 // h.lock must NOT be held.
+//
+// 注释：回收内存
+// 注释：步骤
+// 		1.加锁禁止抢占
+// 		2.
+// 		3.
+// 		4.
 func (h *mheap) reclaim(npage uintptr) {
 	// TODO(austin): Half of the time spent freeing spans is in
 	// locking/unlocking the heap (even with low contention). We
@@ -810,7 +819,7 @@ func (h *mheap) reclaim(npage uintptr) {
 
 	arenas := h.sweepArenas
 	locked := false
-	for npage > 0 {
+	for npage > 0 { // 注释：遍历页数量，逐个执行
 		// Pull from accumulated credit first.
 		if credit := atomic.Loaduintptr(&h.reclaimCredit); credit > 0 {
 			take := credit

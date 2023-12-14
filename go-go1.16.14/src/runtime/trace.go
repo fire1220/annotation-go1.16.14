@@ -523,22 +523,22 @@ func traceFullDequeue() traceBufPtr {
 func traceEvent(ev byte, skip int, args ...uint64) {
 	mp, pid, bufp := traceAcquireBuffer() // 注释：获取当前G的M；M对应P的ID；全局栈追踪的缓冲区地址的指针(对象)
 	// Double-check trace.enabled now that we've done m.locks++ and acquired bufLock.
-	// 注释：仔细检查trace.enabled，因为我们已经完成了m.locks++并获得了bufLock。
 	// This protects from races between traceEvent and StartTrace/StopTrace.
-	// 注释：这可以防止traceEvent和StartTrace/StopTrace之间的竞争。
-
+	// 注释：译：既然我们已经完成了m.locks++并获得了bufLock，请仔细检查trace.enabled。这可以防止traceEvent和StartTrace/StopTrace之间的竞争。
+	//
 	// The caller checked that trace.enabled == true, but trace.enabled might have been
 	// turned off between the check and now. Check again. traceLockBuffer did mp.locks++,
-	// 注释：调用方检查trace.enabled==true，但trace.enabed可能在检查到现在之间已关闭。再次检查。traceLockBuffer执行了mp。locks++，
 	// StopTrace does stopTheWorld, and stopTheWorld waits for mp.locks to go back to zero,
-	// 注释：StopTrace会停止TheWorld，而stopTheWorld会等待mp.locks归零，
 	// so if we see trace.enabled == true now, we know it's true for the rest of the function.
-	// 注释：因此，如果我们现在看到trace.enabled==true，我们就知道它对函数的其余部分是true。
 	// Exitsyscall can run even during stopTheWorld. The race with StartTrace/StopTrace
 	// during tracing in exitsyscall is resolved by locking trace.bufLock in traceLockBuffer.
-	// 注释：Exitsyscall甚至可以在stopTheWorld期间运行。exitsyscall中跟踪期间StartTrace/StopTrace的争用通过在traceLockBuffer中锁定trace.bufLock来解决。
+	// 注释：译：调用方检查trace.enabled==true，但trace.enabed可能在检查期间和现在之间已关闭。再次检查。
+	//		traceLockBuffer做了mp.locks++，StopTrace做了stopTheWorld，stopTheWorld等待mp.locks归零，
+	//		所以如果我们现在看到trace.enabled==true，我们就知道函数的其余部分也是如此。Exitsyscall甚至可以在stopTheWorld期间运行。
+	//		在exitsyscall中跟踪期间与StartTrace/StopTrace的竞争通过在traceLockBuffer中锁定trace.bufLock来解决。
 	//
-	// Note trace_userTaskCreate runs the same check. // 注释：请注意trace_userTaskCreate运行相同的检查。
+	// Note trace_userTaskCreate runs the same check.
+	// 注释：译：请注意trace_userTaskCreate运行相同的检查。
 	if !trace.enabled && !mp.startingtrace { // 注释：如果栈追踪已经关闭，并且没有开始执行栈追踪则释放并返回
 		traceReleaseBuffer(pid)
 		return

@@ -122,6 +122,8 @@ type mstats struct {
 	// objects that have not yet been swept (and hence goes up as we
 	// allocate and down as we sweep) while heap_live excludes these
 	// objects (and hence only goes up between GCs).
+	// 注释：译：heap_live是GC认为有效的字节数。即：由自那时以来分配的最新GC plus保留。heap_live<=alloc，
+	//		因为alloc包括尚未被扫描的未标记对象（因此在分配时向上，在扫描时向下），而heap_life排除了这些对象（因此仅在GC之间向上）。
 	//
 	// This is updated atomically without locking. To reduce
 	// contention, this is updated only when obtaining a span from
@@ -134,11 +136,18 @@ type mstats struct {
 	// necessary rather than potentially too late and 2) this
 	// leads to a conservative GC rate rather than a GC rate that
 	// is potentially too low.
+	// 注释：译：这是在没有锁定的情况下以原子方式更新的。为了减少争用，只有当从一个mcentral获得一个跨度时，才会更新它，
+	//		此时它会统计该跨度中所有未分配的插槽（将在mcache从该mcentral获取另一个跨度之前分配）。因此，它略微高估了“真实”的活动堆大小。
+	//		高估总比低估好，因为：
+	//		1）这会提前触发GC，而不是可能太迟；
+	//		2）这会导致保守的GC速率，而不是潜在的过低GC速率。
 	//
 	// Reads should likewise be atomic (or during STW).
+	// 注释：译：读取同样应该是原子读取（或在STW期间）。
 	//
 	// Whenever this is updated, call traceHeapAlloc() and
 	// gcController.revise().
+	// 注释：译：每当更新时，请调用traceHeapAlloc()和gcController.requeste()。
 	heap_live uint64
 
 	// heap_scan is the number of bytes of "scannable" heap. This

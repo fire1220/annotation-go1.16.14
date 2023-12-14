@@ -237,13 +237,15 @@ func sweepone() uintptr {
 	}
 
 	// Sweep the span we found.
+	// 注释：清扫找到的span
 	npages := ^uintptr(0)
 	if s != nil {
 		npages = s.npages
-		if s.sweep(false) {
+		if s.sweep(false) { // 注释：执行清理
 			// Whole span was freed. Count it toward the
 			// page reclaimer credit since these pages can
 			// now be used for span allocation.
+			// 注释：译：整个跨度都被释放了。将其计入页面回收器信用，因为这些页面现在可以用于跨度分配。
 			atomic.Xadduintptr(&mheap_.reclaimCredit, npages)
 		} else {
 			// Span is still in-use, so this returned no
@@ -331,7 +333,7 @@ func (s *mspan) ensureSwept() {
 // Returns true if the span was returned to heap.
 // If preserve=true, don't return it to heap nor relink in mcentral lists;
 // caller takes care of it.
-// 注释：执行清理动作
+// 注释：执行清理动作【ing】
 func (s *mspan) sweep(preserve bool) bool {
 	// It's critical that we enter this function with preemption disabled,
 	// GC must not start while we are in the middle of this function.
@@ -339,18 +341,21 @@ func (s *mspan) sweep(preserve bool) bool {
 	if _g_.m.locks == 0 && _g_.m.mallocing == 0 && _g_ != _g_.m.g0 {
 		throw("mspan.sweep: m is not locked")
 	}
-	sweepgen := mheap_.sweepgen // 注释：获取GC清理计数器
+	sweepgen := mheap_.sweepgen // 注释：获取GC清理计数器(清扫版本)
 	if state := s.state.get(); state != mSpanInUse || s.sweepgen != sweepgen-1 {
 		print("mspan.sweep: state=", state, " sweepgen=", s.sweepgen, " mheap.sweepgen=", sweepgen, "\n")
 		throw("mspan.sweep: bad span state")
 	}
 
-	if trace.enabled {
-		traceGCSweepSpan(s.npages * _PageSize)
+	// 注释：程序走到这里说明，状态是【无空闲、已分配】并且不是扫描中的状态
+
+	if trace.enabled { // 注释：链路追踪是否开启
+		traceGCSweepSpan(s.npages * _PageSize) // 注释：入参s.npages * _PageSize表示页总占用内存(需要清理的字节)
 	}
 
-	atomic.Xadd64(&mheap_.pagesSwept, int64(s.npages))
+	atomic.Xadd64(&mheap_.pagesSwept, int64(s.npages)) // 注释：把参数2加到参数1对应的指针里里并且返回参数2
 
+	// 【ing】
 	spc := s.spanclass
 	size := s.elemsize
 

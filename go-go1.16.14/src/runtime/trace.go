@@ -32,7 +32,7 @@ const (
 	traceEvGCDone            = 8  // GC done [timestamp]
 	traceEvGCSTWStart        = 9  // GC STW start [timestamp, kind]
 	traceEvGCSTWDone         = 10 // GC STW done [timestamp]
-	traceEvGCSweepStart      = 11 // GC sweep start [timestamp, stack id]
+	traceEvGCSweepStart      = 11 // 注释：GC清理阶段注册链路追踪的开始 // GC sweep start [timestamp, stack id]
 	traceEvGCSweepDone       = 12 // GC sweep done [timestamp, swept, reclaimed]
 	traceEvGoCreate          = 13 // goroutine creation [timestamp, new goroutine id, new stack id, stack id]
 	traceEvGoStart           = 14 // goroutine starts running [timestamp, goroutine id, seq]
@@ -519,7 +519,7 @@ func traceFullDequeue() traceBufPtr {
 // to collect and remember it for this particular call.
 // 注释：如果skip=0，则此事件类型应该包含一个堆栈，但我们不希望为该特定调用收集并记住它。
 //
-// 注释：栈追踪事件
+// 注释：注册链路追踪时间，ev是链路追踪的动作标识
 func traceEvent(ev byte, skip int, args ...uint64) {
 	mp, pid, bufp := traceAcquireBuffer() // 注释：获取当前G的M；M对应P的ID；全局栈追踪的缓冲区地址的指针(对象)
 	// Double-check trace.enabled now that we've done m.locks++ and acquired bufLock.
@@ -1052,13 +1052,19 @@ func traceGCSweepStart() {
 //
 // This may be called outside a traceGCSweepStart/traceGCSweepDone
 // pair; however, it will not emit any trace events in this case.
+// 注释：链路追踪时清理Span，bytesSwept是需要清理的字节
+// 注释：步骤
+// 		1.判断是否需要清理时执行链路追踪
+// 		2.链路追踪的字节是否是0（是否是开始处，0表示开始处）
+// 		3.开始处时：注册链路追踪开始
+// 		4.记录需要链路追踪的字节数
 func traceGCSweepSpan(bytesSwept uintptr) {
-	_p_ := getg().m.p.ptr()
-	if _p_.traceSweep {
-		if _p_.traceSwept == 0 {
-			traceEvent(traceEvGCSweepStart, 1)
+	_p_ := getg().m.p.ptr() // 注释：获取当前p
+	if _p_.traceSweep {     // 注释：如果需要链路追踪
+		if _p_.traceSwept == 0 { // 注释：如果需要链路追踪的字节为0说明刚刚开始链路追踪
+			traceEvent(traceEvGCSweepStart, 1) // 注释：注册链路追踪开始
 		}
-		_p_.traceSwept += bytesSwept
+		_p_.traceSwept += bytesSwept // 注释：向链路追踪里添加清理的字节
 	}
 }
 
@@ -1165,7 +1171,7 @@ func traceGoSysExit(ts int64) {
 func traceGoSysBlock(pp *p) {
 	// Sysmon and stopTheWorld can declare syscalls running on remote Ps as blocked,
 	// to handle this we temporary employ the P.
-	// 注释：Sysmon和stopTheWorld可以将在远程P上运行的系统调用声明为阻塞，为了处理此问题，我们临时使用P。
+	// 注释：译：Sysmon和stopTheWorld可以将在远程P上运行的系统调用声明为阻塞，为了处理此问题，我们临时使用P。
 	mp := acquirem()                  // 注释：获取当前P。临时使用
 	oldp := mp.p                      // 注释：把P存储起来
 	mp.p.set(pp)                      // 注释：把传入的P替换当前的P，后面栈事件使用

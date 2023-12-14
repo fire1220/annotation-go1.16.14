@@ -676,10 +676,12 @@ type p struct {
 	// traceSweep indicates the sweep events should be traced.
 	// This is used to defer the sweep start event until a span
 	// has actually been swept.
-	traceSweep bool // 注释：
+	// 注释：译：traceSweep表示应该跟踪扫描事件。这用于推迟扫描开始事件，直到实际扫描了一个跨度。
+	traceSweep bool // 注释：清理是是否需要链路追踪
 	// traceSwept and traceReclaimed track the number of bytes
 	// swept and reclaimed by sweeping in the current sweep loop.
-	traceSwept, traceReclaimed uintptr
+	// 注释：译：traceSwept和traceReclaimed跟踪当前扫描循环中通过扫描扫描和回收的字节数。
+	traceSwept, traceReclaimed uintptr // 注释：traceSwept是清理时需要链路追踪的字节,0代表链路追踪的开始；traceReclaimed是回收的字节
 
 	palloc persistentAlloc // per-P to avoid mutex
 

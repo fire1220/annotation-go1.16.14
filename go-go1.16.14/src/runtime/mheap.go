@@ -107,7 +107,7 @@ type mheap struct {
 	// 注释：译：重要的是，该线条通过我们控制的一个点而不是简单地从 (0,0) 原点开始，因为这样可以让我们在任何时候调整扫描步调，同时考虑当前的进展。
 	//		如果我们只能调整斜率，那么如果已经取得了任何进展，将会产生债务上的不连续性。
 	pagesInUse         uint64  // 注释：stats 结构中的 mSpanInUse 字段中跟踪的 span 页数；这些页数是以原子方式更新的。 // pages of spans in stats mSpanInUse; updated atomically
-	pagesSwept         uint64  // 注释：页面扫过了这个周期；以原子方式更新 // pages swept this cycle; updated atomically
+	pagesSwept         uint64  // 注释：清理的页的数量；以原子方式更新 // pages swept this cycle; updated atomically
 	pagesSweptBasis    uint64  // 注释：（清扫扫描的基点）用作扫描比的原点；以原子方式更新 // pagesSwept to use as the origin of the sweep ratio; updated atomically
 	sweepHeapLiveBasis uint64  // 注释：heap_live的值用作清扫比的基地址；写入带锁，读取不带锁 // value of heap_live to use as the origin of sweep ratio; written with lock, read without
 	sweepPagesPerByte  float64 // 注释：GC触发清扫的比例，0表示不触发，大于0则是比例值，写入带锁，读取不带锁 // proportional sweep ratio; written with lock, read without
@@ -135,10 +135,10 @@ type mheap struct {
 	// the page reclaimer works in large chunks, it may reclaim
 	// more than requested. Any spare pages released go to this
 	// credit pool.
-	// 注释：译：reclaimCredit是额外页面扫描的备用信用。由于页面回收器工作在大块中，它可能会回收比请求的更多的内容。释放的任何备用页面都将进入此信用池。
+	// 注释：译：reclaimCredit是额外页page清理的备用信用。由于页回收器工作在大块中，它可能会回收比请求的更多的内容。释放的任何备用页都将进入此信用池。
 	//
 	// This is accessed atomically.
-	reclaimCredit uintptr
+	reclaimCredit uintptr // 注释：(可用的页的数量)(回收信用，就是回收的比例)这个值存储是page页数，待清理的页的数量
 
 	// arenas is the heap arena map. It points to the metadata for
 	// the heap for every arena frame of the entire usable virtual
@@ -186,18 +186,19 @@ type mheap struct {
 	// safe to acquire mheap_.lock, copy the slice header, and
 	// then release mheap_.lock.
 	// 注释：译：访问受到mheap_lock的保护。但是，由于这是仅追加的，并且永远不会释放旧的备份数组，因此可以安全地获取mheap_lock，复制切片标头，然后释放mheap_lock。
-	allArenas []arenaIdx
+	allArenas []arenaIdx // 注释：全部的arena
 
 	// sweepArenas is a snapshot of allArenas taken at the
 	// beginning of the sweep cycle. This can be read safely by
 	// simply blocking GC (by disabling preemption).
-	// 注释：译：sweepArenas是在扫描周期开始时拍摄的所有Arenas的快照。这可以通过简单地阻塞GC（通过禁用抢占）来安全地读取。
-	sweepArenas []arenaIdx // 注释：是allArenas的快照
+	// 注释：译：sweepArenas是在清理开始时对allArenas的快照。这可以通过简单地阻塞GC（通过禁用抢占）来安全地读取。
+	sweepArenas []arenaIdx // 注释：清理开始时对allArenas的快照
 
 	// markArenas is a snapshot of allArenas taken at the beginning
 	// of the mark cycle. Because allArenas is append-only, neither
 	// this slice nor its contents will change during the mark, so
 	// it can be read safely.
+	// 注释：译：markArenas是在mark开始时对Arenas的快照。因为allArenas只是附加的，所以在标记过程中，这个切片及其内容都不会改变，所以可以安全地读取。
 	markArenas []arenaIdx
 
 	// curArena is the arena that the heap is currently growing
@@ -359,8 +360,8 @@ type mSpanState uint8 // 注释：span的状态（内存管理单元的状态）
 // 注释：span的状态，一共有4中状态，这里第四中状态没有定义，第四中状态值为3，下面状态码映射名称的map里有定义
 const (
 	mSpanDead   mSpanState = iota // 注释：内存已回收，初始化时或将跨度span释放回堆中时设置
-	mSpanInUse                    // 注释：无空闲（已经被分配）// allocated for garbage collected heap
-	mSpanManual                   // 注释：无空闲（已经被分配）分配用于手动管理 // allocated for manual management (e.g., stack allocator)
+	mSpanInUse                    // 注释：【无空闲、已分配】 // allocated for garbage collected heap
+	mSpanManual                   // 注释：(手动)【无空闲、已分配】分配用于手动管理 // allocated for manual management (e.g., stack allocator)
 )
 
 // mSpanStateNames are the names of the span states, indexed by
@@ -368,9 +369,9 @@ const (
 // 注释：span状态名称：一共有4中状态
 var mSpanStateNames = []string{
 	"mSpanDead",   // 注释：内存已回收，初始化时或将跨度span释放回堆中时设置
-	"mSpanInUse",  // 注释：无空闲（已经被分配）
-	"mSpanManual", // 注释：无空闲（已经被分配）分配用于手动管理
-	"mSpanFree",   // 注释：有空闲（在空闲堆中）
+	"mSpanInUse",  // 注释：【无空闲、已分配】
+	"mSpanManual", // 注释：【无空闲、已分配】（手动）分配用于手动管理
+	"mSpanFree",   // 注释：【有空闲、未分配】（在空闲堆中）
 }
 
 // mSpanStateBox holds an mSpanState and provides atomic operations on
@@ -500,7 +501,6 @@ type mspan struct {
 	// 如果sweepgen == h->sweepgen + 1，【需要清理、已缓存】span(跨度)在扫描开始前在mcache缓存中，现在仍在mchche缓存中，需要扫描
 	// 如果sweepgen == h->sweepgen + 3，【无需清理、已缓存】span(跨度)已经被扫描，并放到mcache缓存中
 	// h->sweepgen在每次垃圾回收后会增加2。
-
 	sweepgen    uint32        // 注释：向 mheap.sweepgen 标记看齐
 	divMul      uint16        // for divide by elemsize - divMagic.mul
 	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
@@ -817,18 +817,19 @@ func (h *mheap) reclaim(npage uintptr) {
 		traceGCSweepStart()
 	}
 
-	arenas := h.sweepArenas
+	arenas := h.sweepArenas // 注释：获取arena
 	locked := false
 	for npage > 0 { // 注释：遍历页数量，逐个执行
 		// Pull from accumulated credit first.
-		if credit := atomic.Loaduintptr(&h.reclaimCredit); credit > 0 {
+		// 注释：译：先从累积的信贷中提取
+		if credit := atomic.Loaduintptr(&h.reclaimCredit); credit > 0 { // 注释：获取待清理的页数量
 			take := credit
-			if take > npage {
+			if take > npage { // 注释：如果待清理页数量大于当前页总数，则拿走当前页大小的数量
 				// Take only what we need.
-				take = npage
+				take = npage // 注释：重置拿出的页数量
 			}
-			if atomic.Casuintptr(&h.reclaimCredit, credit, credit-take) {
-				npage -= take
+			if atomic.Casuintptr(&h.reclaimCredit, credit, credit-take) { // 注释：修改待清理页数数量
+				npage -= take // 注释：跳过拿出的页
 			}
 			continue
 		}

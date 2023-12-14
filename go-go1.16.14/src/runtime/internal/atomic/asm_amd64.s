@@ -91,14 +91,15 @@ TEXT runtime∕internal∕atomic·Xadd(SB), NOSPLIT, $0-20
 	MOVL	AX, ret+16(FP)
 	RET
 
+// 注释：把参数2加到参数1对应的指针里里并且返回参数2
 TEXT runtime∕internal∕atomic·Xadd64(SB), NOSPLIT, $0-24
-	MOVQ	ptr+0(FP), BX
-	MOVQ	delta+8(FP), AX
-	MOVQ	AX, CX
-	LOCK
-	XADDQ	AX, 0(BX)
-	ADDQ	CX, AX
-	MOVQ	AX, ret+16(FP)
+	MOVQ	ptr+0(FP), BX           // 注释：参数1：是个指针
+	MOVQ	delta+8(FP), AX         // 注释：参数2：需要相加的数据
+	MOVQ	AX, CX                  // 注释：把AX值复制到CX寄存器里（把参数2放到CX里）
+	LOCK                            // 注释：（对总线和缓存上锁）强制所有lock信号之前的指令，都在此之前被执行，并同步相关缓存
+	XADDQ	AX, 0(BX)               // 注释：把AX（参数2）复制到0(BX)里（把参数2放到参数1指针对应的值里）
+	ADDQ	CX, AX                  // 注释：把CX放到AX里（把参数2放到AX寄存器里）
+	MOVQ	AX, ret+16(FP)          // 注释：把AX放到返回位置（把参数2返回）
 	RET
 
 TEXT runtime∕internal∕atomic·Xadduintptr(SB), NOSPLIT, $0-24

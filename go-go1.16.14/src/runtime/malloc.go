@@ -933,7 +933,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
 //
-// 注释：（所有申请内存的入口）分配对象（处理分配对象和GC一些标记工作）
+// 注释：（用户分配内存起始函数）分配对象（处理分配对象和GC一些标记工作）
 // 注释：返回申请后的内存首地址
 // 注释：步骤：
 // 		1.微对象分配
@@ -943,6 +943,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // 		2.小对象分配
 // 		3.大对象分配
 // 		4.
+// 		5.
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if gcphase == _GCmarktermination { // 注释：如果GC标记为_GCmarktermination则报错
 		throw("mallocgc called with gcphase == _GCmarktermination")
@@ -984,7 +985,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 
 	// assistG is the G to charge for this allocation, or nil if
 	// GC is not currently active.
-	// 注释：assistG是为此分配收费的G，如果GC当前未处于活动状态，则为零。
+	// 注释：译：assistG是为此分配收费的G，如果GC当前未处于活动状态，则为零。
 	var assistG *g
 	if gcBlackenEnabled != 0 { // 注释：允许标记成黑色时
 		// Charge the current user G for this allocation.
@@ -994,15 +995,15 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		}
 		// Charge the allocation against the G. We'll account
 		// for internal fragmentation at the end of mallocgc.
-		// 注释：根据G收取分配内存。我们将在mallocgc结束时说明内部碎片。
+		// 注释：译：根据G收取分配内存。我们将在mallocgc结束时说明内部碎片。
 		assistG.gcAssistBytes -= int64(size)
 
 		if assistG.gcAssistBytes < 0 {
 			// This G is in debt. Assist the GC to correct
 			// this before allocating. This must happen
 			// before disabling preemption.
-			// 注释：这个G负债了。在分配之前，协助GC纠正此问题。这必须在禁用抢占之前发生。
-			gcAssistAlloc(assistG)
+			// 注释：译：这个G负债了。在分配之前，协助GC纠正此问题。这必须在禁用抢占之前发生。
+			gcAssistAlloc(assistG) // 注释：【ing】
 		}
 	}
 
@@ -1032,14 +1033,14 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		// 注释：微型分配器。
 		if noscan && size < maxTinySize { // 注释：如果小于16KB表示是微小对象分配
 			// Tiny allocator.
-			// 注释：微型分配器。
+			// 注释：译：微型分配器。
 			//
 			// Tiny allocator combines several tiny allocation requests
 			// into a single memory block. The resulting memory block
 			// is freed when all subobjects are unreachable. The subobjects
 			// must be noscan (don't have pointers), this ensures that
 			// the amount of potentially wasted memory is bounded.
-			// 注释：微小分配器将几个微小的分配请求组合到一个内存块中。当所有子对象都无法访问时，将释放生成的内存块。子对象必须是noscan（没有指针），这样可以确保潜在浪费的内存量是有限的。
+			// 注释：译：微小分配器将几个微小的分配请求组合到一个内存块中。当所有子对象都无法访问时，将释放生成的内存块。子对象必须是noscan（没有指针），这样可以确保潜在浪费的内存量是有限的。
 			//
 			// Size of the memory block used for combining (maxTinySize) is tunable.
 			// Current setting is 16 bytes, which relates to 2x worst case memory
@@ -1049,24 +1050,24 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// 32 bytes provides more opportunities for combining,
 			// but can lead to 4x worst case wastage.
 			// The best case winning is 8x regardless of block size.
-			// 注释：用于组合的内存块的大小（maxTinySize）是可调的。当前设置为16字节，这与2倍最坏情况下的内存浪费有关（当除一个子对象外的所有子对象都无法访问时）。
+			// 注释：译：用于组合的内存块的大小（maxTinySize）是可调的。当前设置为16字节，这与2倍最坏情况下的内存浪费有关（当除一个子对象外的所有子对象都无法访问时）。
 			// 		8个字节将导致完全没有浪费，但提供较少的组合机会。32字节提供了更多的组合机会，但在最坏情况下可能导致4倍的浪费。无论区块大小，最好的获胜方式是8倍。
 			//
 			// Objects obtained from tiny allocator must not be freed explicitly.
 			// So when an object will be freed explicitly, we ensure that
 			// its size >= maxTinySize.
-			// 注释：不能显式释放从微小分配器获得的对象。因此，当一个对象将被显式释放时，我们确保其大小>=maxTinySize。
+			// 注释：译：不能显式释放从微小分配器获得的对象。因此，当一个对象将被显式释放时，我们确保其大小>=maxTinySize。
 			//
 			// SetFinalizer has a special case for objects potentially coming
 			// from tiny allocator, it such case it allows to set finalizers
 			// for an inner byte of a memory block.
-			// 注释：SetFinalizer对于可能来自微小分配器的对象有一个特殊情况，它允许为内存块的内部字节设置终结器。
+			// 注释：译：SetFinalizer对于可能来自微小分配器的对象有一个特殊情况，它允许为内存块的内部字节设置终结器。
 			//
 			// The main targets of tiny allocator are small strings and
 			// standalone escaping variables. On a json benchmark
 			// the allocator reduces number of allocations by ~12% and
 			// reduces heap size by ~20%.
-			// 注释：微小分配器的主要目标是小字符串和独立的转义变量。在json基准测试中，分配器将分配数量减少了约12%，并将堆大小减少了约20%。
+			// 注释：译：微小分配器的主要目标是小字符串和独立的转义变量。在json基准测试中，分配器将分配数量减少了约12%，并将堆大小减少了约20%。
 			off := c.tinyoffset
 			// Align tiny pointer for required (conservative) alignment.
 			if size&7 == 0 {
@@ -1076,7 +1077,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				// systems so that objects whose first field is a 64-bit
 				// value is aligned to 8 bytes and does not cause a fault on
 				// atomic access. See issue 37262.
-				// 注释：在32位系统上，保守地将12字节对象与8字节对齐，以便第一个字段为64位值的对象与8个字节对齐，并且不会导致原子访问出错。见第37262期。
+				// 注释：译：在32位系统上，保守地将12字节对象与8字节对齐，以便第一个字段为64位值的对象与8个字节对齐，并且不会导致原子访问出错。见第37262期。
 				// TODO(mknyszek): Remove this workaround if/when issue 36606 // 注释：如果/当问题36606时，请删除此解决方法
 				// is resolved.
 				off = alignUp(off, 8)
@@ -1086,7 +1087,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				off = alignUp(off, 2) // 注释：2字节内存对齐
 			}
 			if off+size <= maxTinySize && c.tiny != 0 { // 注释：off+size是要使用的内存大小，小于等于微小对象，并且微对象基地址存在
-				// The object fits into existing tiny block. // 注释：这个物体适合现有的小块。
+				// The object fits into existing tiny block.
+				//注释：译：这个物体适合现有的小块。
 				x = unsafe.Pointer(c.tiny + off) // 注释：微小对象首地址(基地址+对齐后的偏移量)
 				c.tinyoffset = off + size        // 注释：微小对象
 				c.tinyAllocs++                   // 注释：分配次数加一
@@ -1096,7 +1098,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			// 注释：上面是旧的块，下面是新的块
 			// 注释：下面表示当前的微小对象无法容纳需要申请的内存空间，需要再申请一个微小对象
-			// Allocate a new maxTinySize block. // 注释：分配一个新的maxTinySize块。
+			// Allocate a new maxTinySize block.
+			//注释：译：分配一个新的maxTinySize块。
 			span = c.alloc[tinySpanClass] // 注释：(到mcache里拿对应的span)到线程缓存中获取微小对象结构体
 			v := nextFreeFast(span)       // 注释：(到mcache(线程缓存)里的快速缓存(mspan.allocCache)(只缓存64位)中的span是否有存储空间)重新计算空闲位置,返回空闲位置指针
 			if v == 0 {                   // 注释：如果没有找到，则去mcache(线程缓存)里找
@@ -1132,8 +1135,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 		}
 	} else { // 大对象分配
-		shouldhelpgc = true // 注释：是否申请新的span表示，因为大对象是直接申请新的span所以这里是true
-		span = c.allocLarge(size, needzero, noscan)
+		shouldhelpgc = true                         // 注释：是否申请新的span表示，因为大对象是直接申请新的span所以这里是true
+		span = c.allocLarge(size, needzero, noscan) // 注释：大对象分配
 		span.freeindex = 1
 		span.allocCount = 1
 		x = unsafe.Pointer(span.base())

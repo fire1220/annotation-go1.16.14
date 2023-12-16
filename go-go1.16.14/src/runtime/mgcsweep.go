@@ -356,8 +356,8 @@ func (s *mspan) sweep(preserve bool) bool {
 	atomic.Xadd64(&mheap_.pagesSwept, int64(s.npages)) // 注释：把参数2加到参数1对应的指针里里并且返回参数2
 
 	// 【ing】
-	spc := s.spanclass
-	size := s.elemsize
+	spc := s.spanclass // 注释：获取跨度类ID
+	size := s.elemsize // 注释：获取块大小
 
 	// The allocBits indicate which unmarked objects don't need to be
 	// processed since they were free at the end of the last GC cycle
@@ -366,6 +366,8 @@ func (s *mspan) sweep(preserve bool) bool {
 	// is not marked then the object remains unallocated
 	// since the last GC.
 	// This situation is analogous to being on a freelist.
+	// 注释：译：allocBits指示哪些未标记的对象不需要处理，因为它们在上一个GC周期结束时是空闲的，并且此后没有分配。
+	//		如果allocBits索引>=s.freeindex并且该位未被标记，则自上次GC以来该对象保持未分配状态。这种情况类似于被列入自由名单。
 
 	// Unlink & free special records for any objects we're about to free.
 	// Two complications here:
@@ -375,6 +377,10 @@ func (s *mspan) sweep(preserve bool) bool {
 	// 2. A tiny object can have several finalizers setup for different offsets.
 	//    If such object is not marked, we need to queue all finalizers at once.
 	// Both 1 and 2 are possible at the same time.
+	// 注释：译：取消链接并释放我们要释放的任何对象的特殊记录。这里有两个并发症：
+	//		1.一个对象可以同时具有终结器和配置文件特殊记录。在这种情况下，我们需要对终结器进行排队执行，将对象标记为活动，并将配置文件保留为特殊配置文件。
+	//		2.一个小对象可以为不同的偏移设置多个终结器。如果没有标记这样的对象，我们需要同时对所有终结器进行排队。
+	//		1和2同时是可能的。
 	hadSpecials := s.specials != nil
 	specialp := &s.specials
 	special := *specialp

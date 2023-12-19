@@ -341,8 +341,8 @@ func (s *mspan) sweep(preserve bool) bool {
 	if _g_.m.locks == 0 && _g_.m.mallocing == 0 && _g_ != _g_.m.g0 {
 		throw("mspan.sweep: m is not locked")
 	}
-	sweepgen := mheap_.sweepgen // 注释：获取GC清理计数器(清扫版本)
-	if state := s.state.get(); state != mSpanInUse || s.sweepgen != sweepgen-1 {
+	sweepgen := mheap_.sweepgen                                                  // 注释：获取GC清理计数器(清扫版本)
+	if state := s.state.get(); state != mSpanInUse || s.sweepgen != sweepgen-1 { // 注释：如果span状态是【无空闲、已分配】，或者【正在清理】时异常
 		print("mspan.sweep: state=", state, " sweepgen=", s.sweepgen, " mheap.sweepgen=", sweepgen, "\n")
 		throw("mspan.sweep: bad span state")
 	}
@@ -355,7 +355,6 @@ func (s *mspan) sweep(preserve bool) bool {
 
 	atomic.Xadd64(&mheap_.pagesSwept, int64(s.npages)) // 注释：把参数2加到参数1对应的指针里里并且返回参数2
 
-	// 【ing】
 	spc := s.spanclass // 注释：获取跨度类ID
 	size := s.elemsize // 注释：获取块大小
 
@@ -381,52 +380,60 @@ func (s *mspan) sweep(preserve bool) bool {
 	//		1.一个对象可以同时具有终结器和配置文件特殊记录。在这种情况下，我们需要对终结器进行排队执行，将对象标记为活动，并将配置文件保留为特殊配置文件。
 	//		2.一个小对象可以为不同的偏移设置多个终结器。如果没有标记这样的对象，我们需要同时对所有终结器进行排队。
 	//		1和2同时是可能的。
-	hadSpecials := s.specials != nil
-	specialp := &s.specials
-	special := *specialp
-	for special != nil {
+	hadSpecials := s.specials != nil // 注释：是否存在special
+	specialp := &s.specials          // 注释：当前specials的头指针(遍历时会从头开始踢出)
+	special := *specialp             // 注释：当前special(遍历链表时的当前special)
+	for special != nil {             // 注释：遍历specials链表
 		// A finalizer can be set for an inner byte of an object, find object beginning.
-		objIndex := uintptr(special.offset) / size
-		p := s.base() + objIndex*size
-		mbits := s.markBitsForIndex(objIndex)
-		if !mbits.isMarked() {
+		// 注释：译：可以为对象的内部字节设置终结器，查找对象开头
+		objIndex := uintptr(special.offset) / size // 注释：(获取块的偏移量,第几个对象)special.offset是字节偏移量(对象大小)size是span块大小
+		p := s.base() + objIndex*size              // 注释：(对象的地址)偏移量对应的指针位置
+		mbits := s.markBitsForIndex(objIndex)      // 注释：返回8的整数倍，和余数对应的位图，和入参
+		if !mbits.isMarked() {                     // 注释：(如果没有标记执行)该对象是否被标记
 			// This object is not marked and has at least one special record.
 			// Pass 1: see if it has at least one finalizer.
-			hasFin := false
-			endOffset := p - s.base() + size
-			for tmp := special; tmp != nil && uintptr(tmp.offset) < endOffset; tmp = tmp.next {
-				if tmp.kind == _KindSpecialFinalizer {
+			// 注释：译：此对象没有标记，并且至少有一个特殊记录。
+			// 		步骤1：查看它是否至少有一个终结器。
+			hasFin := false                                                                     // 注释：是否存在终结器
+			endOffset := p - s.base() + size                                                    // 注释：对象结束的字节偏移量
+			for tmp := special; tmp != nil && uintptr(tmp.offset) < endOffset; tmp = tmp.next { // 注释：如果有终结器则设置标记
+				if tmp.kind == _KindSpecialFinalizer { // 注释：如果是最有一个special
 					// Stop freeing of object if it has a finalizer.
-					mbits.setMarkedNonAtomic()
-					hasFin = true
+					// 注释：译：如果对象有终结器，请停止释放该对象。
+					mbits.setMarkedNonAtomic() // 注释：非原子操作，设置标记位
+					hasFin = true              // 注释：存在终结器
 					break
 				}
 			}
 			// Pass 2: queue all finalizers _or_ handle profile record.
+			// 注释：译：步骤2：将所有终结器_or_处理配置文件记录排入队列。
 			for special != nil && uintptr(special.offset) < endOffset {
 				// Find the exact byte for which the special was setup
 				// (as opposed to object beginning).
-				p := s.base() + uintptr(special.offset)
-				if special.kind == _KindSpecialFinalizer || !hasFin {
+				// 注释：译：找到设置特殊的确切字节（与对象开头相反）。
+				p := s.base() + uintptr(special.offset)               // 注释：对象首指针
+				if special.kind == _KindSpecialFinalizer || !hasFin { // 注释：如果不存在终结器或是最后一个终结器时执行
 					// Splice out special record.
-					y := special
-					special = special.next
-					*specialp = special
-					freespecial(y, unsafe.Pointer(p), size)
-				} else {
+					// 注释：译：拼接出特殊记录。
+					y := special                            // 注释：记录当前specials(设置下一个special为当前时，这里为上一个special)
+					special = special.next                  // 注释：设置下一个special为当前special
+					*specialp = special                     // 注释：头部踢出一个special
+					freespecial(y, unsafe.Pointer(p), size) // 注释：释放y(旧的special)
+				} else { // 注释：存在终结器，并且当前不是终结器的special
 					// This is profile record, but the object has finalizers (so kept alive).
 					// Keep special record.
-					specialp = &special.next
-					special = *specialp
+					// 注释：译：这是配置文件记录，但对象具有终结器（因此保持活动）。做好专门记录。
+					specialp = &special.next // 注释：踢出头部special
+					special = *specialp      // 注释：踢出头部special
 				}
 			}
-		} else {
+		} else { // 注释：如果已经标记过了，则踢出头部的special
 			// object is still live: keep special record
-			specialp = &special.next
-			special = *specialp
+			specialp = &special.next // 注释：踢出头部的special
+			special = *specialp      // 注释：踢出头部的special
 		}
 	}
-	if hadSpecials && s.specials == nil {
+	if hadSpecials && s.specials == nil { // 注释：如果曾经存special，并且已经全部把special踢出，则执行
 		spanHasNoSpecials(s)
 	}
 

@@ -51,7 +51,7 @@ func LoadAcquintptr(ptr *uintptr) uintptr {
 func Xadd(ptr *uint32, delta int32) uint32
 
 //go:noescape
-func Xadd64(ptr *uint64, delta int64) uint64 // 注释：把参数2加到参数1对应的指针里里并且返回参数2
+func Xadd64(ptr *uint64, delta int64) uint64 // 注释：(原子操作)把参数2加到参数1对应的指针里里并且返回参数2
 
 //go:noescape
 func Xadduintptr(ptr *uintptr, delta uintptr) uintptr

@@ -360,8 +360,8 @@ type mSpanState uint8 // 注释：span的状态（内存管理单元的状态）
 // 注释：span的状态，一共有4中状态，这里第四中状态没有定义，第四中状态值为3，下面状态码映射名称的map里有定义
 const (
 	mSpanDead   mSpanState = iota // 注释：内存已回收，初始化时或将跨度span释放回堆中时设置
-	mSpanInUse                    // 注释：【无空闲、已分配】 // allocated for garbage collected heap
-	mSpanManual                   // 注释：(手动)【无空闲、已分配】分配用于手动管理 // allocated for manual management (e.g., stack allocator)
+	mSpanInUse                    // 注释：【无空闲、已分配】 GC管理 // allocated for garbage collected heap
+	mSpanManual                   // 注释：(手动)【无空闲、已分配】分配用于手动管理(GC不管理) // allocated for manual management (e.g., stack allocator)
 )
 
 // mSpanStateNames are the names of the span states, indexed by
@@ -406,7 +406,7 @@ type mspan struct {
 	prev *mspan     // 注释：列表中的前一个span，如果没有则为nil(用于将span链接起来) // previous span in list, or nil if none
 	list *mSpanList // For debugging. TODO: Remove.
 
-	startAddr uintptr // 注释：mpan管理内存的基地址(起始地址，也即所管理页的地址) // address of first byte of span aka s.base()
+	startAddr uintptr // 注释：mpan基地址(起始地址，也即所管理页的地址) // address of first byte of span aka s.base()
 	npages    uintptr // 注释：管理的页数 // number of pages in span
 
 	manualFreeList gclinkptr // list of free objects in mSpanManual spans
@@ -516,7 +516,7 @@ type mspan struct {
 	specials    *special      // 注释：译：按偏移量排序的特殊记录的链接列表。 // linked list of special records sorted by offset.
 }
 
-// 注释：获取基地址
+// 注释：获取span的基地址
 func (s *mspan) base() uintptr {
 	return s.startAddr
 }
@@ -614,9 +614,10 @@ func (sc spanClass) noscan() bool {
 // It is nosplit because it's called by spanOf and several other
 // nosplit functions.
 //
+//  注释：arena二维矩阵的一维索引（返回arena的正数倍数）
 //go:nosplit
 func arenaIndex(p uintptr) arenaIdx {
-	return arenaIdx((p - arenaBaseOffset) / heapArenaBytes)
+	return arenaIdx((p - arenaBaseOffset) / heapArenaBytes) // 注释：返回arena的正数倍数
 }
 
 // arenaBase returns the low address of the region covered by heap
@@ -627,6 +628,7 @@ func arenaBase(i arenaIdx) uintptr {
 
 type arenaIdx uint
 
+// 注释：l1是高位，i >> 22
 func (i arenaIdx) l1() uint {
 	if arenaL1Bits == 0 {
 		// Let the compiler optimize this away if there's no
@@ -637,6 +639,7 @@ func (i arenaIdx) l1() uint {
 	}
 }
 
+// 注释：l2是低位，i的低22位
 func (i arenaIdx) l2() uint {
 	if arenaL1Bits == 0 {
 		return uint(i)
@@ -1710,8 +1713,8 @@ func (list *mSpanList) takeAll(other *mSpanList) {
 }
 
 const (
-	_KindSpecialFinalizer = 1
-	_KindSpecialProfile   = 2
+	_KindSpecialFinalizer = 1 // 注释：special.kind 结束标识
+	_KindSpecialProfile   = 2 // 注释：
 	// Note: The finalizer special must be first because if we're freeing
 	// an object, a finalizer special will cause the freeing operation
 	// to abort, and we want to keep the other special records around
@@ -1721,8 +1724,8 @@ const (
 //go:notinheap
 type special struct {
 	next   *special // linked list in span
-	offset uint16   // span offset of object
-	kind   byte     // kind of special
+	offset uint16   // 注释：对象指针偏移量（值为该对象的首指针），uintptr(p) - span.base()// span offset of object
+	kind   byte     // 注释：类型 // kind of special
 }
 
 // spanHasSpecials marks a span as having specials in the arena bitmap.
@@ -1734,9 +1737,11 @@ func spanHasSpecials(s *mspan) {
 }
 
 // spanHasNoSpecials marks a span as having no specials in the arena bitmap.
+// 注释：译：spanHasNoSpecials将span标记为在竞技场位图中没有特殊功能。
 func spanHasNoSpecials(s *mspan) {
-	arenaPage := (s.base() / pageSize) % pagesPerArena
-	ai := arenaIndex(s.base())
+	// 注释：(s.base() / pageSize)是span存的页数量，pagesPerArena是每个arena可以容纳的页的数量
+	arenaPage := (s.base() / pageSize) % pagesPerArena // 注释：一个arena下的page下标位置，下面可以定位具体按个arena，然后通过这个定位具体的页
+	ai := arenaIndex(s.base())                         // 注释：获取arena矩阵的信息
 	ha := mheap_.arenas[ai.l1()][ai.l2()]
 	atomic.And8(&ha.pageSpecials[arenaPage/8], ^(uint8(1) << (arenaPage % 8)))
 }
@@ -1920,6 +1925,8 @@ func setprofilebucket(p unsafe.Pointer, b *bucket) {
 
 // Do whatever cleanup needs to be done to deallocate s. It has
 // already been unlinked from the mspan specials list.
+// 注释：译：做任何需要做的清理以解除分配s。它已经从mspan特价商品列表中取消了链接。
+// 注释：释放special【ing】
 func freespecial(s *special, p unsafe.Pointer, size uintptr) {
 	switch s.kind {
 	case _KindSpecialFinalizer:
@@ -1949,15 +1956,17 @@ type gcBits uint8
 // bytep returns a pointer to the n'th byte of b.
 // 注释：bytep返回指向b的第n个字节的指针。
 // 注释：指针b偏移n个
-// 注释：可以理解为返回b[n]
+// 注释：可以理解为返回b[n],(返回n下标对应的地址)
 func (b *gcBits) bytep(n uintptr) *uint8 {
 	return addb((*uint8)(b), n) // 注释：返回 b + n
 }
 
 // bitp returns a pointer to the byte containing bit n and a mask for
 // selecting that bit from *bytep.
+// 注释：返回8的整数倍，和余数对应的位图
+// 注释：标记位图，8个一组，返回第几组，当前组的第几位来控制对象分配情况
 func (b *gcBits) bitp(n uintptr) (bytep *uint8, mask uint8) {
-	return b.bytep(n / 8), 1 << (n % 8)
+	return b.bytep(n / 8), 1 << (n % 8) // 注释： b.bytep(n / 8)是第几组的指针，1 << (n % 8)是对应组里的span位图。
 }
 
 const gcBitsChunkBytes = uintptr(64 << 10)

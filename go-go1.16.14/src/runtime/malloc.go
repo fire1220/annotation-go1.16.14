@@ -115,7 +115,7 @@ const (
 	maxSmallSize  = _MaxSmallSize  // 注释：小对象最大容量32KB
 
 	pageShift = _PageShift
-	pageSize  = _PageSize
+	pageSize  = _PageSize // 注释：8KB
 	pageMask  = _PageMask
 	// By construction, single page spans of the smallest object class
 	// have the most objects per span.
@@ -123,7 +123,7 @@ const (
 
 	concurrentSweep = _ConcurrentSweep
 
-	_PageSize = 1 << _PageShift // 注释：页大小（8KB）
+	_PageSize = 1 << _PageShift // 注释：页大小（8KB），1 << 13
 	_PageMask = _PageSize - 1   // 注释：页大小掩码
 
 	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
@@ -249,19 +249,19 @@ const (
 	// This is particularly important with the race detector,
 	// since it significantly amplifies the cost of committed
 	// memory.
-	heapArenaBytes = 1 << logHeapArenaBytes
+	heapArenaBytes = 1 << logHeapArenaBytes // 注释：一个arena的大小是64MB，1 << 26 (67108864)(64MB)，（2**26/1024/1024 = 64）
 
 	// logHeapArenaBytes is log_2 of heapArenaBytes. For clarity,
 	// prefer using heapArenaBytes where possible (we need the
 	// constant to compute some other constants).
 	// 注释：logHeapArenaBytes是heapArenaBytes的log_2。为了清楚起见，尽可能使用heapArenaBytes（我们需要常数来计算其他一些常数）。
-	// 注释：logHeapArenaBytes = 26
+	// 注释：logHeapArenaBytes = 26 (Linux64系统下)
 	logHeapArenaBytes = (6+20)*(_64bit*(1-sys.GoosWindows)*(1-sys.GoarchWasm)) + (2+20)*(_64bit*sys.GoosWindows) + (2+20)*(1-_64bit) + (2+20)*sys.GoarchWasm
 
 	// heapArenaBitmapBytes is the size of each heap arena's bitmap.
 	heapArenaBitmapBytes = heapArenaBytes / (sys.PtrSize * 8 / 2)
 
-	pagesPerArena = heapArenaBytes / pageSize
+	pagesPerArena = heapArenaBytes / pageSize // 注释：每个arena存储page的数量是8192， (1<<26)/(1<<13)，64MB/8KB，(也就是说一个arena可以存储8KB个页(共64MB))
 
 	// arenaL1Bits is the number of bits of the arena number
 	// covered by the first level arena map.
@@ -285,7 +285,7 @@ const (
 	// 1<<arenaL2Bits, so it's important that this not be too
 	// large. 48 bits leads to 32MB arena index allocations, which
 	// is about the practical threshold.
-	arenaL2Bits = heapAddrBits - logHeapArenaBytes - arenaL1Bits // 注释：48 - 26 - 0 = 22
+	arenaL2Bits = heapAddrBits - logHeapArenaBytes - arenaL1Bits // 注释：22 = 48 - 26 - 0
 
 	// arenaL1Shift is the number of bits to shift an arena frame
 	// number by to compute an index into the first level arena map.
@@ -311,7 +311,7 @@ const (
 	//
 	// On other platforms, the user address space is contiguous
 	// and starts at 0, so no offset is necessary.
-	arenaBaseOffset = 0xffff800000000000*sys.GoarchAmd64 + 0x0a00000000000000*sys.GoosAix
+	arenaBaseOffset = 0xffff800000000000*sys.GoarchAmd64 + 0x0a00000000000000*sys.GoosAix // 注释：arena的基础偏移量(地址大于在这个偏移量之后开始存储arena数据)
 	// A typed version of this constant that will make it into DWARF (for viewcore).
 	arenaBaseOffsetUintptr = uintptr(arenaBaseOffset)
 

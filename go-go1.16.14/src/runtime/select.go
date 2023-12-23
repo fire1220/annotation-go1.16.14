@@ -131,8 +131,8 @@ func block() {
 // 注释：运行select case语句的时候会执行该函数
 // 注释：cas0 存放的是case管道数组首指针；
 // 注释：order0 存放的值是case管道数组的下标数组首指针。
-// 注释：nsends 存放case里发送管道类型的管道数量
-// 注释：nrecvs 存放case里接受管道类型的管道数量
+// 注释：nsends (发送总数)存放case里发送管道类型的管道数量
+// 注释：nrecvs (接收总数)存放case里接受管道类型的管道数量
 // 注释：block 是否需要阻塞
 func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, block bool) (int, bool) {
 	if debugSelect {
@@ -142,24 +142,24 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// NOTE: In order to maintain a lean stack size, the number of scases
 	// is capped at 65536.
 	// 注释：为了保持精简堆栈大小，scase的数量上限为65536。
-	cas1 := (*[1 << 16]scase)(unsafe.Pointer(cas0))      // 注释：case是存放在数组里的，数组个数是1<<16个
-	order1 := (*[1 << 17]uint16)(unsafe.Pointer(order0)) // 注释：（大小是case的两倍）存放排序后的数组下标，前半部分是乱序的下标，后半部分是下标对应的锁
+	cas1 := (*[1 << 16]scase)(unsafe.Pointer(cas0))      // 注释：(case数组)case是存放在数组里的，数组个数是1<<16个
+	order1 := (*[1 << 17]uint16)(unsafe.Pointer(order0)) // 注释：(case下标,包括正常、打乱后下标)（大小是case的两倍）存放排序后的数组下标，前半部分是乱序的下标，后半部分是下标对应的锁
 
-	ncases := nsends + nrecvs                    // 注释：接受管道和发送管道的个数
-	scases := cas1[:ncases:ncases]               // 注释：管道数组转换成slice
-	pollorder := order1[:ncases:ncases]          // 注释：(order1数组的上半部分)存储slice打乱后的数组下标
-	lockorder := order1[ncases:][:ncases:ncases] // 注释：(order1数组的下半部分)存储slice下标对应的锁数据
+	ncases := nsends + nrecvs                    // 注释：(case总数)接受和发送管道总数之和
+	scases := cas1[:ncases:ncases]               // 注释：(case切片)管道数组转换成slice
+	pollorder := order1[:ncases:ncases]          // 注释：(case打乱的下标)(order1数组的上半部分)存储slice打乱后的数组下标(key)
+	lockorder := order1[ncases:][:ncases:ncases] // 注释：(case正常的下标)(order1数组的下半部分)存储slice下标对应的锁数据(key正常下标；value随机下标)
 	// NOTE: pollorder/lockorder's underlying array was not zero-initialized by compiler.
 
 	// Even when raceenabled is true, there might be select
 	// statements in packages compiled without -race (e.g.,
 	// ensureSigM in runtime/signal_unix.go).
-	var pcs []uintptr
+	var pcs []uintptr              // 注释：检测数据竞争时使用
 	if raceenabled && pc0 != nil { // 注释：判读是否开启数据竞争
-		pc1 := (*[1 << 16]uintptr)(unsafe.Pointer(pc0))
-		pcs = pc1[:ncases:ncases]
+		pc1 := (*[1 << 16]uintptr)(unsafe.Pointer(pc0)) // 注释：构建PC地址
+		pcs = pc1[:ncases:ncases]                       // 注释：构建PC切片
 	}
-	casePC := func(casi int) uintptr {
+	casePC := func(casi int) uintptr { // 注释：检测数据竞争时使用
 		if pcs == nil {
 			return 0
 		}
@@ -180,7 +180,8 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	// optimizing (and needing to test).
 
 	// generate permuted order
-	norder := 0             // 注释：没有随机的case切片下标
+	// 注释：组装case打乱和正常的下标切片
+	norder := 0             // 注释：临时下标（为了踢出nil的管道）
 	for i := range scases { // 注释：遍历case切片数据，打乱case切片数据，实现case的随机执行
 		cas := &scases[i] // 注释：获取case的数据
 
@@ -190,28 +191,32 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 			continue
 		}
 
-		j := fastrandn(uint32(norder + 1)) // 注释：随机出一个下标，通过存放下标，进行数据打乱，实现case随机执行
-		pollorder[norder] = pollorder[j]   // 注释：交换数据，当前数组下标数据和随机后的下标数据进行交换，数据为case切片的小标编号
-		pollorder[j] = uint16(i)           // 注释：把当前的小标编号存放到随机的下标编号的位置。
-		norder++                           // 注释：当前下标加一
+		j := fastrandn(uint32(norder + 1)) // 注释：(随机)随机出一个下标，通过存放下标，进行数据打乱，实现case随机执行
+		pollorder[norder] = pollorder[j]   // 注释：(交换)交换数据，当前数组下标数据和随机后的下标数据进行交换，数据为case切片的小标编号
+		pollorder[j] = uint16(i)           // 注释：(交换)把当前的小标编号存放到随机的下标编号的位置。
+		norder++                           // 注释：当前下标(踢出nil管道的当前下标)
 	}
-	pollorder = pollorder[:norder] // 注释：记录打乱后的case切片有效数据的下标
-	lockorder = lockorder[:norder] // 注释：用来记录case切片有效数据的下标，标记case下标对应的锁
+	pollorder = pollorder[:norder] // 注释：(case随机的下标)(有数据)记录打乱后的case切片有效数据的下标
+	lockorder = lockorder[:norder] // 注释：(case正常的下标)(无数据)用来记录case切片有效数据的下标，标记case下标对应的锁
 
 	// sort the cases by Hchan address to get the locking order.
 	// simple heap sort, to guarantee n log n time and constant stack footprint.
 	// 注释：根据Hchan地址对cases进行排序以获得锁定顺序。简单的堆排序，以保证log n时间和恒定的堆栈占用空间。
 	// 注释：大堆排序
 	// 注释：构建大堆二叉树
-	for i := range lockorder { // 注释：程序向后遍历
+	// 注释：组装lockorder(正常下标数据)
+	for i := range lockorder { // 注释：(遍历正常下标)程序向后遍历
 		j := i // 注释：记录当前节点坐标
 		// Start with the pollorder to permute cases on the same channel.
 		// 注释：从轮询顺序开始，在同一频道上排列案例。
-		c := scases[pollorder[i]].c // 注释：(当前case的下标)获取打乱后的case的管道数据
+		c := scases[pollorder[i]].c // 注释：(随机管道)(当前case的下标)获取打乱后的case的管道数据
 		// 注释：程序向前遍历
-		for j > 0 && scases[lockorder[(j-1)/2]].c.sortkey() < c.sortkey() { // 注释：父节点和子节点比较，子节点大于父节点是交换数据
-			k := (j - 1) / 2            // 注释：父节点位置
-			lockorder[j] = lockorder[k] // 注释：交换节点数据
+		// 注释：把随机节点复制到正常节点切片中(pollorder[i]随机下标，lockorder[j]正常下标)
+		// 注释：当前父节点和子节点(随机管道)比较，如果随机管道大，则交换，并且再次比较上级父节点，直到其中一个父节点大时停止
+		// 注释：保证父节点大于子节点
+		for j > 0 && scases[lockorder[(j-1)/2]].c.sortkey() < c.sortkey() { // 注释：(向上逐个父节点和随机节点比较),随机节点大时交换并继续比较，直到随机节点小时退出
+			k := (j - 1) / 2            // 注释：(父节点)父节点位置
+			lockorder[j] = lockorder[k] // 注释：父子节点交换(j子节点k父节点)
 			j = k                       // 注释：从父节点位置重新循环比较
 		}
 		lockorder[j] = pollorder[i] // 注释：最大节点位置存储当前case的下标
@@ -275,10 +280,10 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	var caseSuccess bool
 	var caseReleaseTime int64 = -1
 	var recvOK bool
-	for _, casei := range pollorder { // 注释：遍历打乱顺序后的下标(就是实现随机执行case，这里根据这个乱序循环执行对应的case)
-		casi = int(casei)   // 注释：(要执行的case元素下标)拿出当前下标
-		cas = &scases[casi] // 注释：case的元素，当前下标对应的case
-		c = cas.c           // 注释：chan管道
+	for _, casei := range pollorder { // 注释：(下标)遍历打乱顺序后的下标(就是实现随机执行case，这里根据这个乱序循环执行对应的case)
+		casi = int(casei)   // 注释：(下标)(要执行的case元素下标)拿出当前下标
+		cas = &scases[casi] // 注释：(元素)case的元素，当前下标对应的case
+		c = cas.c           // 注释：(管道)chan管道
 
 		if casi >= nsends { // 注释：(处理管道读操作)大于发送总数，代表case是接收管道
 			sg = c.sendq.dequeue() // 注释：到写入阻塞队列中取出数据，（接收管道，首先是看发送阻塞管道里是否有数据，如果有数据优先取出来）

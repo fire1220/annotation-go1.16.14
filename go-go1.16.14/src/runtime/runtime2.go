@@ -195,10 +195,13 @@ type note struct {
 	key uintptr // 注释：这里的值是【0或1或*M】0什么都不做，1表示已经是唤醒状态，*M待唤醒的M指针
 }
 
+// 注释：存储方法的结构体
+// 注释：还有一些隐士的字段，参考 runtime.reflectMethodValue 结构体
 type funcval struct {
 	fn uintptr
 	// variable-size, fn-specific data here
 	// 注释：这里在newproc中定义了一个指针的大小用来存储P指针
+	// 注释：后面会有两个属性分别是(stack *bitvector 和 argLen uintptr，参考 reflectMethodValue )
 }
 
 // 注释：带方法签名的接口在运行时的具体结构体
@@ -1012,6 +1015,7 @@ type _panic struct {
 }
 
 // stack traces
+// 注释：堆栈跟踪
 type stkframe struct {
 	fn       funcInfo   // function being run
 	pc       uintptr    // program counter within fn

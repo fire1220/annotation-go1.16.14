@@ -564,6 +564,7 @@ func gentraceback(pc0, sp0, lr0 uintptr, gp *g, skip int, pcbuf *uintptr, max in
 
 // reflectMethodValue is a partial duplicate of reflect.makeFuncImpl
 // and reflect.methodValue.
+// 注释：译：reflectMethodValue是reflect.makeFuncImpl和reflect.methodValue的部分副本。
 type reflectMethodValue struct {
 	fn     uintptr
 	stack  *bitvector // 注释：译：参数和结果的ptrmap // ptrmap for both args and results
@@ -601,6 +602,7 @@ func getArgInfo(frame *stkframe, f funcInfo, needArgMap bool, ctxt *funcval) (ar
 				// This is not an actual call, but a
 				// deferred call or an unstarted goroutine.
 				// The function value is itself the *reflect.methodValue.
+				// 注释：译：这不是一个实际的调用，而是一个延迟调用或未启动的goroutine。函数值本身就是*reflect.methodValue。
 				mv = (*reflectMethodValue)(unsafe.Pointer(ctxt))
 			} else {
 				// This is a real call that took the

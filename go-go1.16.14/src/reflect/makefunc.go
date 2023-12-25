@@ -15,6 +15,7 @@ import (
 // The first three words of this type must be kept in sync with
 // methodValue and runtime.reflectMethodValue.
 // Any changes should be reflected in all three.
+// 注释：译：makeFuncImpl是实现MakeFunc返回的函数的闭包值。此类型的前三个字必须与methodValue和runtime.reflectMethodValue保持同步。任何更改都应反映在这三个字中。
 type makeFuncImpl struct {
 	code   uintptr
 	stack  *bitVector // ptrmap for both args and results

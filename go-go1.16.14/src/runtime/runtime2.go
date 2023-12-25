@@ -198,7 +198,7 @@ type note struct {
 // 注释：存储方法的结构体
 // 注释：还有一些隐士的字段，参考 runtime.reflectMethodValue 结构体
 type funcval struct {
-	fn uintptr
+	fn uintptr // 注释：指令指针，PC值
 	// variable-size, fn-specific data here
 	// 注释：这里在newproc中定义了一个指针的大小用来存储P指针
 	// 注释：后面会有两个属性分别是(stack *bitvector 和 argLen uintptr，参考 reflectMethodValue )

@@ -567,7 +567,7 @@ func gentraceback(pc0, sp0, lr0 uintptr, gp *g, skip int, pcbuf *uintptr, max in
 // 注释：译：reflectMethodValue是reflect.makeFuncImpl和reflect.methodValue的部分副本。
 type reflectMethodValue struct {
 	fn     uintptr
-	stack  *bitvector // 注释：译：参数和结果的ptrmap // ptrmap for both args and results
+	stack  *bitvector // 注释：译：参数和返回值的ptrmap // ptrmap for both args and results
 	argLen uintptr    // just args
 }
 

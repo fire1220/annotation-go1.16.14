@@ -562,8 +562,9 @@ func adjustpointer(adjinfo *adjustinfo, vpp unsafe.Pointer) {
 
 // Information from the compiler about the layout of stack frames.
 // Note: this type must agree with reflect.bitVector.
+// 注释：译：来自编译器的有关堆栈帧布局的信息。 注意：此类型必须与reflect.bitVector一致。
 type bitvector struct {
-	n        int32 // # of bits
+	n        int32 // 注释：参数大小（单位是指针大小）(对应参考 stkframe.arglen 值)（例如：2表示：2*sys.PtrSize）// # of bits
 	bytedata *uint8
 }
 
@@ -1300,7 +1301,7 @@ func getStackMap(frame *stkframe, cache *pcvalueCache, debug bool) (locals, args
 				throw("bad symbol table")
 			}
 			if stackmap.nbit > 0 {
-				args = stackmapdata(stackmap, pcdata)
+				args = stackmapdata(stackmap, pcdata) // 注释：【ing】
 			}
 		}
 	}

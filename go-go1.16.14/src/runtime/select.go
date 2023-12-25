@@ -226,7 +226,7 @@ func selectgo(cas0 *scase, order0 *uint16, pc0 *uintptr, nsends, nrecvs int, blo
 	for i := len(lockorder) - 1; i >= 0; i-- {
 		o := lockorder[i]           // 注释：(最后节点)当前下标
 		c := scases[o].c            // 注释：(最后节点管道)
-		lockorder[i] = lockorder[0] // 注释：(替换最后节点)把跟节点替换最后节点(其实就是踢出跟节点,因为下次循环的时候i--正好把最后一个节点踢出了)
+		lockorder[i] = lockorder[0] // 注释：(把第一个元素踢出)(替换最后节点)把跟节点替换最后节点(其实就是踢出跟节点,因为下次循环的时候i--正好把最后一个节点踢出了)
 		j := 0                      // 注释：从头遍历lockorder，(默认开始的遍历的节点下标)
 		for {
 			k := j*2 + 1 // 注释：左子节点(右子节点是j*2+2)

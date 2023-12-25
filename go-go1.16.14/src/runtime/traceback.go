@@ -566,7 +566,7 @@ func gentraceback(pc0, sp0, lr0 uintptr, gp *g, skip int, pcbuf *uintptr, max in
 // and reflect.methodValue.
 type reflectMethodValue struct {
 	fn     uintptr
-	stack  *bitvector // ptrmap for both args and results
+	stack  *bitvector // 注释：译：参数和结果的ptrmap // ptrmap for both args and results
 	argLen uintptr    // just args
 }
 

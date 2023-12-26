@@ -12,21 +12,24 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 	LEAQ ret+32(FP), R8
 	JMP  indexbytebody<>(SB)
 
+// 注释：返回比较字节字符在字符串中出现的位置，例如：x := IndexByteString("hello world", 'o')；这是x为4
 TEXT	·IndexByteString(SB), NOSPLIT, $0-32
-	MOVQ s_base+0(FP), SI
-	MOVQ s_len+8(FP), BX
-	MOVB c+16(FP), AL
-	LEAQ ret+24(FP), R8
-	JMP  indexbytebody<>(SB)
+	MOVQ s_base+0(FP), SI           // 注释：参数一，go字符串的str，放到寄存器SI中
+	MOVQ s_len+8(FP), BX            // 注释：参数一，go字符串的len，放到寄存器BX中
+	MOVB c+16(FP), AL               // 注释：参数二，要查找的字节字符，放到寄存器AL中
+	LEAQ ret+24(FP), R8             // 注释：返回值指针放到寄存器R8中
+	JMP  indexbytebody<>(SB)        // 注释：执行函数，修改返回值寄存器R8中的指针（返回值赋值），并返回
 
 // input:
 //   SI: data
 //   BX: data len
 //   AL: byte sought
 //   R8: address to put result
+// 注释：在字符串中查找字符，入参都在寄存器里，寄存器： SI字符串数据，BX字符串长度，AL要查找的字节字符，R8返回数据的指针
 TEXT	indexbytebody<>(SB), NOSPLIT, $0
 	// Shuffle X0 around so that each byte contains
 	// the character we're looking for.
+	// 注释：译：打乱X0，使每个字节都包含我们要查找的字符。
 	MOVD AX, X0
 	PUNPCKLBW X0, X0
 	PUNPCKLBW X0, X0
@@ -84,8 +87,8 @@ ssesuccess:
 
 // handle for lengths < 16
 small:
-	TESTQ	BX, BX
-	JEQ	failure
+	TESTQ	BX, BX // 注释：BX & BX ，值如果是0，会设置比较寄存器为1（true，表示相等）
+	JEQ	failure // 注释：(如果BX&BX等于0则相等)相等时报错
 
 	// Check if we'll load across a page boundary.
 	LEAQ	16(SI), AX

@@ -875,6 +875,9 @@ const (
 // See https://golang.org/s/go12symtab.
 // Keep in sync with linker (../cmd/link/internal/ld/pcln.go:/pclntab)
 // and with package debug/gosym and with symtab.go in package runtime.
+// 注释：译：链接器准备的内存中每个函数信息的布局请参阅https://golang.org/s/go12symtab.
+//		在包运行时与链接器（../cmd/link/internal/ld/pcln.go:/pclntab）、包调试/gosym和symtab.go保持同步。
+// 函数方法的基础信息
 type _func struct {
 	entry   uintptr // start pc
 	nameoff int32   // function name

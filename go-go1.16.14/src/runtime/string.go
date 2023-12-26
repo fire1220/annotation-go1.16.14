@@ -24,7 +24,7 @@ type tmpBuf [tmpStringBufSize]byte
 // 注释：连接字符串
 func concatstrings(buf *tmpBuf, a []string) string {
 	idx := 0
-	l := 0 // 注释：有效的总字符串字节长度
+	l := 0     // 注释：有效的总字符串字节长度
 	count := 0 // 注释：有效的字符串个数
 	for i, x := range a {
 		n := len(x)
@@ -51,7 +51,7 @@ func concatstrings(buf *tmpBuf, a []string) string {
 	// 注释：通过字节数创建空间，返回字符串和指向字符串地址的[]byte,这样在下面就可以直接复制到[]byte里（间接复制到字符串里），然返回字符串
 	s, b := rawstringtmp(buf, l) // 注释：申请内存，返回string和slice，两个共用同一块内存，通过修改slice实现变更string
 	for _, x := range a {
-		copy(b, x) // 注释：复制到[]byte里
+		copy(b, x)     // 注释：复制到[]byte里
 		b = b[len(x):] // 注释：把b指针向后移动，移动到一下个x位置
 	}
 	return s
@@ -418,6 +418,7 @@ func findnull(s *byte) int {
 	// Avoid IndexByteString on Plan 9 because it uses SSE instructions
 	// on x86 machines, and those are classified as floating point instructions,
 	// which are illegal in a note handler.
+	// 注释：译：在Plan 9中避免使用IndexByteString，因为它在x86计算机上使用SSE指令，并且这些指令被归类为浮点指令，在注释处理程序中是非法的。
 	if GOOS == "plan9" {
 		p := (*[maxAlloc/2 - 1]byte)(unsafe.Pointer(s))
 		l := 0

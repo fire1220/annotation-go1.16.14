@@ -337,6 +337,7 @@ const (
 )
 
 // pcHeader holds data used by the pclntab lookups.
+// 注释：译：pcHeader保存pclntab查找所使用的数据。
 type pcHeader struct {
 	magic          uint32  // 0xFFFFFFFA
 	pad1, pad2     uint8   // 0,0
@@ -356,6 +357,8 @@ type pcHeader struct {
 // matched changes to the code in cmd/internal/ld/symtab.go:symtab.
 // moduledata is stored in statically allocated non-pointer memory;
 // none of the pointers here are visible to the garbage collector.
+// 注释：译：moduledata记录关于可执行映像的布局的信息。它是由链接器编写的。此处的任何更改都必须与cmd/internal/ld/symtab.go:symtab中的代码更改相匹配。
+//		moduledata存储在静态分配的非指针内存中；这里的指针对垃圾收集器都不可见。
 type moduledata struct {
 	pcHeader     *pcHeader
 	funcnametab  []byte
@@ -659,8 +662,8 @@ func findmoduledatap(pc uintptr) *moduledata {
 
 // 注释：函数方法的详细信息
 type funcInfo struct {
-	*_func
-	datap *moduledata
+	*_func             // 注释：函数方法的基础信息
+	datap  *moduledata // 注释：函数方法的数据指针
 }
 
 func (f funcInfo) valid() bool {

@@ -88,20 +88,21 @@ ssesuccess:
 // handle for lengths < 16
 small:
 	TESTQ	BX, BX // 注释：BX & BX ，值如果是0，会设置比较寄存器为1（true，表示相等）
-	JEQ	failure // 注释：(如果BX&BX等于0则相等)相等时报错
+	JEQ	failure // 注释：BX非空时返回-1
 
 	// Check if we'll load across a page boundary.
+	// 注释：译：检查我们是否要跨越页边界加载。
 	LEAQ	16(SI), AX
 	TESTW	$0xff0, AX
 	JEQ	endofpage
 
-	MOVOU	(SI), X1 // Load data
-	PCMPEQB	X0, X1	// Compare target byte with each byte in data.
-	PMOVMSKB X1, DX	// Move result bits to integer register.
-	BSFL	DX, DX	// Find first set bit.
-	JZ	failure	// No set bit, failure.
-	CMPL	DX, BX
-	JAE	failure	// Match is past end of data.
+	MOVOU	(SI), X1 // Load data                                   // 注释：译：加载数据
+	PCMPEQB	X0, X1	// Compare target byte with each byte in data.  // 注释：译：将目标字节与数据中的每个字节进行比较
+	PMOVMSKB X1, DX	// Move result bits to integer register.        // 注释：译：将结果位移动到整数寄存器
+	BSFL	DX, DX	// Find first set bit.                          // 注释：译：查找第一个设置位
+	JZ	failure	// No set bit, failure.                             // 注释：译：无设定位，故障
+	CMPL	DX, BX                                                  // 注释：比较查找后的位置下标和字符串长度，如果位置下标>=字符串长度则返回-1
+	JAE	failure	// Match is past end of data.                       // 注释：译：匹配已过数据末尾
 	MOVQ	DX, (R8)
 	RET
 

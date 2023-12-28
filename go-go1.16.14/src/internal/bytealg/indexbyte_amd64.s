@@ -36,12 +36,12 @@ TEXT	indexbytebody<>(SB), NOSPLIT, $0
 	PSHUFL $0, X0, X0
 
 	CMPQ BX, $16
-	JLT small
+	JLT small               // 注释：小于16时处理
 
 	MOVQ SI, DI
 
 	CMPQ BX, $32
-	JA avx2
+	JA avx2                 // 注释：小于等于32时处理
 sse:
 	LEAQ	-16(SI)(BX*1), AX	// AX = address of last 16 bytes
 	JMP	sseloopentry

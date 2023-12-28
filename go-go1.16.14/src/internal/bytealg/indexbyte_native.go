@@ -10,4 +10,4 @@ package bytealg
 func IndexByte(b []byte, c byte) int
 
 //go:noescape
-func IndexByteString(s string, c byte) int
+func IndexByteString(s string, c byte) int // 注释：返回比较字节字符在字符串中出现的位置(从0开始),没有找到返回-1，例如：x := IndexByteString("hello world", 'o')；这是x为4

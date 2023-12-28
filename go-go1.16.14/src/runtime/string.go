@@ -444,7 +444,7 @@ func findnull(s *byte) int {
 	for {
 		t := *(*string)(unsafe.Pointer(&stringStruct{ptr, safeLen}))
 		// Check one page at a time.
-		if i := bytealg.IndexByteString(t, 0); i != -1 {
+		if i := bytealg.IndexByteString(t, 0); i != -1 { // 注释：查找出现0的位置，没有找到返回-1
 			return offset + i
 		}
 		// Move to next page
@@ -469,9 +469,9 @@ func findnullw(s *uint16) int {
 // 注释：把slice转换成string（不复制数据）
 //go:nosplit
 func gostringnocopy(str *byte) string {
-	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)}
-	s := *(*string)(unsafe.Pointer(&ss))
-	return s
+	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)} // 注释：组装字符串结构体
+	s := *(*string)(unsafe.Pointer(&ss))                             // 注释：把字符串结构体指针转化成字符串
+	return s                                                         // 注释：返回字符串
 }
 
 func gostringw(strw *uint16) string {

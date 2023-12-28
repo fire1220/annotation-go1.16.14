@@ -12,7 +12,7 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 	LEAQ ret+32(FP), R8
 	JMP  indexbytebody<>(SB)
 
-// 注释：返回比较字节字符在字符串中出现的位置，例如：x := IndexByteString("hello world", 'o')；这是x为4
+// 注释：返回比较字节字符在字符串中出现的位置(从0开始),没有找到返回-1，例如：x := IndexByteString("hello world", 'o')；这是x为4
 TEXT	·IndexByteString(SB), NOSPLIT, $0-32
 	MOVQ s_base+0(FP), SI           // 注释：参数一，go字符串的str，放到寄存器SI中
 	MOVQ s_len+8(FP), BX            // 注释：参数一，go字符串的len，放到寄存器BX中
@@ -88,7 +88,7 @@ ssesuccess:
 // handle for lengths < 16
 small:
 	TESTQ	BX, BX // 注释：BX & BX ，值如果是0，会设置比较寄存器为1（true，表示相等）
-	JEQ	failure // 注释：BX非空时返回-1
+	JEQ	failure // 注释：BX非空时返回-1(没有找到返回-1)
 
 	// Check if we'll load across a page boundary.
 	// 注释：译：检查我们是否要跨越页边界加载。
@@ -99,11 +99,11 @@ small:
 	MOVOU	(SI), X1 // Load data                                   // 注释：译：加载数据
 	PCMPEQB	X0, X1	// Compare target byte with each byte in data.  // 注释：译：将目标字节与数据中的每个字节进行比较
 	PMOVMSKB X1, DX	// Move result bits to integer register.        // 注释：译：将结果位移动到整数寄存器
-	BSFL	DX, DX	// Find first set bit.                          // 注释：查找第一个设置位，从右向左扫描DX(第二个)第一个含"1"的位，并把位号放到DX(第一个)里(位号从1开始)
-	JZ	failure	// No set bit, failure.                             // 注释：译：无设定位，故障
+	BSFL	DX, DX	// Find first set bit.                          // 注释：查找第一个设置位，从右向左扫描DX(第二个)第一个含"1"的位，并把位号放到DX(第一个)里(位号从0开始)
+	JZ	failure	// No set bit, failure.                             // 注释：译：无设定位，故障(没有找到返回-1)
 	CMPL	DX, BX                                                  // 注释：比较查找后的位置下标和字符串长度，如果位置下标>=字符串长度则返回-1
-	JAE	failure	// Match is past end of data.                       // 注释：译：匹配已过数据末尾
-	MOVQ	DX, (R8)                                                // 注释：把查找后的位号放到返回值寄存器R8里
+	JAE	failure	// Match is past end of data.                       // 注释：译：匹配已过数据末尾(没有找到返回-1)
+	MOVQ	DX, (R8)                                                // 注释：把查找后的下标（位号）放到返回值寄存器R8里
 	RET
 
 endofpage:

@@ -409,6 +409,8 @@ func atoi32(s string) (int32, bool) {
 	return 0, false
 }
 
+// 注释：查找0的下标，用户找C字符串的结尾位置。
+// 注释：以页为单位循环扫描字符串结尾，直到找到0结束，并返回字符串长度
 //go:nosplit
 func findnull(s *byte) int {
 	if s == nil {
@@ -439,18 +441,19 @@ func findnull(s *byte) int {
 	// IndexByteString uses wide reads, so we need to be careful
 	// with page boundaries. Call IndexByteString on
 	// [ptr, endOfPage) interval.
-	safeLen := int(pageSize - uintptr(ptr)%pageSize)
+	safeLen := int(pageSize - uintptr(ptr)%pageSize) // 注释：最有一个页的数据，（可能不满整页，则用整页减去余数，精确扫描的长度）
 
+	// 注释：以页为单位循环扫描字符串结尾，直到找到0结束，并返回字符串长度
 	for {
-		t := *(*string)(unsafe.Pointer(&stringStruct{ptr, safeLen}))
+		t := *(*string)(unsafe.Pointer(&stringStruct{ptr, safeLen})) // 注释：构建字符串，临时使用
 		// Check one page at a time.
-		if i := bytealg.IndexByteString(t, 0); i != -1 { // 注释：查找出现0的位置，没有找到返回-1
+		if i := bytealg.IndexByteString(t, 0); i != -1 { // 注释：如果找到0返回该位置的偏移量
 			return offset + i
 		}
 		// Move to next page
-		ptr = unsafe.Pointer(uintptr(ptr) + uintptr(safeLen))
-		offset += safeLen
-		safeLen = pageSize
+		ptr = unsafe.Pointer(uintptr(ptr) + uintptr(safeLen)) // 注释：C字符串指针偏移，偏移到下一个页的开头处
+		offset += safeLen                                     // 注释：记录总长度
+		safeLen = pageSize                                    // 注释：(以页为单位循环扫描字符串结尾)页尺寸，（下一个月的大小）
 	}
 }
 
@@ -467,6 +470,7 @@ func findnullw(s *uint16) int {
 }
 
 // 注释：把slice转换成string（不复制数据）
+// 注释：返回字符串，str是C字符串，用0分隔多个字符串，这里就是把0前面的字符串拿出来，组成Go字符串并返回
 //go:nosplit
 func gostringnocopy(str *byte) string {
 	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)} // 注释：组装字符串结构体

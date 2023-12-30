@@ -880,7 +880,7 @@ const (
 // 函数方法的基础信息
 type _func struct {
 	entry   uintptr // start pc
-	nameoff int32   // function name
+	nameoff int32   // 注释：方法名称头指针偏移量，这个方法名称存储在一个大的C字符串中，多个用0分隔，这里记录C字符串头指针的偏移量 // function name
 
 	args        int32  // in/out args size
 	deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.

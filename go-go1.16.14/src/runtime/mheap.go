@@ -510,7 +510,7 @@ type mspan struct {
 	needzero    uint8         // 注释：需要在分配前归零(零填充)，1是0否 // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2
-	elemsize    uintptr       // 注释：(块打下)存储的单个对象大小；(对应class表中的【bytes/obj】字段,地址:/src/runtime/sizeclasses.go) // computed from sizeclass or from npages
+	elemsize    uintptr       // 注释：(块大小)存储的单个对象大小；(对应class表中的【bytes/obj】字段,地址:/src/runtime/sizeclasses.go) // computed from sizeclass or from npages
 	limit       uintptr       // end of data in span
 	speciallock mutex         // guards specials list
 	specials    *special      // 注释：译：按偏移量排序的特殊记录的链接列表。 // linked list of special records sorted by offset.

@@ -1028,7 +1028,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	}
 	var span *mspan // 注释：定义span
 	var x unsafe.Pointer
-	noscan := typ == nil || typ.ptrdata == 0
+	noscan := typ == nil || typ.ptrdata == 0 // 注释：不扫描标识，如果不存在或者不含有指针时为true
+	// 注释：下面是微对象、小对象、大对象的分配
 	if size <= maxSmallSize { // 注释：(微小对象分配)如果小于等于32KB是表示为小对象或者微小对象分配
 		// 注释：微型分配器。
 		if noscan && size < maxTinySize { // 注释：如果小于16KB表示是微小对象分配
@@ -1137,20 +1138,22 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	} else { // 大对象分配
 		shouldhelpgc = true                         // 注释：是否申请新的span表示，因为大对象是直接申请新的span所以这里是true
 		span = c.allocLarge(size, needzero, noscan) // 注释：大对象分配
-		span.freeindex = 1
-		span.allocCount = 1
-		x = unsafe.Pointer(span.base())
-		size = span.elemsize
+		span.freeindex = 1                          // 注释：下一个空闲块下标
+		span.allocCount = 1                         // 注释：已经分别块的数量
+		x = unsafe.Pointer(span.base())             // 注释：获取span的基地址
+		size = span.elemsize                        // 注释：块大小
 	}
 
 	var scanSize uintptr
-	if !noscan {
+	if !noscan { // 注释：如果需要扫描则运行（不扫描标识）
 		// If allocating a defer+arg block, now that we've picked a malloc size
 		// large enough to hold everything, cut the "asked for" size down to
 		// just the defer header, so that the GC bitmap will record the arg block
 		// as containing nothing at all (as if it were unused space at the end of
 		// a malloc block caused by size rounding).
 		// The defer arg areas are scanned as part of scanstack.
+		// 注释：译：如果分配一个defer+arg块，现在我们已经选择了一个足够大的malloc大小来容纳所有内容，那么将“请求”的大小缩小到只有defer标头，
+		//		这样GC位图就会将arg块记录为完全不包含任何内容（就好像它是由大小舍入引起的malloc块末尾的未使用空间一样）。延迟参数区域作为扫描堆栈的一部分进行扫描。
 		if typ == deferType {
 			dataSize = unsafe.Sizeof(_defer{})
 		}

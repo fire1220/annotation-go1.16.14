@@ -1246,40 +1246,47 @@ const (
 	// gcTriggerHeap indicates that a cycle should be started when
 	// the heap size reaches the trigger heap size computed by the
 	// controller.
-	gcTriggerHeap gcTriggerKind = iota
+	// 注释：译：gcTriggerHeap表示当堆大小达到控制器计算的触发堆大小时，应该启动一个循环。
+	gcTriggerHeap gcTriggerKind = iota // 注释：分配内存时出发GC
 
 	// gcTriggerTime indicates that a cycle should be started when
 	// it's been more than forcegcperiod nanoseconds since the
 	// previous GC cycle.
-	gcTriggerTime
+	// 注释：译：gcTriggerTime表示自上一个GC周期以来超过forcegcperiod纳秒时，应启动一个周期。
+	gcTriggerTime // 注释：系统协成触发GC(约每2分钟触发一次)
 
 	// gcTriggerCycle indicates that a cycle should be started if
 	// we have not yet started cycle number gcTrigger.n (relative
 	// to work.cycles).
-	gcTriggerCycle
+	// 注释：译：gcTriggerCycle表示，如果我们还没有启动周期编号gcTrigger.n（相对于work.cycles），则应该启动一个周期。
+	gcTriggerCycle // 注释：手动触发GC
 )
 
 // test reports whether the trigger condition is satisfied, meaning
 // that the exit condition for the _GCoff phase has been met. The exit
 // condition should be tested when allocating.
+// 注释：译：测试报告是否满足触发条件，这意味着_GCoff阶段的退出条件已经满足。分配时应测试退出条件。
+// 注释：返回是否满足触发GC
 func (t gcTrigger) test() bool {
-	if !memstats.enablegc || panicking != 0 || gcphase != _GCoff {
+	if !memstats.enablegc || panicking != 0 || gcphase != _GCoff { // 注释：如果不允许垃圾收集、程序有崩溃、GC阶段不是关闭状态(处于垃圾收集循环)
 		return false
 	}
+	// 注释：满足触发垃圾收集条件：允许垃圾收集、程序没有崩溃、没有处于垃圾收集循环
 	switch t.kind {
-	case gcTriggerHeap:
+	case gcTriggerHeap: // 注释：分配内存时出发GC
 		// Non-atomic access to heap_live for performance. If
 		// we are going to trigger on this, this thread just
 		// atomically wrote heap_live anyway and we'll see our
 		// own write.
+		// 注释：译：非原子访问heap_live以提高性能。如果我们要对此进行触发，那么这个线程只是原子地编写了heap_live，我们将看到自己的编写。
 		return memstats.heap_live >= memstats.gc_trigger
-	case gcTriggerTime:
+	case gcTriggerTime: // 注释：系统协成触发GC(约每2分钟触发一次)
 		if gcpercent < 0 {
 			return false
 		}
 		lastgc := int64(atomic.Load64(&memstats.last_gc_nanotime))
 		return lastgc != 0 && t.now-lastgc > forcegcperiod
-	case gcTriggerCycle:
+	case gcTriggerCycle: // 注释：手动触发GC
 		// t.n > work.cycles, but accounting for wraparound.
 		return int32(t.n-work.cycles) > 0
 	}

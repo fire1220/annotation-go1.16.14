@@ -23,7 +23,7 @@ type mcache struct {
 	// The following members are accessed on every malloc,
 	// so they are grouped here for better caching.
 	// 注释：以下成员在每个malloc上都可以访问，因此在这里对它们进行分组以获得更好的缓存。
-	nextSample uintptr // 注释：分配这么多字节后触发堆示例 // trigger heap sample after allocating this many bytes
+	nextSample uintptr // 注释：分配这么多字节后触发堆实例 // trigger heap sample after allocating this many bytes
 	scanAlloc  uintptr // 注释：已分配的可扫描堆的字节数 // bytes of scannable heap allocated
 
 	// Allocator cache for tiny objects w/o pointers.

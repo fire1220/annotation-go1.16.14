@@ -1145,7 +1145,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	}
 
 	var scanSize uintptr
-	if !noscan { // 注释：如果需要扫描则运行（不扫描标识）
+	if !noscan { // 注释：如果需要GC扫描则运行（GC不扫描标识）
 		// If allocating a defer+arg block, now that we've picked a malloc size
 		// large enough to hold everything, cut the "asked for" size down to
 		// just the defer header, so that the GC bitmap will record the arg block
@@ -1162,7 +1162,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// Array allocation. If there are any
 			// pointers, GC has to scan to the last
 			// element.
-			if typ.ptrdata != 0 {
+			// 注释：译：数组分配。如果有任何指针，GC必须扫描到最后一个元素。
+			if typ.ptrdata != 0 { // 注释：如果对象最后一个包含指针偏移量!=0说明包含指针
 				scanSize = dataSize - typ.size + typ.ptrdata
 			}
 		} else {

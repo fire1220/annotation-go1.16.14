@@ -1154,8 +1154,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		// The defer arg areas are scanned as part of scanstack.
 		// 注释：译：如果分配一个defer+arg块，现在我们已经选择了一个足够大的malloc大小来容纳所有内容，那么将“请求”的大小缩小到只有defer标头，
 		//		这样GC位图就会将arg块记录为完全不包含任何内容（就好像它是由大小舍入引起的malloc块末尾的未使用空间一样）。延迟参数区域作为扫描堆栈的一部分进行扫描。
-		if typ == deferType {
-			dataSize = unsafe.Sizeof(_defer{})
+		if typ == deferType { // 注释：如果是延迟调用函数则执行
+			dataSize = unsafe.Sizeof(_defer{}) // 注释：从新定义数据大小为延迟调用函数类型结构体大小
 		}
 		heapBitsSetType(uintptr(x), size, dataSize, typ)
 		if dataSize > typ.size {

@@ -568,7 +568,7 @@ type m struct {
 	lockedExt     uint32                        // tracking for external LockOSThread
 	lockedInt     uint32                        // tracking for internal lockOSThread
 	nextwaitm     muintptr                      // next m waiting for lock
-	waitunlockf   func(*g, unsafe.Pointer) bool // 注释：解除等待锁指针的函数
+	waitunlockf   func(*g, unsafe.Pointer) bool // 注释：解除等待锁指针的函数，系统协成执行完成后会调用该函数
 	waitlock      unsafe.Pointer                // 注释：等待锁指针
 	waittraceev   byte                          // 注释：等待追踪事件类型
 	waittraceskip int                           // 注释：跳过几层事件追踪的结果（事件追踪结果中从哪一级返回数据，跳过的是不重要的）

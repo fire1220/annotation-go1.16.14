@@ -172,7 +172,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		if !block {
 			return false
 		}
-		// 注释：如果channel为nil的时候，让渡G的控制权（携程G阻塞），然后抛出异常
+		// 注释：如果channel为nil的时候，让渡G的控制权（协成G阻塞），然后抛出异常
 		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}

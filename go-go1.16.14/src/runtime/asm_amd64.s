@@ -310,13 +310,14 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // Switch to m->g0's stack, call fn(g).
 // Fn must never return. It should gogo(&g->sched)
 // to keep running g.
+// 注释：执行 runtime.mcall 函数的汇编函数
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
-	MOVQ	fn+0(FP), DI
+	MOVQ	fn+0(FP), DI // 注释：(闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)
 
     // 注释：保存现场
-	get_tls(CX)
-	MOVQ	g(CX), AX	// save state in g->sched
-	MOVQ	0(SP), BX	// caller's PC
+	get_tls(CX)                             // 注释：获取TLS的G地址，放到CX寄存器里(里第一个地址就是G地址)
+	MOVQ	g(CX), AX	                    // 注释：把G地址放到AX里 // save state in g->sched
+	MOVQ	0(SP), BX	                    // 注释：硬件寄存器栈指针(栈顶)(存储当前PC值) // caller's PC
 	MOVQ	BX, (g_sched+gobuf_pc)(AX)
 	LEAQ	fn+0(FP), BX	// caller's SP
 	MOVQ	BX, (g_sched+gobuf_sp)(AX)
@@ -335,8 +336,8 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	(g_sched+gobuf_sp)(SI), SP	// sp = m->g0->sched.sp
 	PUSHQ	AX
 	MOVQ	DI, DX
-	MOVQ	0(DI), DI
-	CALL	DI
+	MOVQ	0(DI), DI                   // 注释：闭包函数指令
+	CALL	DI                          // 注释：执行闭包函数
 	POPQ	AX
 	MOVQ	$runtime·badmcall2(SB), AX
 	JMP	AX

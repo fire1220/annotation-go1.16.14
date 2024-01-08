@@ -185,6 +185,8 @@ type Pointer *ArbitraryType
 // For instance, if x is a slice, Sizeof returns the size of the slice
 // descriptor, not the size of the memory referenced by the slice.
 // The return value of Sizeof is a Go constant.
+// 注释：译：Sizeof采用任何类型的表达式x，并返回假设变量v的字节大小，就好像v是通过var v=x声明的一样。该大小不包括任何可能被x引用的内存。
+//		例如，如果x是一个切片，Sizeof返回切片描述符的大小，而不是该切片引用的内存的大小。Sizeof的返回值是Go常量。
 func Sizeof(x ArbitraryType) uintptr
 
 // Offsetof returns the offset within the struct of the field represented by x,

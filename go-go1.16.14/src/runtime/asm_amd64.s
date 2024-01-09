@@ -317,12 +317,12 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
     // 注释：保存现场
 	get_tls(CX)                             // 注释：获取TLS的G地址，放到CX寄存器里(里第一个地址就是G地址)
 	MOVQ	g(CX), AX	                    // 注释：把G地址放到AX里 // save state in g->sched
-	MOVQ	0(SP), BX	                    // 注释：硬件寄存器栈指针(栈顶)(存储当前PC值) // caller's PC
-	MOVQ	BX, (g_sched+gobuf_pc)(AX)
-	LEAQ	fn+0(FP), BX	// caller's SP
-	MOVQ	BX, (g_sched+gobuf_sp)(AX)
-	MOVQ	AX, (g_sched+gobuf_g)(AX)
-	MOVQ	BP, (g_sched+gobuf_bp)(AX)
+	MOVQ	0(SP), BX	                    // 注释：(要执行的PC)硬件寄存器栈指针(栈顶,低地址)(存储当前PC值) // caller's PC
+	MOVQ	BX, (g_sched+gobuf_pc)(AX)      // 注释：保存栈顶，低地址位置(硬件寄存器SP)
+	LEAQ	fn+0(FP), BX	                // 注释：第1个参数(闭包函数) // caller's SP
+	MOVQ	BX, (g_sched+gobuf_sp)(AX)      // 注释：保存第1个参数（闭包函数）
+	MOVQ	AX, (g_sched+gobuf_g)(AX)       // 注释：保存G
+	MOVQ	BP, (g_sched+gobuf_bp)(AX)      // 注释：保存BP基地址（栈低,高地址）
 
 	// switch to m->g0 & its stack, call fn
 	MOVQ	g(CX), BX

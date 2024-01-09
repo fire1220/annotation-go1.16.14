@@ -312,33 +312,33 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // to keep running g.
 // 注释：执行 runtime.mcall 函数的汇编函数
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
-	MOVQ	fn+0(FP), DI // 注释：(闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)
+	MOVQ	fn+0(FP), DI                    // 注释：(参数fn地址,闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)
 
     // 注释：保存现场
 	get_tls(CX)                             // 注释：获取TLS的G地址，放到CX寄存器里(里第一个地址就是G地址)
 	MOVQ	g(CX), AX	                    // 注释：把G地址放到AX里 // save state in g->sched
 	MOVQ	0(SP), BX	                    // 注释：(要执行的PC)硬件寄存器栈指针(栈顶,低地址)(存储当前PC值) // caller's PC
 	MOVQ	BX, (g_sched+gobuf_pc)(AX)      // 注释：保存栈顶，低地址位置(硬件寄存器SP)
-	LEAQ	fn+0(FP), BX	                // 注释：第1个参数(闭包函数) // caller's SP
+	LEAQ	fn+0(FP), BX	                // 注释：(参数fn地址)第1个参数(闭包函数) // caller's SP
 	MOVQ	BX, (g_sched+gobuf_sp)(AX)      // 注释：保存第1个参数（闭包函数）
 	MOVQ	AX, (g_sched+gobuf_g)(AX)       // 注释：保存G
 	MOVQ	BP, (g_sched+gobuf_bp)(AX)      // 注释：保存BP基地址（栈低,高地址）
 
 	// switch to m->g0 & its stack, call fn
-	MOVQ	g(CX), BX
-	MOVQ	g_m(BX), BX
-	MOVQ	m_g0(BX), SI
-	CMPQ	SI, AX	// if g == m->g0 call badmcall
-	JNE	3(PC)
-	MOVQ	$runtime·badmcall(SB), AX
-	JMP	AX
-	MOVQ	SI, g(CX)	// g = m->g0
-	MOVQ	(g_sched+gobuf_sp)(SI), SP	// sp = m->g0->sched.sp
-	PUSHQ	AX
-	MOVQ	DI, DX
-	MOVQ	0(DI), DI                   // 注释：闭包函数指令
-	CALL	DI                          // 注释：执行闭包函数
-	POPQ	AX
+	MOVQ	g(CX), BX                       // 注释：当前业务G
+	MOVQ	g_m(BX), BX                     // 注释：当前业务G对应的M
+	MOVQ	m_g0(BX), SI                    // 注释：G0
+	CMPQ	SI, AX	                        // 注释：如果G0 == 当前业务G 则报错 // if g == m->g0 call badmcall
+	JNE	3(PC)                               // 注释：如果不相等则跳转到下面第三行
+	MOVQ	$runtime·badmcall(SB), AX       // 注释：如果相等则报错（把报错的指令函数地址放到AX里，后面执行）
+	JMP	AX                                  // 注释：如果相等则报错
+	MOVQ	SI, g(CX)	                    // 注释：切换到G0 // g = m->g0
+	MOVQ	(g_sched+gobuf_sp)(SI), SP	    // 注释：把G0里的SP拿出来 // sp = m->g0->sched.sp
+	PUSHQ	AX                              // 注释：(入栈)把业务G压入到栈里(AX是业务G)
+	MOVQ	DI, DX                          // 注释：把参数fn地址放到DX里
+	MOVQ	0(DI), DI                       // 注释：(拿出fn函数指令)闭包函数指令
+	CALL	DI                              // 注释：执行闭包函数(执行fn函数指令)
+	POPQ	AX                              // 注释：(出栈)从栈中踢出业务G
 	MOVQ	$runtime·badmcall2(SB), AX
 	JMP	AX
 	RET

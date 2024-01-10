@@ -310,6 +310,8 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // Switch to m->g0's stack, call fn(g).
 // Fn must never return. It should gogo(&g->sched)
 // to keep running g.
+// 注释：译：func mcall（fn func（*g））切换到m->g0的堆栈，调用fn（g）。Fn决不能再回来。它应该gogo（&g->sched）继续运行g。
+//
 // 注释：执行 runtime.mcall 函数的汇编函数
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	fn+0(FP), DI                    // 注释：(参数fn地址,闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)

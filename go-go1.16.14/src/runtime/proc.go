@@ -302,21 +302,27 @@ func goschedguarded() {
 
 // Puts the current goroutine into a waiting state and calls unlockf on the
 // system stack.
+// 注释：译：将当前goroutine置于等待状态，并在系统堆栈上调用unlock。
 //
 // If unlockf returns false, the goroutine is resumed.
+// 注释：译：如果unlock返回false，则goroutine将恢复。
 //
 // unlockf must not access this G's stack, as it may be moved between
 // the call to gopark and the call to unlockf.
+// 注释：译：unlock不能访问这个G的堆栈，因为它可能在对gopark的调用和对unlock的调用之间移动。
 //
 // Note that because unlockf is called after putting the G into a waiting
 // state, the G may have already been readied by the time unlockf is called
 // unless there is external synchronization preventing the G from being
 // readied. If unlockf returns false, it must guarantee that the G cannot be
 // externally readied.
+// 注释：译：注意，因为unlock f是在将G置于等待状态之后调用的，所以在调用unlock f时G可能已经准备好了，除非有外部同步阻止G准备好。如果unlock返回false，它必须保证G不能从外部准备好。
 //
 // Reason explains why the goroutine has been parked. It is displayed in stack
 // traces and heap dumps. Reasons should be unique and descriptive. Do not
 // re-use reasons, add new ones.
+// 注释：译：原因解释了为什么goroutine停了下来。它显示在堆栈跟踪和堆转储中。原因应具有唯一性和描述性。不要重复使用原因，添加新的原因。
+//
 // 注释：(让渡控制权，当前协成G阻塞)把go代码停车；延迟执行。把要执行的方法放在mp.wait...前缀里，等待唤醒的时候执行
 func gopark(unlockf func(*g, unsafe.Pointer) bool, lock unsafe.Pointer, reason waitReason, traceEv byte, traceskip int) {
 	if reason != waitReasonSleep {
@@ -3383,6 +3389,7 @@ func parkunlock_c(gp *g, lock unsafe.Pointer) bool {
 }
 
 // park continuation on g0.
+// 注释：在G0上执行
 func park_m(gp *g) {
 	_g_ := getg()
 

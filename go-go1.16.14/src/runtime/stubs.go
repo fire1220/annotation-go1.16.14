@@ -26,18 +26,24 @@ func getg() *g
 
 // mcall switches from the g to the g0 stack and invokes fn(g),
 // where g is the goroutine that made the call.
+// 注释：译：mcall从g切换到g0堆栈并调用fn（g），其中g是进行调用的goroutine。
 // mcall saves g's current PC/SP in g->sched so that it can be restored later.
 // It is up to fn to arrange for that later execution, typically by recording
 // g in a data structure, causing something to call ready(g) later.
+// 注释：译：mcall将g当前的PC/SP保存在g->sched中，以便以后可以恢复。这取决于fn来安排稍后的执行，通常是通过在数据结构中记录g，使某些东西稍后调用ready（g）。
 // mcall returns to the original goroutine g later, when g has been rescheduled.
 // fn must not return at all; typically it ends by calling schedule, to let the m
 // run other goroutines.
+// 注释：译：稍后，当g被重新安排时，mcall返回到原来的goroutine g。fn不得返回；通常它以调用schedule结束，让m运行其他goroutine。
 //
 // mcall can only be called from g stacks (not g0, not gsignal).
+// 注释：译：只能从g堆栈调用mcall（不是g0，也不是gsignal）。
 //
 // This must NOT be go:noescape: if fn is a stack-allocated closure,
 // fn puts g on a run queue, and g executes before fn returns, the
 // closure will be invalidated while it is still executing.
+// 注释：译：这一定不能去：noescape：如果fn是一个堆栈分配的闭包，fn将g放在运行队列中，并且g在fn返回之前执行，则闭包在执行时将无效。
+//
 // 注释：保存现场; 汇编函数是：TEXT runtime·mcall(SB), NOSPLIT, $0-8
 func mcall(fn func(*g))
 

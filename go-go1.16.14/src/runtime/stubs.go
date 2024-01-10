@@ -191,7 +191,7 @@ func noescape(p unsafe.Pointer) unsafe.Pointer {
 func cgocallback(fn, frame, ctxt uintptr)
 
 // 注释：调用汇编函数：TEXT runtime·gogo(SB), NOSPLIT, $16-8
-func gogo(buf *gobuf)
+func gogo(buf *gobuf) // 注释：从gobuf恢复状态并执行
 func gosave(buf *gobuf)
 
 //go:noescape

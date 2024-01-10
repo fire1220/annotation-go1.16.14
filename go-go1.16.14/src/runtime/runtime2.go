@@ -32,21 +32,21 @@ const (
 
 	// _Gidle means this goroutine was just allocated and has not
 	// yet been initialized.
-	_Gidle = iota // 0 // 注释：_Gidle=0 刚刚被分配并且还没有被初始化
+	_Gidle = iota // 0 // 注释：(空闲不执行)_Gidle=0 刚刚被分配并且还没有被初始化
 
 	// _Grunnable means this goroutine is on a run queue. It is
 	// not currently executing user code. The stack is not owned.
-	_Grunnable // 1 // 注释：_Grunnable=1 没有执行代码，没有栈的所有权，存储在运行队列中
+	_Grunnable // 1 // 注释：(准备执行)_Grunnable=1 没有执行代码，没有栈的所有权，存储在运行队列中
 
 	// _Grunning means this goroutine may execute user code. The
 	// stack is owned by this goroutine. It is not on a run queue.
 	// It is assigned an M and a P (g.m and g.m.p are valid).
-	_Grunning // 2 // 注释：_Grunning=2 可以执行代码，拥有栈的所有权，被赋予了内核线程 M 和处理器 P
+	_Grunning // 2 // 注释：(执行中)_Grunning=2 可以执行代码，拥有栈的所有权，被赋予了内核线程 M 和处理器 P
 
 	// _Gsyscall means this goroutine is executing a system call.
 	// It is not executing user code. The stack is owned by this
 	// goroutine. It is not on a run queue. It is assigned an M.
-	_Gsyscall // 3 // 注释：_Gsyscall=3 正在执行系统调用，没有执行用户代码，拥有栈的所有权，被赋予了内核线程 M 但是不在运行队列上
+	_Gsyscall // 3 // 注释：(系统调用)_Gsyscall=3 正在执行系统调用，没有执行用户代码，拥有栈的所有权，被赋予了内核线程 M 但是不在运行队列上
 
 	// _Gwaiting means this goroutine is blocked in the runtime.
 	// It is not executing user code. It is not on a run queue,
@@ -56,11 +56,11 @@ const (
 	// write parts of the stack under the appropriate channel
 	// lock. Otherwise, it is not safe to access the stack after a
 	// goroutine enters _Gwaiting (e.g., it may get moved).
-	_Gwaiting // 4 // 注释：_Gwaiting=4 由于运行时而被阻塞，没有执行用户代码并且不在运行队列上，但是可能存在于 Channel 的等待队列上。若需要时执行ready()唤醒
+	_Gwaiting // 4 // 注释：(等待中、挂起中)_Gwaiting=4 由于运行时而被阻塞，没有执行用户代码并且不在运行队列上，但是可能存在于 Channel 的等待队列上。若需要时执行ready()唤醒
 
 	// _Gmoribund_unused is currently unused, but hardcoded in gdb
 	// scripts.
-	_Gmoribund_unused // 5 // 注释：_Gmoribund_unused=5 当前此状态未使用，但硬编码在了gdb 脚本里，可以不用关注
+	_Gmoribund_unused // 5 // 注释：(该状态未使用)_Gmoribund_unused=5 当前此状态未使用，但硬编码在了gdb 脚本里，可以不用关注
 
 	// _Gdead means this goroutine is currently unused. It may be
 	// just exited, on a free list, or just being initialized. It
@@ -71,19 +71,19 @@ const (
 	_Gdead // 6 // 注释：_Gdead=6 没有被使用，可能刚刚退出，或在一个freelist；也或者刚刚被初始化；没有执行代码，可能有分配的栈也可能没有；G和分配的栈（如果已分配过栈）归刚刚退出G的M所有或从free list 中获取
 
 	// _Genqueue_unused is currently unused.
-	_Genqueue_unused // 7 // 注释：_Genqueue_unused=7 目前未使用，不用理会
+	_Genqueue_unused // 7 // 注释：(该状态未使用)_Genqueue_unused=7 目前未使用，不用理会
 
 	// _Gcopystack means this goroutine's stack is being moved. It
 	// is not executing user code and is not on a run queue. The
 	// stack is owned by the goroutine that put it in _Gcopystack.
-	_Gcopystack // 8 // 注释：_Gcopystack=8 栈正在被拷贝，没有执行代码，不在运行队列上
+	_Gcopystack // 8 // 注释：(栈拷贝中)_Gcopystack=8 栈正在被拷贝，没有执行代码，不在运行队列上
 
 	// _Gpreempted means this goroutine stopped itself for a
 	// suspendG preemption. It is like _Gwaiting, but nothing is
 	// yet responsible for ready()ing it. Some suspendG must CAS
 	// the status to _Gwaiting to take responsibility for
 	// ready()ing this G.
-	_Gpreempted // 9 // 注释：_Gpreempted=9 由于抢占而被阻塞，没有执行用户代码并且不在运行队列上，等待唤醒
+	_Gpreempted // 9 // 注释：(抢占阻塞)_Gpreempted=9 由于抢占而被阻塞，没有执行用户代码并且不在运行队列上，等待唤醒
 
 	// _Gscan combined with one of the above states other than
 	// _Grunning indicates that GC is scanning the stack. The
@@ -568,8 +568,8 @@ type m struct {
 	lockedExt     uint32                        // tracking for external LockOSThread
 	lockedInt     uint32                        // tracking for internal lockOSThread
 	nextwaitm     muintptr                      // next m waiting for lock
-	waitunlockf   func(*g, unsafe.Pointer) bool // 注释：解除等待锁指针的函数，系统协成执行完成后会调用该函数
-	waitlock      unsafe.Pointer                // 注释：等待锁指针
+	waitunlockf   func(*g, unsafe.Pointer) bool // 注释：(解除等待钩子)解除等待函数，G0(系统栈-系统协成执)行完成后会调用该函数(函数执行万成后会清空)
+	waitlock      unsafe.Pointer                // 注释：(解除等待钩子)解除等待函数参数，(函数执行万成后会清空)
 	waittraceev   byte                          // 注释：等待追踪事件类型
 	waittraceskip int                           // 注释：跳过几层事件追踪的结果（事件追踪结果中从哪一级返回数据，跳过的是不重要的）
 	startingtrace bool                          // 注释：是否已经开始栈追踪

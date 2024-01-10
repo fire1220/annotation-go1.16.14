@@ -288,7 +288,8 @@ TEXT runtime·gosave(SB), NOSPLIT, $0-8
 
 // func gogo(buf *gobuf)
 // restore state from Gobuf; longjmp
-// 注释：执行gogo函数指令，执行gobuf（之前保存现场的位置）中的数据(g.sched类型是gobuf)
+// 注释：从Gobuf恢复状态并执行
+// 注释：执行gogo函数指令，执行gobuf（之前保存的）中的数据(g.sched类型是gobuf)
 TEXT runtime·gogo(SB), NOSPLIT, $16-8
 	MOVQ	buf+0(FP), BX		// 注释：获取入参的gobuf结构体放到BX寄存器中 // gobuf
 	MOVQ	gobuf_g(BX), DX     // 注释：取出G放到DX寄存器中

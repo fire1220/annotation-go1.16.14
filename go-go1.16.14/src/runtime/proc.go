@@ -2622,9 +2622,13 @@ func gcstopm() {
 // If inheritTime is true, gp inherits the remaining time in the
 // current time slice. Otherwise, it starts a new time slice.
 // Never returns.
+// 注释：译：计划gp在当前M上运行。如果inheritTime为true，则gp将继承当前时间片中的剩余时间。否则，它将启动一个新的时间片。永不回头。
 //
 // Write barriers are allowed because this is called immediately after
 // acquiring a P in several places.
+// 注释：译：写入障碍是允许的，因为这是在几个地方获得P后立即调用的。
+//
+// 注释：如果inheritTime是true则立刻执行gp
 //
 //go:yeswritebarrierrec
 func execute(gp *g, inheritTime bool) {
@@ -2632,7 +2636,7 @@ func execute(gp *g, inheritTime bool) {
 
 	// Assign gp.m before entering _Grunning so running Gs have an
 	// M.
-	_g_.m.curg = gp                       // 注释：把要执行的G绑定到当前G的M对应的当前G上
+	_g_.m.curg = gp                       // 注释：(还原业务G)把要执行的G绑定到当前G的M对应的当前G上
 	gp.m = _g_.m                          // 注释：把要执行的G对应的M绑定到当前已经存在的G对应的M上
 	casgstatus(gp, _Grunnable, _Grunning) // 注释：更新G的状态为运行中
 	gp.waitsince = 0
@@ -2658,7 +2662,7 @@ func execute(gp *g, inheritTime bool) {
 		traceGoStart()
 	}
 
-	gogo(&gp.sched) // 注释：真正执行G里的指令(在G休眠的时候会保存现场，保存现场就是保存到&gp.sched里，所以唤醒后执行这里的指令)
+	gogo(&gp.sched) // 注释：(执行)真正执行G里的指令(在G休眠的时候会保存现场，保存现场就是保存到&gp.sched里，所以唤醒后执行这里的指令)
 }
 
 // Finds a runnable goroutine to execute.
@@ -3311,11 +3315,15 @@ top:
 // appropriate time. After calling dropg and arranging for gp to be
 // readied later, the caller can do other work but eventually should
 // call schedule to restart the scheduling of goroutines on this m.
+// 注释：译：dropg删除了m和当前goroutine m->curg（简称gp）之间的关联。通常情况下，调用者将gp的状态设置为远离Grunning，然后立即调用dropg来完成作业。
+//		调用方还负责安排在适当的时间使用ready重新启动gp。在调用dropg并安排稍后准备gp之后，调用者可以做其他工作，但最终应该调用schedule来重新启动该m上goroutines的调度。
+// 注释：删除当前线程M的G，并把G和M的关系一并删除
+// 注释：删除当前G
 func dropg() {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取当前G
 
-	setMNoWB(&_g_.m.curg.m, nil)
-	setGNoWB(&_g_.m.curg, nil)
+	setMNoWB(&_g_.m.curg.m, nil) // 注释：删除当前线程M对应G和M的关系
+	setGNoWB(&_g_.m.curg, nil)   // 注释：删除当前线程M的G
 }
 
 // checkTimers runs any timers for the P that are ready.
@@ -3389,7 +3397,8 @@ func parkunlock_c(gp *g, lock unsafe.Pointer) bool {
 }
 
 // park continuation on g0.
-// 注释：在G0上执行
+// 注释：在G0上执行，参数gp是业务G
+// 注释：设置业务G的状态为等待（_Gwaiting）
 func park_m(gp *g) {
 	_g_ := getg()
 
@@ -3397,22 +3406,23 @@ func park_m(gp *g) {
 		traceGoPark(_g_.m.waittraceev, _g_.m.waittraceskip)
 	}
 
-	casgstatus(gp, _Grunning, _Gwaiting)
-	dropg()
+	casgstatus(gp, _Grunning, _Gwaiting) // 注释：业务G设置状态为等待（_Gwaiting）
+	dropg()                              // 注释：(解除等待)删除G0和M的绑定
 
-	if fn := _g_.m.waitunlockf; fn != nil {
-		ok := fn(gp, _g_.m.waitlock)
-		_g_.m.waitunlockf = nil
-		_g_.m.waitlock = nil
+	// 注释：解除等待，执行钩子函数
+	if fn := _g_.m.waitunlockf; fn != nil { // 注释：解除等待函数钩子，如果定义，解除等待则执行
+		ok := fn(gp, _g_.m.waitlock) // 注释：执行钩子函数
+		_g_.m.waitunlockf = nil      // 注释：清空钩子函数
+		_g_.m.waitlock = nil         // 注释：清空钩子函数的参数
 		if !ok {
 			if trace.enabled {
 				traceGoUnpark(gp, 2)
 			}
-			casgstatus(gp, _Gwaiting, _Grunnable)
-			execute(gp, true) // Schedule it back, never returns.
+			casgstatus(gp, _Gwaiting, _Grunnable) // 注释：如果钩子函数执行失败则把业务G状态设置为准备执行(_Grunnable)
+			execute(gp, true)                     // 注释：立刻执行业务G // Schedule it back, never returns. // 注释：译：把它安排回来，永远不会回来。
 		}
 	}
-	schedule()
+	schedule() // 注释：执行下一轮调度
 }
 
 func goschedImpl(gp *g) {

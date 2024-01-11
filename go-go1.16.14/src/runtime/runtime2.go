@@ -391,7 +391,7 @@ type sudog struct {
 	// value was delivered over channel c, and false if awoken
 	// because c was closed.
 	// 注释：信道c上的通信是否成功。如果goroutine因为值通过通道c传递而被唤醒，则为true，如果因为c被关闭而被唤醒则为false
-	success bool // 注释：是否因通道唤醒
+	success bool // 注释：是否因通道唤醒(管道非关闭时唤醒为true，关闭时唤醒为false)
 
 	parent   *sudog // semaRoot binary tree
 	waitlink *sudog // 注释：阻塞链表 // g.waiting list or semaRoot

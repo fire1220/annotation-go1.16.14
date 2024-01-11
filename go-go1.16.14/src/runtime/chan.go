@@ -567,13 +567,14 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		return true, false
 	}
 
-	// 注释：到发送队列（sendq）里取出一个，判断是否有值，如果有值则直接读取，接收到的数据写入ep里
+	// 注释：到发送队列（sendq）里取出一个，判断是否有值，如果有值则直接读取，
+	// 注释：然后判断是否有buf，如果没有则接收到的数据写入ep里，如果有则把数据和buf数据交换，并把buf数据写入ep里，同时buf读取下标后移（后移以后新插入的则是最后读出）
 	if sg := c.sendq.dequeue(); sg != nil {
 		// Found a waiting sender. If buffer is size 0, receive value
 		// directly from sender. Otherwise, receive from head of queue
 		// and add sender's value to the tail of the queue (both map to
 		// the same buffer slot because the queue is full).
-		recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+		recv(c, sg, ep, func() { unlock(&c.lock) }, 3) // 注释：判断是否有buf，没有则sg写入ep里返回，有则把buf第1个数据放到ep里返回，并把sg放到buf尾部
 		return true, true
 	}
 
@@ -658,46 +659,49 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 // Channel c must be full and locked. recv unlocks c with unlockf.
 // sg must already be dequeued from c.
 // A non-nil ep must point to the heap or the caller's stack.
+//
+// 注释：判断是否有buf，没有则sg写入ep里返回，有则把buf第1个数据放到ep里返回，并把sg放到buf尾部
+// 注释：判断是否有buf，没有则sg写入ep里返回，有则把sg和buf里第一个数据交换，并把第一个数据写入ep里，同时buf读取下标后移（后移以后新插入的则是最后读出）
 func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
-	if c.dataqsiz == 0 {
+	if c.dataqsiz == 0 { // 注释：无缓冲区
 		if raceenabled {
 			racesync(c, sg)
 		}
-		if ep != nil {
+		if ep != nil { // 注释：有接收的变量地址
 			// copy data from sender
-			recvDirect(c.elemtype, sg, ep)
+			recvDirect(c.elemtype, sg, ep) // 注释：把sg放到ep里
 		}
-	} else {
+	} else { // 注释：有缓冲区
 		// Queue is full. Take the item at the
 		// head of the queue. Make the sender enqueue
 		// its item at the tail of the queue. Since the
 		// queue is full, those are both the same slot.
-		qp := chanbuf(c, c.recvx)
+		qp := chanbuf(c, c.recvx) // 注释：取出缓冲区里第1个数据
 		if raceenabled {
 			racenotify(c, c.recvx, nil)
 			racenotify(c, c.recvx, sg)
 		}
 		// copy data from queue to receiver
-		if ep != nil {
-			typedmemmove(c.elemtype, ep, qp)
+		if ep != nil { // 注释：有接收的变量指针
+			typedmemmove(c.elemtype, ep, qp) // 注释：把qp数据复制到ep里指针里
 		}
 		// copy data from sender to queue
-		typedmemmove(c.elemtype, qp, sg.elem)
-		c.recvx++
-		if c.recvx == c.dataqsiz {
-			c.recvx = 0
+		typedmemmove(c.elemtype, qp, sg.elem) // 注释：把sg.elem放到qp指针里（这里是把send阻塞堆里的数据放到buf里第1个位置）
+		c.recvx++                             // 注释：读取buf队列指针后移，（原本第1个位置变成最后一个位置了）
+		if c.recvx == c.dataqsiz {            // 注释：判断环形队列是否到末尾，如果超出末尾时，设置为数组头部0下标位置
+			c.recvx = 0 // 注释：数组0下标位置
 		}
-		c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+		c.sendx = c.recvx // 注释：发送下标需要等于读取下标，因为环形队列是满的 // c.sendx = (c.sendx+1) % c.dataqsiz
 	}
-	sg.elem = nil
-	gp := sg.g
-	unlockf()
-	gp.param = unsafe.Pointer(sg)
-	sg.success = true
+	sg.elem = nil                 // 注释：清空send阻塞队列里第一个元素（这个元素已经被取出来或者放到环形buf队列的尾部）
+	gp := sg.g                    // 注释：取出G
+	unlockf()                     // 注释：执行解锁的闭包函数
+	gp.param = unsafe.Pointer(sg) // 注释：设置G的参数(sg是sudog)
+	sg.success = true             // 注释：管道非关闭时被唤醒
 	if sg.releasetime != 0 {
 		sg.releasetime = cputicks()
 	}
-	goready(gp, skip+1)
+	goready(gp, skip+1) // 注释：把gp放到skip+1个位置上等待执行
 }
 
 // 注释：暂停的管道(管道读取队列（c.recvq）或写入队列（c.sendq里）)被唤醒时执行

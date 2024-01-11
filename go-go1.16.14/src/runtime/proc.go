@@ -354,7 +354,7 @@ func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
 // 注释：把gp放到下traceskip个位置上等待执行
 func goready(gp *g, traceskip int) {
 	// 注释：系统栈切换，把gp放到下traceskip个执行的栈位置上
-	systemstack(func() {
+	systemstack(func() { // 注释：切换系统栈调用(切换到G0上执行)
 		ready(gp, traceskip, true)
 	})
 }
@@ -798,26 +798,30 @@ func fastrandinit() {
 }
 
 // Mark gp ready to run.
+// 注释：译：标记gp准备运行。
+// 注释：把G从等待状态变更成准备执行状态（_Grunnable）
 func ready(gp *g, traceskip int, next bool) {
 	if trace.enabled {
 		traceGoUnpark(gp, traceskip)
 	}
 
-	status := readgstatus(gp)
+	status := readgstatus(gp) // 注释：获取gp的状态
 
 	// Mark runnable.
-	_g_ := getg()
-	mp := acquirem() // disable preemption because it can be holding p in a local var
-	if status&^_Gscan != _Gwaiting {
-		dumpgstatus(gp)
-		throw("bad g->status in ready")
+	// 注释：译：标记为可运行。
+	_g_ := getg()                    // 注释：获取G
+	mp := acquirem()                 // 注释：禁止抢占 // disable preemption because it can be holding p in a local var
+	if status&^_Gscan != _Gwaiting { // 注释：(如果gp状态不是等待时报错)status清空_Gscan位后如果不等于_Gwaiting时报错
+		dumpgstatus(gp)                 // 注释：打印日志
+		throw("bad g->status in ready") // 注释：报错
 	}
 
 	// status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
-	casgstatus(gp, _Gwaiting, _Grunnable)
-	runqput(_g_.m.p.ptr(), gp, next)
+	// 注释：译：状态为Gwaiting或Gscanwaiting，使Grunable变为runq
+	casgstatus(gp, _Gwaiting, _Grunnable) // 注释：如果gp状态是_Gwaiting时并更状态为_Grunnable
+	runqput(_g_.m.p.ptr(), gp, next)      // 注释：把全局gp放到本地P队列里，如果next是true则下一个就执行gp
 	wakep()
-	releasem(mp)
+	releasem(mp) // 注释：释放禁止抢占
 }
 
 // freezeStopWait is a large value that freezetheworld sets
@@ -2353,19 +2357,15 @@ func mspinning() {
 }
 
 // Schedules some M to run the p (creates an M if necessary).
-// 注释：安排一些M来运行p（如果需要，创建一个M）。
 // If p==nil, tries to get an idle P, if no idle P's does nothing.
-// 注释：如果p==nil，则尝试获取空闲p，如果没有空闲p则什么也不做。
 // May run with m.p==nil, so write barriers are not allowed.
-// 注释：可能以m.p==nil运行，因此不允许写入障碍。
 // If spinning is set, the caller has incremented nmspinning and startm will
 // either decrement nmspinning or set m.spinning in the newly started M.
-// 注释：如果设置了spinning，调用者将增加nmspinning，startm将减少nmspinning或在新启动的m中设置m.spinning。
 // Callers passing a non-nil P must call from a non-preemptible context. See
 // comment on acquirem below.
-// 注释：传递非nil P的调用方必须从非抢占上下文调用。看见下面是对收购的评论。
 // Must not have write barriers because this may be called without a P.
-// 注释：不能有写障碍，因为这可能在没有P的情况下调用。
+// 注释：译：安排一些M来运行p（如果需要，创建一个M）。如果p==nil，则尝试获取空闲p，如果没有空闲p则什么也不做。可能以m.p==nil运行，因此不允许写入障碍。如果设置了spinning，调用者将增加nmspinning，
+//		startm将减少nmspinning或在新启动的m中设置m.spinning。传递非nil P的调用方必须从非抢占上下文调用。看见下面是对收购的评论。不能有写障碍，因为这可能在没有P的情况下调用。
 // 注释：通过p去跑m
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
@@ -2527,8 +2527,9 @@ func handoffp(_p_ *p) {
 	}
 }
 
-// Tries to add one more P to execute G's.            // 注释：尝试再添加一个P以执行G。
-// Called when a G is made runnable (newproc, ready). // 注释：当G可以运行时调用（newproc，ready）。
+// Tries to add one more P to execute G's.
+// Called when a G is made runnable (newproc, ready).
+// 注释：译：尝试再添加一个P以执行G。当G可以运行时调用（newproc，ready）。
 func wakep() {
 	if atomic.Load(&sched.npidle) == 0 {
 		return

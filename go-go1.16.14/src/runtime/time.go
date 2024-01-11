@@ -1052,31 +1052,36 @@ func timeSleepUntil() (int64, *p) {
 // siftupTimer puts the timer at position i in the right place
 // in the heap by moving it up toward the top of the heap.
 // It returns the smallest changed index.
+//
+// 注释：t是个4叉树（小堆排序）
+// 注释：(上浮)向4叉树，让第i个元素上浮，
 func siftupTimer(t []*timer, i int) int {
 	if i >= len(t) {
 		badTimer()
 	}
-	when := t[i].when
+	when := t[i].when // 注释：当前节点值
 	if when <= 0 {
 		badTimer()
 	}
-	tmp := t[i]
+	tmp := t[i] // 注释：当前节点对象
 	for i > 0 {
-		p := (i - 1) / 4 // parent
-		if when >= t[p].when {
+		p := (i - 1) / 4       // 注释：4叉树的父节点 // parent
+		if when >= t[p].when { // 注释：如果当前节点大于父节点则退出循环
 			break
 		}
-		t[i] = t[p]
-		i = p
+		t[i] = t[p] // 注释：当前节点小于父节点，则交换数据(如果发生交换则t[i]的值就是上面tmp的值)
+		i = p       // 注释：从新回到父节点位置继续执行，逐个找上一个父节点比较
 	}
 	if tmp != t[i] {
-		t[i] = tmp
+		t[i] = tmp // 注释：最后一个待交换的P
 	}
 	return i
 }
 
 // siftdownTimer puts the timer at position i in the right place
 // in the heap by moving it down toward the bottom of the heap.
+// 注释：t是个4叉树（小堆排序）
+// 注释：(下沉)向4叉树，让第i个元素下沉
 func siftdownTimer(t []*timer, i int) {
 	n := len(t)
 	if i >= n {

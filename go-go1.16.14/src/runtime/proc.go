@@ -3318,6 +3318,7 @@ top:
 // 注释：译：dropg删除了m和当前goroutine m->curg（简称gp）之间的关联。通常情况下，调用者将gp的状态设置为远离Grunning，然后立即调用dropg来完成作业。
 //		调用方还负责安排在适当的时间使用ready重新启动gp。在调用dropg并安排稍后准备gp之后，调用者可以做其他工作，但最终应该调用schedule来重新启动该m上goroutines的调度。
 // 注释：删除当前线程M的G，并把G和M的关系一并删除
+// 注释：删除当前G(可能是G0、业务G)和M的联系
 // 注释：删除当前G
 func dropg() {
 	_g_ := getg() // 注释：获取当前G

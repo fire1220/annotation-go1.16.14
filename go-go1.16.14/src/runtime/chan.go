@@ -701,7 +701,7 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	if sg.releasetime != 0 {
 		sg.releasetime = cputicks()
 	}
-	goready(gp, skip+1) // 注释：把gp放到skip+1个位置上等待执行
+	goready(gp, skip+1) // 注释：(准备下一个要执行G，并且开启一个空闲M跑空闲P)把gp放到skip+1个位置上等待执行
 }
 
 // 注释：暂停的管道(管道读取队列（c.recvq）或写入队列（c.sendq里）)被唤醒时执行

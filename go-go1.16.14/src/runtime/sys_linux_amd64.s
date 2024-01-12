@@ -569,18 +569,19 @@ TEXT runtime·madvise(SB),NOSPLIT,$0
 // int64 futex(int32 *uaddr, int32 op, int32 val,
 //	struct timespec *timeout, int32 *uaddr2, int32 val2);
 // 注释：唤醒M(传入6个参数直接执行系统调用)
+// 注释：系统调用SYSCALL的调用码是AX，6个参数分别是DI、SI、DX、R10、R8、R9，返回值放到AX、DX里
 // 注释：Futex 是Fast Userspace muTexes的缩写(快速用户空间互斥体)
 TEXT runtime·futex(SB),NOSPLIT,$0
-	MOVQ	addr+0(FP), DI
-	MOVL	op+8(FP), SI
-	MOVL	val+12(FP), DX
-	MOVQ	ts+16(FP), R10
-	MOVQ	addr2+24(FP), R8
-	MOVL	val3+32(FP), R9
-	MOVL	$SYS_futex, AX      // 注释：系统调用码
-	SYSCALL                     // 注释：执行系统调用
+	MOVQ	addr+0(FP), DI      // 注释：参数1：addr
+	MOVL	op+8(FP), SI        // 注释：参数2：op
+	MOVL	val+12(FP), DX      // 注释：参数3：val
+	MOVQ	ts+16(FP), R10      // 注释：参数4：ts
+	MOVQ	addr2+24(FP), R8    // 注释：参数5：addr2
+	MOVL	val3+32(FP), R9     // 注释：参数6：val3
+	MOVL	$SYS_futex, AX      // 注释：系统调用码(202)(Futex 是Fast Userspace muTexes的缩写)
+	SYSCALL                     // 注释：执行系统调用(调用码是AX，6个参数分别是DI、SI、DX、R10、R8、R9，返回值放到AX、DX里)
 	MOVL	AX, ret+40(FP)      // 注释：系统调用的结果会放到AX寄存器中，这里放到返回值位置
-	RET
+	RET                         // 注释：函数返回
 
 // int32 clone(int32 flags, void *stk, M *mp, G *gp, void (*fn)(void));
 TEXT runtime·clone(SB),NOSPLIT,$0

@@ -137,7 +137,7 @@ func noteclear(n *note) {
 	n.key = 0
 }
 
-// 注释：【Linux系统】唤醒节点
+// 注释：【Linux系统】（唤醒线程M，以系统信号的方式）向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 func notewakeup(n *note) {
 	old := atomic.Xchg(key32(&n.key), 1) // 注释：(把n.key设置成1并返回n.key的旧值)交换位置并且返回，把ptr指针里的值和new的相互交换后返回ptr指针对应的值
 	if old != 0 {                        // 注释：如果传入的节点不为空报错(n.key的旧值)

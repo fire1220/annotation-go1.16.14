@@ -802,8 +802,10 @@ func fastrandinit() {
 // 注释：把G从等待状态变更成准备执行状态（_Grunnable）
 // 注释：(典型的自己不让抢，启动一个空闲P去抢别人的 哈)
 // 注释：步骤：
-//		1.把gp放到本地P队列，并标记下一个就执行；
-//		2.拿个M启动一个空闲P自旋开始抢其他G；
+//		1.当前M禁止抢占
+//		2.把gp放到本地P队列，并标记下一个就执行；
+//		3.拿个空闲M线程运行空闲P，并且自旋，开始抢别的G了
+//		4.当前M解除禁止抢占
 func ready(gp *g, traceskip int, next bool) {
 	if trace.enabled {
 		traceGoUnpark(gp, traceskip)
@@ -824,7 +826,7 @@ func ready(gp *g, traceskip int, next bool) {
 	// 注释：译：状态为Gwaiting或Gscanwaiting，使Grunable变为runq
 	casgstatus(gp, _Gwaiting, _Grunnable) // 注释：如果gp状态是_Gwaiting时并更状态为_Grunnable
 	runqput(_g_.m.p.ptr(), gp, next)      // 注释：把G放到本地P队列里，如果next是true则下一个就执行gp
-	wakep()                               // 注释：(执行一个空闲P)唤醒一个空闲P，并且自旋开始抢占其他G
+	wakep()                               // 注释：拿个空闲M线程运行空闲P，并且自旋，开始抢别的G了
 	releasem(mp)                          // 注释：释放禁止抢占(典型的自己不让抢，启动一个空闲P去抢别人的哈)
 }
 
@@ -2544,6 +2546,7 @@ func handoffp(_p_ *p) {
 // Tries to add one more P to execute G's.
 // Called when a G is made runnable (newproc, ready).
 // 注释：译：尝试再添加一个P以执行G。当G可以运行时调用（newproc，ready）。
+// 注释：拿个空闲M线程运行空闲P，并且自旋，开始抢别的G了
 func wakep() {
 	if atomic.Load(&sched.npidle) == 0 {
 		return
@@ -2552,7 +2555,7 @@ func wakep() {
 	if atomic.Load(&sched.nmspinning) != 0 || !atomic.Cas(&sched.nmspinning, 0, 1) {
 		return
 	}
-	startm(nil, true) // 注释：拿个M去跑空闲P，并且自旋，开始抢别的G了
+	startm(nil, true) // 注释：拿个空闲M线程运行空闲P，并且自旋，开始抢别的G了
 }
 
 // Stops execution of the current m that is locked to a g until the g is runnable again.

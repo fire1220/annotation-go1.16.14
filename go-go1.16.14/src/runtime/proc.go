@@ -352,6 +352,7 @@ func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
 }
 
 // 注释：把gp放到下traceskip个位置上等待执行
+// 注释：准备下一个要执行G，并且开启一个空闲M跑空闲P
 func goready(gp *g, traceskip int) {
 	// 注释：系统栈切换，把gp放到下traceskip个执行的栈位置上
 	systemstack(func() { // 注释：切换系统栈调用(切换到G0上执行)，每个M下都有自己G0

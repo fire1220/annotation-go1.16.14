@@ -144,7 +144,7 @@ func notewakeup(n *note) {
 		print("notewakeup - double wakeup (", old, ")\n")
 		throw("notewakeup - double wakeup")
 	}
-	futexwakeup(key32(&n.key), 1) // 注释：(这时n.key的值是1)开始唤醒M
+	futexwakeup(key32(&n.key), 1) // 注释：(执行执行系统调用唤醒M)(这时n.key的值是1)开始唤醒M
 }
 
 func notesleep(n *note) {

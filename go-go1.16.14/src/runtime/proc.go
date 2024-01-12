@@ -2383,7 +2383,7 @@ func mspinning() {
 //		3.获取新M（获取空闲M，如果没有则创建新M）
 //		4.新M设置自旋（等于参数spinning）
 //		5.新M设置下一个要执行的P，当新M被唤醒时第一个执行的P
-//		6.发送系统信号等待新M线程被唤醒
+//		6.唤醒线程M（以系统信号的方式，不同系统采用不同的方法实现）
 //		7.当前M解除禁止抢占
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
@@ -2472,7 +2472,7 @@ func startm(_p_ *p, spinning bool) {
 	// The caller incremented nmspinning, so set m.spinning in the new M.
 	nmp.spinning = spinning // 注释；（我开始要抢别人了）新线程m设置可以试图抢占
 	nmp.nextp.set(_p_)      // 注释：(设置下一个要执行的P)新线程m下一个要执行的p（起始任务函数）(nmp.nextp = _p_)
-	notewakeup(&nmp.park)   // 注释：向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
+	notewakeup(&nmp.park)   // 注释：（唤醒线程M，以系统信号的方式）向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
 	// safe.
 	releasem(mp) // 注释：释放线程m

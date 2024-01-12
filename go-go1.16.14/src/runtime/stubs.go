@@ -67,7 +67,7 @@ func mcall(fn func(*g))
 // 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G），汇编位置：TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 //
 //go:noescape
-func systemstack(fn func())
+func systemstack(fn func()) // 注释：切换系统栈执行
 
 var badsystemstackMsg = "fatal: systemstack called from unexpected goroutine"
 

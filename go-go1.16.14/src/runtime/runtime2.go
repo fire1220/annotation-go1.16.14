@@ -188,6 +188,10 @@ type mutex struct {
 //
 // notesleep/notetsleep are generally called on g0,
 // notetsleepg is similar to notetsleep but is called on user g.
+// 注释：译：一次性事件的睡眠和唤醒。在调用notesleep或notewakeup之前，必须调用noteclear来初始化Note。那么，正好有一个线程可以调用notesleep，正好有个线程可以（一次）调用notewakeup。
+//		一旦调用了notewakeup，notesleep就会返回。future notesleep将立即返回。只有在前一个notesleep返回后才能调用后续的noteclear，例如，不允许在notewakeup后直接调用noteclear。
+//		notesleep与notesleep类似，但在给定的纳秒数后会醒来，即使事件尚未发生。如果一个goroutine使用notesleep提前唤醒，它必须等待调用noteclear，
+//		直到它可以确定没有其他goroutine在调用notewakeup。notesleep/notesleep通常在g0上调用，notesleepg类似于notesleep，但在用户g上调用。
 type note struct {
 	// Futex-based impl treats it as uint32 key,
 	// while sema-based impl as M* waitm.

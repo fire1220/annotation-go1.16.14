@@ -354,7 +354,7 @@ func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
 // 注释：把gp放到下traceskip个位置上等待执行
 func goready(gp *g, traceskip int) {
 	// 注释：系统栈切换，把gp放到下traceskip个执行的栈位置上
-	systemstack(func() { // 注释：切换系统栈调用(切换到G0上执行)
+	systemstack(func() { // 注释：切换系统栈调用(切换到G0上执行)，每个M下都有自己G0
 		ready(gp, traceskip, true) // 注释：把gp放到本地P队列，并标记下一个就执行；并拿个M启动一个空闲P自旋开始抢其他G；
 	})
 }
@@ -2370,9 +2370,17 @@ func mspinning() {
 // Must not have write barriers because this may be called without a P.
 // 注释：译：安排一些M来运行p（如果需要，创建一个M）。如果p==nil，则尝试获取空闲p，如果没有空闲p则什么也不做。可能以m.p==nil运行，因此不允许写入障碍。如果设置了spinning，调用者将增加nmspinning，
 //		startm将减少nmspinning或在新启动的m中设置m.spinning。传递非nil P的调用方必须从非抢占上下文调用。看见下面是对收购的评论。不能有写障碍，因为这可能在没有P的情况下调用。
-// 注释：通过p去跑m
-// 注释：拿个M去跑P，如果P为nil，则拿个M跑个新的空闲P。
+// 注释：用M把P进行连接，然后想系统发送信号，唤醒这个M
+// 注释：拿个M去跑P，如果没有拿到M则创建新的M；如果P为nil，创建一个空闲P。
 // 注释：参数spinning：是否自旋，表示开始抢别的G了
+// 注释：步骤：
+//		1.当前M禁止抢占
+//		2.获取P（如果参数_p_有值则使用，否则拿个空闲P)
+//		3.获取新M（获取空闲M，如果没有则创建新M）
+//		4.新M设置自旋（等于参数spinning）
+//		5.新M设置下一个要执行的P，当新M被唤醒时第一个执行的P
+//		6.发送系统信号等待新M线程被唤醒
+//		7.当前M解除禁止抢占
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	// Disable preemption.
@@ -2459,7 +2467,7 @@ func startm(_p_ *p, spinning bool) {
 	}
 	// The caller incremented nmspinning, so set m.spinning in the new M.
 	nmp.spinning = spinning // 注释；（我开始要抢别人了）新线程m设置可以试图抢占
-	nmp.nextp.set(_p_)      // 注释：新线程m下一个要执行的p（起始任务函数）
+	nmp.nextp.set(_p_)      // 注释：(设置下一个要执行的P)新线程m下一个要执行的p（起始任务函数）(nmp.nextp = _p_)
 	notewakeup(&nmp.park)   // 注释：向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
 	// safe.

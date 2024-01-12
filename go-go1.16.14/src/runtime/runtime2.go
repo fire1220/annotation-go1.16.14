@@ -546,7 +546,7 @@ type m struct {
 	locks         int32    // 注释：给M加锁;(禁用抢占)大于0时说明正在g正在被使用，系统调用后置函数的时候有使用（获取时++，释放是--）
 	dying         int32
 	profilehz     int32
-	spinning      bool // 注释：是否自旋，自旋就表示M正在找G来运行，表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work
+	spinning      bool // 注释：（我开始要抢别人了）是否自旋，自旋就表示M正在找G来运行，表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g // m is out of work and is actively looking for work
 	blocked       bool // 注释：m是否被阻塞 // m is blocked on a note
 	newSigstack   bool // minit on C thread called sigaltstack
 	printlock     int8

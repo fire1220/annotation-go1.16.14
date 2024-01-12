@@ -355,7 +355,7 @@ func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
 func goready(gp *g, traceskip int) {
 	// 注释：系统栈切换，把gp放到下traceskip个执行的栈位置上
 	systemstack(func() { // 注释：切换系统栈调用(切换到G0上执行)
-		ready(gp, traceskip, true)
+		ready(gp, traceskip, true) // 注释：把gp放到本地P队列，并标记下一个就执行；并拿个M启动一个空闲P自旋开始抢其他G；
 	})
 }
 
@@ -800,6 +800,10 @@ func fastrandinit() {
 // Mark gp ready to run.
 // 注释：译：标记gp准备运行。
 // 注释：把G从等待状态变更成准备执行状态（_Grunnable）
+// 注释：(典型的自己不让抢，启动一个空闲P去抢别人的 哈)
+// 注释：步骤：
+//		1.把gp放到本地P队列，并标记下一个就执行；
+//		2.拿个M启动一个空闲P自旋开始抢其他G；
 func ready(gp *g, traceskip int, next bool) {
 	if trace.enabled {
 		traceGoUnpark(gp, traceskip)
@@ -819,9 +823,9 @@ func ready(gp *g, traceskip int, next bool) {
 	// status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
 	// 注释：译：状态为Gwaiting或Gscanwaiting，使Grunable变为runq
 	casgstatus(gp, _Gwaiting, _Grunnable) // 注释：如果gp状态是_Gwaiting时并更状态为_Grunnable
-	runqput(_g_.m.p.ptr(), gp, next)      // 注释：把全局gp放到本地P队列里，如果next是true则下一个就执行gp
-	wakep()
-	releasem(mp) // 注释：释放禁止抢占
+	runqput(_g_.m.p.ptr(), gp, next)      // 注释：把G放到本地P队列里，如果next是true则下一个就执行gp
+	wakep()                               // 注释：(执行一个空闲P)唤醒一个空闲P，并且自旋开始抢占其他G
+	releasem(mp)                          // 注释：释放禁止抢占(典型的自己不让抢，启动一个空闲P去抢别人的哈)
 }
 
 // freezeStopWait is a large value that freezetheworld sets
@@ -2367,6 +2371,8 @@ func mspinning() {
 // 注释：译：安排一些M来运行p（如果需要，创建一个M）。如果p==nil，则尝试获取空闲p，如果没有空闲p则什么也不做。可能以m.p==nil运行，因此不允许写入障碍。如果设置了spinning，调用者将增加nmspinning，
 //		startm将减少nmspinning或在新启动的m中设置m.spinning。传递非nil P的调用方必须从非抢占上下文调用。看见下面是对收购的评论。不能有写障碍，因为这可能在没有P的情况下调用。
 // 注释：通过p去跑m
+// 注释：拿个M去跑P，如果P为nil，则拿个M跑个新的空闲P。
+// 注释：参数spinning：是否自旋，表示开始抢别的G了
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	// Disable preemption.
@@ -2452,7 +2458,7 @@ func startm(_p_ *p, spinning bool) {
 		throw("startm: p has runnable gs")
 	}
 	// The caller incremented nmspinning, so set m.spinning in the new M.
-	nmp.spinning = spinning // 注释；新线程m设置可以试图抢占
+	nmp.spinning = spinning // 注释；（我开始要抢别人了）新线程m设置可以试图抢占
 	nmp.nextp.set(_p_)      // 注释：新线程m下一个要执行的p（起始任务函数）
 	notewakeup(&nmp.park)   // 注释：向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
@@ -2538,7 +2544,7 @@ func wakep() {
 	if atomic.Load(&sched.nmspinning) != 0 || !atomic.Cas(&sched.nmspinning, 0, 1) {
 		return
 	}
-	startm(nil, true)
+	startm(nil, true) // 注释：拿个M去跑空闲P，并且自旋，开始抢别的G了
 }
 
 // Stops execution of the current m that is locked to a g until the g is runnable again.
@@ -5970,7 +5976,7 @@ const randomizeScheduler = raceenabled // 注释：随机打乱P队列的G位置
 // Executed only by the owner P.
 // 注释：仅提供P的所有者执行
 //
-// 注释：把全局的gp放到本地队列_p_里
+// 注释：把gp放到本地队列_p_里，并且标记是否下一就执行
 // 注释：把G放到P队列里，next表示是否下一个就马上处理gp
 func runqput(_p_ *p, gp *g, next bool) {
 	if randomizeScheduler && next && fastrand()%2 == 0 {

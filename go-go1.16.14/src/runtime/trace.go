@@ -33,7 +33,7 @@ const (
 	traceEvGCSTWStart        = 9  // GC STW start [timestamp, kind]
 	traceEvGCSTWDone         = 10 // GC STW done [timestamp]
 	traceEvGCSweepStart      = 11 // 注释：GC清理阶段注册链路追踪的开始 // GC sweep start [timestamp, stack id]
-	traceEvGCSweepDone       = 12 // GC sweep done [timestamp, swept, reclaimed]
+	traceEvGCSweepDone       = 12 // 注释：GC清理结束，链路追踪 // GC sweep done [timestamp, swept, reclaimed]
 	traceEvGoCreate          = 13 // goroutine creation [timestamp, new goroutine id, new stack id, stack id]
 	traceEvGoStart           = 14 // goroutine starts running [timestamp, goroutine id, seq]
 	traceEvGoEnd             = 15 // goroutine ends [timestamp]
@@ -1068,15 +1068,16 @@ func traceGCSweepSpan(bytesSwept uintptr) {
 	}
 }
 
+// 注释：(关闭GC清理时链路追踪表示)标记链路追踪结束
 func traceGCSweepDone() {
-	_p_ := getg().m.p.ptr()
-	if !_p_.traceSweep {
+	_p_ := getg().m.p.ptr() // 注释：获取P指针
+	if !_p_.traceSweep {    // 注释：如果清理的时候没有开启链路追踪则报错
 		throw("missing traceGCSweepStart")
 	}
-	if _p_.traceSwept != 0 {
+	if _p_.traceSwept != 0 { // 注释：链路追踪的字节，如果存在则需要回收, _p_.traceReclaimed是链路追踪的结束字节
 		traceEvent(traceEvGCSweepDone, -1, uint64(_p_.traceSwept), uint64(_p_.traceReclaimed))
 	}
-	_p_.traceSweep = false
+	_p_.traceSweep = false // 注释：关闭清理时链路追踪的标识
 }
 
 func traceGCMarkAssistStart() {

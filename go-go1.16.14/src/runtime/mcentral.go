@@ -197,23 +197,24 @@ func (c *mcentral) cacheSpan() *mspan {
 	}
 
 	// At this point s is a span that should have free slots.
+	// 注释：译：此时，s是一个应具有空闲插槽的跨度。
 havespan:
-	if trace.enabled && !traceDone {
-		traceGCSweepDone()
+	if trace.enabled && !traceDone { // 注释：开启链路追踪并且没有结束
+		traceGCSweepDone() // 注释：(关闭GC清理时链路追踪表示)标记链路追踪结束
 	}
-	n := int(s.nelems) - int(s.allocCount)
+	n := int(s.nelems) - int(s.allocCount) // 注释：未分配的块数量
 	if n == 0 || s.freeindex == s.nelems || uintptr(s.allocCount) == s.nelems {
-		throw("span has no free objects")
+		throw("span has no free objects") // 注释：span没有可用对象
 	}
-	freeByteBase := s.freeindex &^ (64 - 1)
+	freeByteBase := s.freeindex &^ (64 - 1) // 注释：清空后5位
 	whichByte := freeByteBase / 8
 	// Init alloc bits cache.
 	// 注释：译：初始分配的位图缓存
-	s.refillAllocCache(whichByte)
+	s.refillAllocCache(whichByte) // 注释：重新缓存64个空的块到快速缓冲区里
 
 	// Adjust the allocCache so that s.freeindex corresponds to the low bit in
 	// s.allocCache.
-	s.allocCache >>= s.freeindex % 64
+	s.allocCache >>= s.freeindex % 64 // 注释：移除要被只用的空块，(s.freeindex是下一个空块的下标)
 
 	return s
 }

@@ -148,10 +148,11 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // and negates them so that ctz (count trailing zeros) instructions
 // can be used. It then places these 8 bytes into the cached 64 bit
 // s.allocCache.
-// 注释：relfillAllocCache占用8个字节。allocBits从whichByte开始并取反，以便可以使用ctz（计数尾随零）指令。然后，它将这8个字节放入缓存的64位s.allocCache中
+// 注释：译：relfillAllocCache占用8个字节。allocBits从whichByte开始并取反，以便可以使用ctz（计数尾随零）指令。然后，它将这8个字节放入缓存的64位s.allocCache中
 //
 // 注释：接着从allocBits中拿出64个位作为快速缓存块(前面的已经别分配了，所以需要继续拿出64位放到快速缓存里)
 // 注释：(重新缓存64个空的块到快速缓冲区里)把空闲位置对应的页缓存到mspan.allocCache快速缓存中
+// 注释：重新装载分配的还草
 func (s *mspan) refillAllocCache(whichByte uintptr) {
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：从数组指针中，偏移whichByte(是8的倍数)个的位置指针向后拿出8个元素，把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
 	// 注释：把空闲位置的对应的页取出来缓存到mspan.allocCache快速缓存中

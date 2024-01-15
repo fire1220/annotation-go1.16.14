@@ -139,15 +139,16 @@ func (c *mcentral) cacheSpan() *mspan {
 	var s *mspan
 
 	// Try partial swept spans first.
-	// 注释：译：先尝试部分扫掠跨度。
+	// 注释：译：先尝试部分清扫跨度。
 	if s = c.partialSwept(sg).pop(); s != nil { // 注释：从部分清扫【有空闲、已清理】链表出栈span，如果有则直接返回
 		goto havespan
 	}
 
 	// Now try partial unswept spans.
-	// 注释：下面是尝试从【有空闲、未清理】中获取span
+	// 注释：译：现在尝试部分未清扫的跨度
+	// 注释：下面是从部分未清扫【有空闲、未清理】中找
 	for ; spanBudget >= 0; spanBudget-- {
-		s = c.partialUnswept(sg).pop() // 注释：到【有空闲、为清理】链表出栈span
+		s = c.partialUnswept(sg).pop() // 注释：到部分未清扫【有空闲、未清理】链表出栈span
 		if s == nil {                  // 注释：入股没有则跳过
 			break
 		}
@@ -207,6 +208,7 @@ havespan:
 	freeByteBase := s.freeindex &^ (64 - 1)
 	whichByte := freeByteBase / 8
 	// Init alloc bits cache.
+	// 注释：译：初始分配的位图缓存
 	s.refillAllocCache(whichByte)
 
 	// Adjust the allocCache so that s.freeindex corresponds to the low bit in

@@ -207,7 +207,7 @@ havespan:
 		throw("span has no free objects") // 注释：span没有可用对象
 	}
 	freeByteBase := s.freeindex &^ (64 - 1) // 注释：清空后5位
-	whichByte := freeByteBase / 8
+	whichByte := freeByteBase / 8           // 注释：已经分配过的位置，是8的倍数（8个一组）
 	// Init alloc bits cache.
 	// 注释：译：初始分配的位图缓存
 	s.refillAllocCache(whichByte) // 注释：重新缓存64个空的块到快速缓冲区里
@@ -216,7 +216,7 @@ havespan:
 	// s.allocCache.
 	s.allocCache >>= s.freeindex % 64 // 注释：移除要被只用的空块，(s.freeindex是下一个空块的下标)
 
-	return s
+	return s // 注释：返回mspan
 }
 
 // Return span from an mcache.

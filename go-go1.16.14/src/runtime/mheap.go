@@ -65,7 +65,7 @@ type mheap struct {
 	lock      mutex     // 注释：互斥锁
 	pages     pageAlloc // 注释：指向spans区域，用于映射span和page的关系(页面分配数据结构) // page allocation data structure
 	sweepgen  uint32    // 注释：GC清理的计数器(GC清理版本)（每次GC清理开始处自增2）// sweep generation, see comment in mspan; written during STW
-	sweepdone uint32    // 注释：清理完成标识1是0否(所有的内存区块（span）都已经被清理了) // all spans are swept
+	sweepdone uint32    // 注释：是否清理完成1是0否(所有的内存区块（span）都已经被清理了)(如果存在没有清理的的数据时是0) // all spans are swept
 	sweepers  uint32    // 注释：活动的处理sweepdone的数量 // number of active sweepone calls
 
 	// allspans is a slice of all mspans ever created. Each mspan
@@ -130,7 +130,9 @@ type mheap struct {
 	// the page marks.
 	//
 	// This is accessed atomically.
-	reclaimIndex uint64
+	// 注释：译：reclainIndex是下一个要回收的页面的allArenas中的页面索引。具体来说，它是指arena(竞技场)allArenas[i/pagesPerArena]的页面（i%pagesPerArena）。
+	//		如果这是>=1<<63，则页面回收器将完成对页面标记的扫描。这是以原子方式访问的。
+	reclaimIndex uint64 // 注释：回收的下标
 	// reclaimCredit is spare credit for extra pages swept. Since
 	// the page reclaimer works in large chunks, it may reclaim
 	// more than requested. Any spare pages released go to this
@@ -138,7 +140,7 @@ type mheap struct {
 	// 注释：译：reclaimCredit是额外页page清理的备用信用。由于页回收器工作在大块中，它可能会回收比请求的更多的内容。释放的任何备用页都将进入此信用池。
 	//
 	// This is accessed atomically.
-	reclaimCredit uintptr // 注释：(可用的页的数量)(回收信用，就是回收的比例)这个值存储是page页数，待清理的页的数量
+	reclaimCredit uintptr // 注释：回收信用，类似受保护缓冲区，如果回收的页数大于这个值时，超出的页数则进行回收，(可用的页的数量)
 
 	// arenas is the heap arena map. It points to the metadata for
 	// the heap for every arena frame of the entire usable virtual
@@ -192,7 +194,7 @@ type mheap struct {
 	// beginning of the sweep cycle. This can be read safely by
 	// simply blocking GC (by disabling preemption).
 	// 注释：译：sweepArenas是在清理开始时对allArenas的快照。这可以通过简单地阻塞GC（通过禁用抢占）来安全地读取。
-	sweepArenas []arenaIdx // 注释：清理开始时对allArenas的快照
+	sweepArenas []arenaIdx // 注释：(需要清理的arena)清理开始时对allArenas的快照
 
 	// markArenas is a snapshot of allArenas taken at the beginning
 	// of the mark cycle. Because allArenas is append-only, neither
@@ -511,7 +513,7 @@ type mspan struct {
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2
 	elemsize    uintptr       // 注释：(块大小)存储的单个对象大小；(对应class表中的【bytes/obj】字段,地址:/src/runtime/sizeclasses.go) // computed from sizeclass or from npages
-	limit       uintptr       // end of data in span
+	limit       uintptr       // 注释：内存尾部地址(s.base() + sapn的对象大小*页数量) // end of data in span
 	speciallock mutex         // guards specials list
 	specials    *special      // 注释：译：按偏移量排序的特殊记录的链接列表。 // linked list of special records sorted by offset.
 }
@@ -795,11 +797,16 @@ func (h *mheap) init() {
 // h.lock must NOT be held.
 //
 // 注释：回收内存
+// 注释：参数npage需要回收页的数量
 // 注释：步骤
 // 		1.加锁禁止抢占
-// 		2.
-// 		3.
-// 		4.
+// 		2.获取需要清理的arena
+// 		3.遍历页数量，逐个执行回收
+// 			(1).跳过信用页数（受保护的页数量）
+// 			(2).
+// 			(3).
+// 			(4).
+// 注释：【ing】
 func (h *mheap) reclaim(npage uintptr) {
 	// TODO(austin): Half of the time spent freeing spans is in
 	// locking/unlocking the heap (even with low contention). We
@@ -816,29 +823,32 @@ func (h *mheap) reclaim(npage uintptr) {
 	// traceGCSweepStart/Done pair on the P.
 	mp := acquirem() // 注释：获取M加锁禁止抢占
 
-	if trace.enabled {
-		traceGCSweepStart()
+	if trace.enabled { // 注释：如果链路追踪开启
+		traceGCSweepStart() // 注释：启动GC清理是链路追踪
 	}
 
-	arenas := h.sweepArenas // 注释：获取arena
+	arenas := h.sweepArenas // 注释：获取需要回收的arena
 	locked := false
 	for npage > 0 { // 注释：遍历页数量，逐个执行
 		// Pull from accumulated credit first.
 		// 注释：译：先从累积的信贷中提取
-		if credit := atomic.Loaduintptr(&h.reclaimCredit); credit > 0 { // 注释：获取待清理的页数量
-			take := credit
-			if take > npage { // 注释：如果待清理页数量大于当前页总数，则拿走当前页大小的数量
+		// 注释：回收信用，类似受保护缓冲区，如果回收的页数大于这个值时，超出的页数则进行回收，(可用的页的数量)
+		if credit := atomic.Loaduintptr(&h.reclaimCredit); credit > 0 { // 注释：获取信用缓冲区页数，回收页数超出这个时则超出的进行回收
+			take := credit    // 注释：待回收的页数
+			if take > npage { // 注释：如果待回收页数量大于当前页总数，则拿走当前页大小的数量
 				// Take only what we need.
 				take = npage // 注释：重置拿出的页数量
 			}
-			if atomic.Casuintptr(&h.reclaimCredit, credit, credit-take) { // 注释：修改待清理页数数量
-				npage -= take // 注释：跳过拿出的页
+			if atomic.Casuintptr(&h.reclaimCredit, credit, credit-take) { // 注释：修改待回收页数数量
+				npage -= take // 注释：跳过信用页数量(受保护的页数量)，超出的才可以回收
 			}
 			continue
 		}
 
 		// Claim a chunk of work.
-		idx := uintptr(atomic.Xadd64(&h.reclaimIndex, pagesPerReclaimerChunk) - pagesPerReclaimerChunk)
+		// 注释：译：索赔一大块工作。
+		// 注释：(idx是&h.reclaimIndex的旧值)idx = &h.reclaimIndex; &h.reclaimIndex += pagesPerReclaimerChunk
+		idx := uintptr(atomic.Xadd64(&h.reclaimIndex, pagesPerReclaimerChunk) - pagesPerReclaimerChunk) // 注释：获取回收下标后，重置下标，原子操作
 		if idx/pagesPerArena >= uintptr(len(arenas)) {
 			// Page reclaiming is done.
 			atomic.Store64(&h.reclaimIndex, 1<<63)
@@ -965,6 +975,7 @@ func (s spanAllocType) manual() bool {
 // spanclass indicates the span's size class and scannability.
 //
 // If needzero is true, the memory for the returned span will be zeroed.
+// 注释：译：alloc从GC的堆中分配一个新的npage页面跨度。panclass指示跨度的大小类和可扫描性。如果needzero为true，则返回跨度的内存将为零。
 // 注释：申请内存，npages 页数, spanclass 对象ID（包含是否不需要扫描标识）, needzero 是否0填充，返回新的span
 // 注释：步骤
 // 		1.系统栈执行
@@ -980,16 +991,16 @@ func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan
 		// To prevent excessive heap growth, before allocating n pages
 		// we need to sweep and reclaim at least n pages.
 		if h.sweepdone == 0 { // 注释：如果存在没有清理的的数据
-			h.reclaim(npages) // 注释：回收内存(如果存在没有清理的数据时需要回收内存，重新分配)【ing】
+			h.reclaim(npages) // 注释：回收内存(如果存在没有清理的数据时需要回收内存，重新分配)
 		}
-		s = h.allocSpan(npages, spanAllocHeap, spanclass) // 注释：申请（分配）内存【ing】
+		s = h.allocSpan(npages, spanAllocHeap, spanclass) // 注释：申请（分配）内存
 	})
 
 	if s != nil {
 		if needzero && s.needzero != 0 { // 注释：如果需要0填充，并且span.needzero同时也需要0填充时，执行0填充
 			memclrNoHeapPointers(unsafe.Pointer(s.base()), s.npages<<_PageShift) // 注释：初始化内存，0填充，汇编执行
 		}
-		s.needzero = 0
+		s.needzero = 0 // 注释：需要在分配前归零(零填充)，1是0否
 	}
 	return s
 }
@@ -1195,6 +1206,7 @@ func (h *mheap) freeMSpanLocked(s *mspan) {
 // allocSpan must be called on the system stack both because it acquires
 // the heap lock and because it must block GC transitions.
 //
+// 注释：【ing】
 //go:systemstack
 func (h *mheap) allocSpan(npages uintptr, typ spanAllocType, spanclass spanClass) (s *mspan) {
 	// Function-global state.

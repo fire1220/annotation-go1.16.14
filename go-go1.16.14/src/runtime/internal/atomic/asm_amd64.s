@@ -81,26 +81,26 @@ TEXT runtime∕internal∕atomic·Casp1(SB), NOSPLIT, $0-25
 // Atomically:
 //	*val += delta;
 //	return *val;
-// 注释：内存原子操作，把两数之和返回
+// 注释：(原子操作)交换相加后返回相加后的结果
 TEXT runtime∕internal∕atomic·Xadd(SB), NOSPLIT, $0-20
-	MOVQ	ptr+0(FP), BX   // 注释：第一个参数是指针
-	MOVL	delta+8(FP), AX // 注释：第二个参数是数值
-	MOVL	AX, CX          // 注释：备份第二个参数到CX里
+	MOVQ	ptr+0(FP), BX   // 注释：参数1：(ptr)是个指针
+	MOVL	delta+8(FP), AX // 注释：参数2：(delta)需要相加的数据
+	MOVL	AX, CX          // 注释：(备份delta数据)把AX值复制到CX寄存器里（把参数2(delta)放到CX里）
 	LOCK                    // 注释：同步锁，保证寄存器在CPU缓存中的数据是一致的
-	XADDL	AX, 0(BX)       // 注释：原子操作内存，0(BX)值：AX+0(BX)；AX值：0(BX)，内存0(BX)是原子相加
-	ADDL	CX, AX          // 注释：AX = CX + AX ；把0(BX)内存数据原子操作时的前数据拿出来和CX相加（CX就是函数的第二个参数），防止再次读取内存破坏原子性
+	XADDL	AX, 0(BX)       // 注释： 注释：(原子操作,两值调换相加),结果：0(BX) = AX + 0(BX)； AX = 0(BX),AX是ptr指针里的旧值
+	ADDL	CX, AX          // 注释：【AX = delta旧值(CX) + ptr旧值(AX)】把0(BX)内存数据原子操作时的前数据拿出来和CX相加（CX就是函数的第二个参数），防止再次读取内存破坏原子性
 	MOVL	AX, ret+16(FP)  // 注释：返回原子相加后的值（是针对内存的原子操作）
 	RET                     // 注释：函数退出
 
-// 注释：把参数2加到参数1对应的指针里里并且返回参数2
+// 注释：(原子操作)交换相加后返回相加后的结果
 TEXT runtime∕internal∕atomic·Xadd64(SB), NOSPLIT, $0-24
-	MOVQ	ptr+0(FP), BX           // 注释：参数1：是个指针
-	MOVQ	delta+8(FP), AX         // 注释：参数2：需要相加的数据
-	MOVQ	AX, CX                  // 注释：把AX值复制到CX寄存器里（把参数2放到CX里）
+	MOVQ	ptr+0(FP), BX           // 注释：参数1：(ptr)是个指针
+	MOVQ	delta+8(FP), AX         // 注释：参数2：(delta)需要相加的数据
+	MOVQ	AX, CX                  // 注释：(备份delta数据)把AX值复制到CX寄存器里（把参数2(delta)放到CX里）
 	LOCK                            // 注释：（对总线和缓存上锁）强制所有lock信号之前的指令，都在此之前被执行，并同步相关缓存
-	XADDQ	AX, 0(BX)               // 注释：把AX（参数2）复制到0(BX)里（把参数2放到参数1指针对应的值里）
-	ADDQ	CX, AX                  // 注释：把CX放到AX里（把参数2放到AX寄存器里）
-	MOVQ	AX, ret+16(FP)          // 注释：把AX放到返回位置（把参数2返回）
+	XADDQ	AX, 0(BX)               // 注释：(原子操作,两值调换相加),结果：0(BX) = AX + 0(BX)； AX = 0(BX),AX是ptr指针里的旧值
+	ADDQ	CX, AX                  // 注释：【AX = delta旧值(CX) + ptr旧值(AX)】把0(BX)内存数据原子操作时的前数据拿出来和CX相加（CX就是函数的第二个参数），防止再次读取内存破坏原子性
+	MOVQ	AX, ret+16(FP)          // 注释：注释：返回原子相加后的值（是针对内存的原子操作）
 	RET
 
 TEXT runtime∕internal∕atomic·Xadduintptr(SB), NOSPLIT, $0-24

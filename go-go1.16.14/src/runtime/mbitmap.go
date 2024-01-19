@@ -843,8 +843,13 @@ func (s *mspan) countAlloc() int {
 // bits that belong to neighboring objects. Also, on weakly-ordered
 // machines, callers must execute a store/store (publication) barrier
 // between calling this function and making the object reachable.
+// 注释：译：heapBitsSetType记录新分配[x，x+size）在[x，x+dataSize）中保存一个或多个类型为typ的值。
+//		一次只能有一个来自给定跨度的活动分配，并且跨度的位图总是位于字节边界上，因此不存在访问堆位图的写-写竞争。因此，heapBitsSetType可以在没有原子的情况下访问位图。
+//		在heapBitsSetType和像scanobject这样读取堆位图的东西之间可能存在读写竞争。但是，由于heapBitsSetType仅用于尚未可访问的对象，因此读取器将忽略此函数修改的位。
+//		这意味着此函数不能临时修改属于相邻对象的位。此外，在弱序机器上，调用方必须在调用此函数和使对象可访问之间执行存储/存储（发布）屏障。
+// 注释：参数：x是span的基地址；size是块大小；dataSize是数据大小；tpy是数据类型
 func heapBitsSetType(x, size, dataSize uintptr, typ *_type) {
-	const doubleCheck = false // slow but helpful; enable to test modifications to this code
+	const doubleCheck = false // slow but helpful; enable to test modifications to this code // 注释：译：缓慢但有益；启用以测试对此代码的修改
 
 	const (
 		mask1 = bitPointer | bitScan                        // 00010001
@@ -859,6 +864,8 @@ func heapBitsSetType(x, size, dataSize uintptr, typ *_type) {
 	//
 	// The checks for size == sys.PtrSize and size == 2*sys.PtrSize can therefore
 	// assume that dataSize == size without checking it explicitly.
+	// 注释：译：dataSize总是四舍五入到下一个malloc大小类的大小，但分配延迟块的情况除外，在这种情况下，大小是sizeof（_defer｛｝）（至少6个字），dataSize可以任意大。
+	//		检查大小==sys。PtrSize和size==2*sys。因此，PtrSize可以假设dataSize==size，而无需明确检查。
 
 	if sys.PtrSize == 8 && size == sys.PtrSize {
 		// It's one word and it has pointers, it must be a pointer.

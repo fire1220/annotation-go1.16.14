@@ -546,7 +546,7 @@ type m struct {
 	id            int64    // 注释：M的ID
 	mallocing     int32    // 注释：正在申请内存标识(0否1是)，当申请内存的开头会检查这个字段，如果已经在申请了，则报错，
 	throwing      int32    // 注释：-1不要转储完整的堆栈,大于0时:存储完整的堆栈（用于栈追踪使用）
-	preemptoff    string   // if != "", keep curg running on this m
+	preemptoff    string   // 注释：如果有值则保持curg在这个m上运行 // if != "", keep curg running on this m
 	locks         int32    // 注释：给M加锁;(禁用抢占)大于0时说明正在g正在被使用，系统调用后置函数的时候有使用（获取时++，释放是--）
 	dying         int32
 	profilehz     int32

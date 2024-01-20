@@ -259,7 +259,8 @@ const (
 	logHeapArenaBytes = (6+20)*(_64bit*(1-sys.GoosWindows)*(1-sys.GoarchWasm)) + (2+20)*(_64bit*sys.GoosWindows) + (2+20)*(1-_64bit) + (2+20)*sys.GoarchWasm
 
 	// heapArenaBitmapBytes is the size of each heap arena's bitmap.
-	heapArenaBitmapBytes = heapArenaBytes / (sys.PtrSize * 8 / 2)
+	// 注释：译：heapArenaBitmapBytes是每个堆竞技场的位图的大小。
+	heapArenaBitmapBytes = heapArenaBytes / (sys.PtrSize * 8 / 2) // 注释：每个arena的位图大小
 
 	pagesPerArena = heapArenaBytes / pageSize // 注释：每个arena存储page的数量是8192， (1<<26)/(1<<13)，64MB/8KB，(也就是说一个arena可以存储8KB个页(共64MB))
 

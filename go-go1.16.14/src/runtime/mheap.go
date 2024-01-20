@@ -248,6 +248,7 @@ var mheap_ mheap
 // outside of the Go heap and accessed via the mheap_.arenas index.
 // 注释：译：heapArena存储堆竞技场的元数据。heapArenas存储在Go堆之外，并通过mheap_arenas索引进行访问。
 //
+// 注释：一个arena的结构体，是对虚拟内存单元
 //go:notinheap
 type heapArena struct {
 	// bitmap stores the pointer/scalar bitmap for the words in
@@ -293,9 +294,12 @@ type heapArena struct {
 	//
 	// This is used to quickly find whole spans that can be freed.
 	//
-	// TODO(austin): It would be nice if this was uint64 for
+	// TODO(austin): It would be nice if this was uint64 for // 注释：译：如果这是uint64就太好了
 	// faster scanning, but we don't have 64-bit atomic bit
 	// operations.
+	// 注释：译：pageMarks是一个位图，用于指示哪些跨度上有任何标记的对象。与pageInUse一样，只使用与每个跨度中的第一页相对应的位。
+	//		在标记期间以原子方式进行写入。读取是非原子的且无锁的，因为它们只发生在扫描期间（因此从不与写入竞争）。
+	//		这用于快速查找可以释放的整个跨度。更快的扫描，但我们没有64位原子位操作。
 	pageMarks [pagesPerArena / 8]uint8
 
 	// pageSpecials is a bitmap that indicates which spans have
@@ -306,6 +310,8 @@ type heapArena struct {
 	// a span and whenever the last special is removed from a span.
 	// Reads are done atomically to find spans containing specials
 	// during marking.
+	// 注释：译：pageSpecials是一个位图，用于指示哪些跨度具有特殊值（终结器或其他）。与pageInUse一样，只使用与每个跨度中的第一页相对应的位。
+	//		每当向跨度中添加特殊项以及从跨度中删除最后一个特殊项时，都会以原子方式进行写入。在标记过程中，以原子方式进行读取以查找包含特殊值的跨度。
 	pageSpecials [pagesPerArena / 8]uint8
 
 	// checkmarks stores the debug.gccheckmark state. It is only
@@ -632,7 +638,7 @@ func (sc spanClass) noscan() bool {
 // 注释：译：arenaIndex将索引返回到包含p元数据的竞技场的mheap_arenas中。该索引结合了L1地图的索引和L2地图的索引，应用作mheap_.renas[ai.l1()][ai.L2()]。
 //		如果p在有效堆地址的范围之外，则l1（）或l2（）将越界。它是nosplit，因为它是由spanOf和其他几个nosplit函数调用的。
 //
-// 注释：arena二维矩阵的一维索引（返回arena的正数倍数）
+// 注释：arena二维矩阵的组合下标（返回arena的正数倍数）
 // 注释：arenaIdx的高位（L1），低位（L2），用来表示：mheap_.arenas[L1][L2]，用一个整型表示二维矩阵的组合下标
 // 注释：低位(L1)是低22位,高位(L2)是arenaIdx>>22，每个架构不同这里是Linux AMD64架构
 //go:nosplit

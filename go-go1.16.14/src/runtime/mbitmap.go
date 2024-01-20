@@ -115,7 +115,7 @@ func subtract1(p *byte) *byte {
 type heapBits struct {
 	bitp  *uint8
 	shift uint32
-	arena uint32 // Index of heap arena containing bitp
+	arena uint32 // 注释：arena二维矩阵的组合下标 // Index of heap arena containing bitp
 	last  *uint8 // Last byte arena's bitmap
 }
 
@@ -337,11 +337,12 @@ func (m *markBits) advance() {
 // nosplit because it is used during write barriers and must not be preempted.
 // 注释：译：heapBitsForAddr返回地址addr的heapBits。调用方必须确保addr位于已分配的范围内。特别要注意不要指向对象的末端。
 //		nosplit，因为它是在写屏障期间使用的，不能被抢占。
+// 注释：参数addr是span的基地址
 //go:nosplit
 func heapBitsForAddr(addr uintptr) (h heapBits) {
 	// 2 bits per word, 4 pairs per byte, and a mask is hard coded.
 	// 注释：译：每个字2个比特，每个字节4对，并且掩码是硬编码的。
-	arena := arenaIndex(addr)
+	arena := arenaIndex(addr) // 注释：arena二维矩阵的组合下标
 	ha := mheap_.arenas[arena.l1()][arena.l2()] // 注释：获取arena(定位arena)，arena指向虚拟地址空间
 	// The compiler uses a load for nil checking ha, but in this
 	// case we'll almost never hit that cache line again, so it

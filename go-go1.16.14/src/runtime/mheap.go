@@ -162,7 +162,13 @@ type mheap struct {
 	// platforms (even 64-bit), arenaL1Bits is 0, making this
 	// effectively a single-level map. In this case, arenas[0]
 	// will never be nil.
-	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena // 注释：arenas[1]*[1<<22]*heapArena ，每个heapArena是64M，所以这里管理了 64M << 22 = 256TB
+	// 注释：译：竞技场是堆竞技场地图。它指向整个可用虚拟地址空间的每个竞技场帧的堆的元数据。使用arenIndex计算此数组中的索引。
+	//		对于没有Go堆支持的地址空间区域，竞技场映射包含nil。修改受mheap_.lock保护。可以在不锁定的情况下执行读取；
+	//		但是，给定的条目可以在未持有锁的任何时候从nil转换为non-nil。（条目从不转换回零。）
+	//		通常，这是由L1映射和可能的许多L2映射组成的两级映射。当有大量的竞技场框架时，这样可以节省空间。
+	//		然而，在许多平台上（甚至是64位），arenaL1Bits是0，这实际上是一个单级映射。在这种情况下，arenas[0]永远不会为零。
+	// 注释：arenas[1]*[1<<22]*heapArena ，每个heapArena是64M，所以这里管理了 64M << 22 = 256TB（Linux AMD64架构）
+	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena // 注释：arenas矩阵数据（指向虚拟地址空间）,所有arena都是从这个矩阵中获取的
 
 	// heapArenaAlloc is pre-reserved space for allocating heapArena
 	// objects. This is only used on 32-bit, where we pre-reserve
@@ -240,12 +246,14 @@ var mheap_ mheap
 
 // A heapArena stores metadata for a heap arena. heapArenas are stored
 // outside of the Go heap and accessed via the mheap_.arenas index.
+// 注释：译：heapArena存储堆竞技场的元数据。heapArenas存储在Go堆之外，并通过mheap_arenas索引进行访问。
 //
 //go:notinheap
 type heapArena struct {
 	// bitmap stores the pointer/scalar bitmap for the words in
 	// this arena. See mbitmap.go for a description. Use the
 	// heapBits type to access this.
+	// 注释：译：位图存储该领域中单词的指针/标量位图。有关描述，请参见mbitmap.go。使用heapBits类型访问此。
 	bitmap [heapArenaBitmapBytes]byte
 
 	// spans maps from virtual address page ID within this arena to *mspan.
@@ -259,7 +267,11 @@ type heapArena struct {
 	// known to contain in-use or stack spans. This means there
 	// must not be a safe-point between establishing that an
 	// address is live and looking it up in the spans array.
-	spans [pagesPerArena]*mspan
+	// 注释：译：跨越从该竞技场内的虚拟地址页ID到*mspan的映射。对于已分配的跨度，其页面将映射到跨度本身。
+	//		对于空闲跨度，只有最低和最高的页面映射到跨度本身。内部页面映射到任意范围。对于从未分配过的页面，跨度条目为零。
+	//		修改受mheap.lock保护。可以在不锁定的情况下执行读取，但只能从已知包含在用或堆栈跨度的索引中执行。
+	//		这意味着在确定地址为活动地址和在span数组中查找地址之间不能存在安全点。
+	spans [pagesPerArena]*mspan // 注释：每个arena存储page的数量是8192， (1<<26)/(1<<13)，64MB/8KB，(也就是说一个arena可以存储8KB个页(共64MB))
 
 	// pageInUse is a bitmap that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,
@@ -267,6 +279,8 @@ type heapArena struct {
 	// span is used.
 	//
 	// Reads and writes are atomic.
+	// 注释：译：pageInUse是一个位图，指示哪些跨度处于mSpanInUse状态。此位图按页码进行索引，但仅使用与每个跨度中的第一页相对应的位。
+	//		读取和写入是原子的。
 	pageInUse [pagesPerArena / 8]uint8
 
 	// pageMarks is a bitmap that indicates which spans have any
@@ -615,8 +629,12 @@ func (sc spanClass) noscan() bool {
 //
 // It is nosplit because it's called by spanOf and several other
 // nosplit functions.
+// 注释：译：arenaIndex将索引返回到包含p元数据的竞技场的mheap_arenas中。该索引结合了L1地图的索引和L2地图的索引，应用作mheap_.renas[ai.l1()][ai.L2()]。
+//		如果p在有效堆地址的范围之外，则l1（）或l2（）将越界。它是nosplit，因为它是由spanOf和其他几个nosplit函数调用的。
 //
-//  注释：arena二维矩阵的一维索引（返回arena的正数倍数）
+// 注释：arena二维矩阵的一维索引（返回arena的正数倍数）
+// 注释：arenaIdx的高位（L1），低位（L2），用来表示：mheap_.arenas[L1][L2]，用一个整型表示二维矩阵的组合下标
+// 注释：低位(L1)是低22位,高位(L2)是arenaIdx>>22，每个架构不同这里是Linux AMD64架构
 //go:nosplit
 func arenaIndex(p uintptr) arenaIdx {
 	return arenaIdx((p - arenaBaseOffset) / heapArenaBytes) // 注释：返回arena的正数倍数
@@ -628,9 +646,10 @@ func arenaBase(i arenaIdx) uintptr {
 	return uintptr(i)*heapArenaBytes + arenaBaseOffset
 }
 
-type arenaIdx uint
+type arenaIdx uint // 注释：arena二维矩阵的组合下标，arenaIdx的高位（L1），低位（L2）用来表示：mheap_.arenas[L1][L2]，用一个整型表示二维矩阵的组合下标
 
-// 注释：l1是高位，i >> 22
+// 注释：l1是高位，返回：arenaIdx >> 22位(Linux AMD64架构)
+// 注释：mheap_.arenas[l1][l2]
 func (i arenaIdx) l1() uint {
 	if arenaL1Bits == 0 {
 		// Let the compiler optimize this away if there's no
@@ -641,7 +660,8 @@ func (i arenaIdx) l1() uint {
 	}
 }
 
-// 注释：l2是低位，i的低22位
+// 注释：l2是低位，返回：arenaIdx的低22位(Linux AMD64架构)
+// 注释：mheap_.arenas[l1][l2]
 func (i arenaIdx) l2() uint {
 	if arenaL1Bits == 0 {
 		return uint(i)

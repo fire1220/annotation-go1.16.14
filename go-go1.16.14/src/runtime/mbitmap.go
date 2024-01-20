@@ -111,6 +111,7 @@ func subtract1(p *byte) *byte {
 // The methods on heapBits take value receivers so that the compiler
 // can more easily inline calls to those methods and registerize the
 // struct fields independently.
+// 注释：译：heapBits提供对单个堆字的位图位的访问。heapBits上的方法采用值接收器，这样编译器可以更容易地内联对这些方法的调用，并独立注册结构字段。
 type heapBits struct {
 	bitp  *uint8
 	shift uint32
@@ -334,17 +335,22 @@ func (m *markBits) advance() {
 // In particular, be careful not to point past the end of an object.
 //
 // nosplit because it is used during write barriers and must not be preempted.
+// 注释：译：heapBitsForAddr返回地址addr的heapBits。调用方必须确保addr位于已分配的范围内。特别要注意不要指向对象的末端。
+//		nosplit，因为它是在写屏障期间使用的，不能被抢占。
 //go:nosplit
 func heapBitsForAddr(addr uintptr) (h heapBits) {
 	// 2 bits per word, 4 pairs per byte, and a mask is hard coded.
+	// 注释：译：每个字2个比特，每个字节4对，并且掩码是硬编码的。
 	arena := arenaIndex(addr)
-	ha := mheap_.arenas[arena.l1()][arena.l2()]
+	ha := mheap_.arenas[arena.l1()][arena.l2()] // 注释：获取arena(定位arena)，arena指向虚拟地址空间
 	// The compiler uses a load for nil checking ha, but in this
 	// case we'll almost never hit that cache line again, so it
 	// makes more sense to do a value check.
+	// 注释：译：编译器使用加载进行nil检查ha，但在这种情况下，我们几乎再也不会碰到那个缓存行，所以进行值检查更有意义。
 	if ha == nil {
 		// addr is not in the heap. Return nil heapBits, which
 		// we expect to crash in the caller.
+		// 注释：译：addr不在堆中。返回nil heapBits，我们预计它会在调用程序中崩溃。
 		return
 	}
 	h.bitp = &ha.bitmap[(addr/(sys.PtrSize*4))%heapArenaBitmapBytes]
@@ -844,9 +850,10 @@ func (s *mspan) countAlloc() int {
 // machines, callers must execute a store/store (publication) barrier
 // between calling this function and making the object reachable.
 // 注释：译：heapBitsSetType记录新分配[x，x+size）在[x，x+dataSize）中保存一个或多个类型为typ的值。
-//		一次只能有一个来自给定跨度的活动分配，并且跨度的位图总是位于字节边界上，因此不存在访问堆位图的写-写竞争。因此，heapBitsSetType可以在没有原子的情况下访问位图。
-//		在heapBitsSetType和像scanobject这样读取堆位图的东西之间可能存在读写竞争。但是，由于heapBitsSetType仅用于尚未可访问的对象，因此读取器将忽略此函数修改的位。
-//		这意味着此函数不能临时修改属于相邻对象的位。此外，在弱序机器上，调用方必须在调用此函数和使对象可访问之间执行存储/存储（发布）屏障。
+//		一次只能有一个来自给定跨度的活动分配，并且跨度的位图总是位于字节边界上，因此不存在访问堆位图的写-写竞争。
+//		因此，heapBitsSetType可以在没有原子的情况下访问位图。在heapBitsSetType和像scanobject这样读取堆位图的东西之间可能存在读写竞争。
+//		但是，由于heapBitsSetType仅用于尚未可访问的对象，因此读取器将忽略此函数修改的位。这意味着此函数不能临时修改属于相邻对象的位。
+//		此外，在弱序机器上，调用方必须在调用此函数和使对象可访问之间执行存储/存储（发布）屏障。
 // 注释：参数：x是span的基地址；size是块大小；dataSize是数据大小；tpy是数据类型
 func heapBitsSetType(x, size, dataSize uintptr, typ *_type) {
 	const doubleCheck = false // slow but helpful; enable to test modifications to this code // 注释：译：缓慢但有益；启用以测试对此代码的修改

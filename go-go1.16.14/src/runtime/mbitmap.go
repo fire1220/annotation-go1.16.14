@@ -116,7 +116,7 @@ type heapBits struct {
 	bitp  *uint8
 	shift uint32
 	arena uint32 // 注释：arena二维矩阵的组合下标 // Index of heap arena containing bitp
-	last  *uint8 // Last byte arena's bitmap
+	last  *uint8 // 注释：译：最后一个字节竞技场的位图 // Last byte arena's bitmap
 }
 
 // Make the compiler check that heapBits.arena is large enough to hold

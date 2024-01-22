@@ -272,7 +272,8 @@ type heapArena struct {
 	//		对于空闲跨度，只有最低和最高的页面映射到跨度本身。内部页面映射到任意范围。对于从未分配过的页面，跨度条目为零。
 	//		修改受mheap.lock保护。可以在不锁定的情况下执行读取，但只能从已知包含在用或堆栈跨度的索引中执行。
 	//		这意味着在确定地址为活动地址和在span数组中查找地址之间不能存在安全点。
-	spans [pagesPerArena]*mspan // 注释：每个arena存储page的数量是8192， (1<<26)/(1<<13)，64MB/8KB，(也就是说一个arena可以存储8KB个页(共64MB))
+	// 注释：每个arena存储page的数量是8192， (1<<26)/(1<<13)，64MB/8KB，(也就是说一个arena可以存储8KB个页(共64MB))
+	spans [pagesPerArena]*mspan
 
 	// pageInUse is a bitmap that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,

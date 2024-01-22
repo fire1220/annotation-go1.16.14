@@ -855,7 +855,7 @@ func (s *mspan) countAlloc() int {
 //		因此，heapBitsSetType可以在没有原子的情况下访问位图。在heapBitsSetType和像scanobject这样读取堆位图的东西之间可能存在读写竞争。
 //		但是，由于heapBitsSetType仅用于尚未可访问的对象，因此读取器将忽略此函数修改的位。这意味着此函数不能临时修改属于相邻对象的位。
 //		此外，在弱序机器上，调用方必须在调用此函数和使对象可访问之间执行存储/存储（发布）屏障。
-// 注释：参数：x是span的基地址；size是块大小；dataSize是数据大小；tpy是数据类型
+// 注释：参数：x是span的基地址；size是span对象块大小；dataSize是对象实际数据大小；tpy是数据类型
 func heapBitsSetType(x, size, dataSize uintptr, typ *_type) {
 	const doubleCheck = false // slow but helpful; enable to test modifications to this code // 注释：译：缓慢但有益；启用以测试对此代码的修改
 

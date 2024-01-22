@@ -273,7 +273,7 @@ type heapArena struct {
 	//		修改受mheap.lock保护。可以在不锁定的情况下执行读取，但只能从已知包含在用或堆栈跨度的索引中执行。
 	//		这意味着在确定地址为活动地址和在span数组中查找地址之间不能存在安全点。
 	// 注释：每个arena存储page的数量是8192， (1<<26)/(1<<13)，64MB/8KB，(也就是说一个arena可以存储8KB个页(共64MB))
-	spans [pagesPerArena]*mspan
+	spans [pagesPerArena]*mspan // 注释：所有的跨度类都是在一个连续的地址空间里，这里表示跨度类的相对地址空间的位置
 
 	// pageInUse is a bitmap that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,

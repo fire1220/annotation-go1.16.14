@@ -112,11 +112,12 @@ func subtract1(p *byte) *byte {
 // can more easily inline calls to those methods and registerize the
 // struct fields independently.
 // 注释：译：heapBits提供对单个堆字的位图位的访问。heapBits上的方法采用值接收器，这样编译器可以更容易地内联对这些方法的调用，并独立注册结构字段。
+// 注释：堆地址指针对应的位图信息
 type heapBits struct {
-	bitp  *uint8
-	shift uint32
+	bitp  *uint8 // 注释：地址指针对应的位图所在的组（每8个一组）
+	shift uint32 // 注释：地址指针对应组里的位置下标
 	arena uint32 // 注释：arena二维矩阵的组合下标 // Index of heap arena containing bitp
-	last  *uint8 // 注释：译：最后一个字节竞技场的位图 // Last byte arena's bitmap
+	last  *uint8 // 注释：最后一个位图组；译：最后一个字节竞技场的位图 // Last byte arena's bitmap
 }
 
 // Make the compiler check that heapBits.arena is large enough to hold
@@ -337,12 +338,13 @@ func (m *markBits) advance() {
 // nosplit because it is used during write barriers and must not be preempted.
 // 注释：译：heapBitsForAddr返回地址addr的heapBits。调用方必须确保addr位于已分配的范围内。特别要注意不要指向对象的末端。
 //		nosplit，因为它是在写屏障期间使用的，不能被抢占。
+// 注释：获取堆地址所在的位图信息
 // 注释：参数addr是span的基地址
 //go:nosplit
 func heapBitsForAddr(addr uintptr) (h heapBits) {
 	// 2 bits per word, 4 pairs per byte, and a mask is hard coded.
 	// 注释：译：每个字2个比特，每个字节4对，并且掩码是硬编码的。
-	arena := arenaIndex(addr) // 注释：arena二维矩阵的组合下标
+	arena := arenaIndex(addr)                   // 注释：arena二维矩阵的组合下标
 	ha := mheap_.arenas[arena.l1()][arena.l2()] // 注释：获取arena(定位arena)，arena指向虚拟地址空间
 	// The compiler uses a load for nil checking ha, but in this
 	// case we'll almost never hit that cache line again, so it
@@ -354,10 +356,10 @@ func heapBitsForAddr(addr uintptr) (h heapBits) {
 		// 注释：译：addr不在堆中。返回nil heapBits，我们预计它会在调用程序中崩溃。
 		return
 	}
-	h.bitp = &ha.bitmap[(addr/(sys.PtrSize*4))%heapArenaBitmapBytes]
-	h.shift = uint32((addr / sys.PtrSize) & 3)
-	h.arena = uint32(arena)
-	h.last = &ha.bitmap[len(ha.bitmap)-1]
+	h.bitp = &ha.bitmap[(addr/(sys.PtrSize*4))%heapArenaBitmapBytes] // addr对应的位图组（每8个一组）
+	h.shift = uint32((addr / sys.PtrSize) & 3)                       // 注释：addr对应的组内的位置
+	h.arena = uint32(arena)                                          // 注释：arena对应的虚拟地址空间的下标
+	h.last = &ha.bitmap[len(ha.bitmap)-1]                            // 注释：bitmap位图的最后一组
 	return
 }
 
@@ -892,14 +894,16 @@ func heapBitsSetType(x, size, dataSize uintptr, typ *_type) {
 		return
 	}
 
-	h := heapBitsForAddr(x)
-	ptrmask := typ.gcdata // start of 1-bit pointer mask (or GC program, handled below)
+	h := heapBitsForAddr(x) // 注释：获取堆地址所在的位图信息
+	ptrmask := typ.gcdata   // 注释：译：1位指针掩码的开始（或GC程序，下面处理） // start of 1-bit pointer mask (or GC program, handled below)
 
 	// 2-word objects only have 4 bitmap bits and 3-word objects only have 6 bitmap bits.
 	// Therefore, these objects share a heap bitmap byte with the objects next to them.
 	// These are called out as a special case primarily so the code below can assume all
 	// objects are at least 4 words long and that their bitmaps start either at the beginning
 	// of a bitmap byte, or half-way in (h.shift of 0 and 2 respectively).
+	// 注释：译：2字对象只有4个位图位，3字对象只有6个位图位。因此，这些对象与旁边的对象共享一个堆位图字节。
+	//		这些被称为特殊情况，主要是因为下面的代码可以假设所有对象都至少有4个单词长，并且它们的位图要么开始于位图字节的开头，要么开始于中间（分别为0和2的h.shift）。
 
 	if size == 2*sys.PtrSize {
 		if typ.size == sys.PtrSize {
@@ -911,9 +915,12 @@ func heapBitsSetType(x, size, dataSize uintptr, typ *_type) {
 			// just the smallest block available. Distinguish by checking dataSize.
 			// (In general the number of instances of typ being allocated is
 			// dataSize/typ.size.)
+			// 注释：译：我们正在分配一个足够大的盖帽来容纳两个指针。在64位上，这意味着实际对象必须是两个指针，否则我们将使用一个指针大小的块。
+			//		然而，在32位上，这是最小的8字节块。所以可能是我们分配了一个指针，而这只是可用的最小块。通过检查dataSize进行区分。（通常，分配的typ实例数为dataSize/typ.size。）
 			if sys.PtrSize == 4 && dataSize == sys.PtrSize {
 				// 1 pointer object. On 32-bit machines clear the bit for the
 				// unused second word.
+				// 注释：译：1个指针对象。在32位机器上，清除未使用的第二个字的位。
 				*h.bitp &^= (bitPointer | bitScan | (bitPointer|bitScan)<<heapBitsShift) << h.shift
 				*h.bitp |= (bitPointer | bitScan) << h.shift
 			} else {

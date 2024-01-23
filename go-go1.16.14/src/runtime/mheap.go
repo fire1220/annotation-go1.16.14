@@ -255,7 +255,7 @@ type heapArena struct {
 	// this arena. See mbitmap.go for a description. Use the
 	// heapBits type to access this.
 	// 注释：译：位图存储该领域中单词的指针/标量位图。有关描述，请参见mbitmap.go。使用heapBits类型访问此。
-	bitmap [heapArenaBitmapBytes]byte
+	bitmap [heapArenaBitmapBytes]byte // 注释：arena对应的位图
 
 	// spans maps from virtual address page ID within this arena to *mspan.
 	// For allocated spans, their pages map to the span itself.

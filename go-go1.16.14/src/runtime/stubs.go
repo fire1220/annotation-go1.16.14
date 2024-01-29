@@ -45,6 +45,11 @@ func getg() *g
 // 注释：译：这一定不能去：noescape：如果fn是一个堆栈分配的闭包，fn将g放在运行队列中，并且g在fn返回之前执行，则闭包在执行时将无效。
 //
 // 注释：保存现场; 汇编函数是：TEXT runtime·mcall(SB), NOSPLIT, $0-8
+// 注释：每个M下都会保存一个g0，是自己独立的栈空间(系统线程栈空间)。
+// 注释：步骤：
+//      1.保存现场
+//      2.切换g0
+//      3.执行fn，用g0执行fn
 func mcall(fn func(*g))
 
 // systemstack runs fn on a system stack.
@@ -217,7 +222,7 @@ func breakpoint()
 // 注释：这里会调用d.fn函数，就是refer里执行的函数
 func reflectcall(argtype *_type, fn, arg unsafe.Pointer, argsize uint32, retoffset uint32)
 
-func procyield(cycles uint32)
+func procyield(cycles uint32) // 注释：循环执行PAUSE系统指令，循环次数是第一个参数，CPU暂停，此时不会被CPU切片抢占(该指令只会占用CPU并消耗CPU时间)
 
 type neverCallThisFunction struct{}
 
@@ -248,6 +253,11 @@ func goexit(neverCallThisFunction)
 // side naturally has a data dependency order. All architectures that
 // Go supports or seems likely to ever support automatically enforce
 // data dependency ordering.
+// 注释：译：publicationBarrier执行存储/存储屏障（“发布”或“导出”屏障）。在初始化一个对象和使另一个处理器可以访问该对象之间需要某种形式的同步。
+//		如果没有同步，初始化写入和“发布”写入可能会被重新排序，从而允许其他处理器跟随指针并观察未初始化的对象。通常，应该使用更高级别的同步，
+//		例如锁定或原子指针写入。publicationBarrier适用于无法选择的情况，例如在内存管理器的实现中。
+//
+//		读取端没有相应的障碍，因为读取端自然具有数据依赖顺序。Go支持或可能支持的所有体系结构都会自动强制执行数据依赖性排序。
 func publicationBarrier()
 
 // getcallerpc returns the program counter (PC) of its caller's caller.

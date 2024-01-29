@@ -314,6 +314,11 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // 注释：译：func mcall（fn func（*g））切换到m->g0的堆栈，调用fn（g）。Fn决不能再回来。它应该gogo（&g->sched）继续运行g。
 //
 // 注释：执行 runtime.mcall 函数的汇编函数
+// 注释：每个M下都会保存一个g0，是自己独立的栈空间(系统线程栈空间)。
+// 注释：步骤：
+//      1.保存现场
+//      2.切换g0
+//      3.执行fn，用g0执行fn
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	fn+0(FP), DI                    // 注释：(参数fn地址,闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)
 
@@ -609,13 +614,13 @@ CALLFN(·call268435456, 268435456)
 CALLFN(·call536870912, 536870912)
 CALLFN(·call1073741824, 1073741824)
 
-// 注释：循环执行PAUSE系统指令，循环次数是第一个参数，该指令只会占用 CPU 并消耗 CPU 时间
+// 注释：循环执行PAUSE系统指令，循环次数是第一个参数，CPU暂停，此时不会被CPU切片抢占(该指令只会占用CPU并消耗CPU时间)
 TEXT runtime·procyield(SB),NOSPLIT,$0-0
 	MOVL	cycles+0(FP), AX
 again:
-	PAUSE
-	SUBL	$1, AX
-	JNZ	again
+	PAUSE           // 注释：CPU暂停，此时不会被CPU切片抢占，（占用CPU并消耗CPU的时间）
+	SUBL	$1, AX  // 注释：AX = AX - 1
+	JNZ	again       // 注释：不等于时跳转again标签
 	RET
 
 
@@ -1408,7 +1413,7 @@ TEXT _cgo_topofstack(SB),NOSPLIT,$0
 // 注释：G调用完成后调用的退出函数
 TEXT runtime·goexit<ABIInternal>(SB),NOSPLIT,$0-0
 	BYTE	$0x90	// NOP
-	CALL	runtime·goexit1(SB)	// does not return
+	CALL	runtime·goexit1(SB)	// 注释：永远不返回，因为执行了下一次调度 // does not return
 	// traceback from goexit1 must hit code range of goexit
 	BYTE	$0x90	// NOP
 

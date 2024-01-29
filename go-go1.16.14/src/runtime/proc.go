@@ -930,7 +930,7 @@ func castogscanstatus(gp *g, oldval, newval uint32) bool {
 // casgstatus will loop if the g->atomicstatus is in a Gscan status until the routine that
 // put it in the Gscan state is finished.
 // 注释：if gp.atomicstatus == oldval { gp = newval}
-// 注释：修改状态，把状态为oldval的更改为newval
+// 注释：(原子操作)修改G的状态，把状态为oldval的更改为newval
 //go:nosplit
 func casgstatus(gp *g, oldval, newval uint32) {
 	if (oldval&_Gscan != 0) || (newval&_Gscan != 0) || oldval == newval {
@@ -949,7 +949,9 @@ func casgstatus(gp *g, oldval, newval uint32) {
 
 	// loop if gp->atomicstatus is in a scan state giving
 	// GC time to finish and change the state to oldval.
-	for i := 0; !atomic.Cas(&gp.atomicstatus, oldval, newval); i++ { // 注释：修改状态，把状态oldval修改成newval
+	for i := 0; !atomic.Cas(&gp.atomicstatus, oldval, newval); i++ { // 注释：(原子操作)修改G的状态，把状态oldval修改成newval
+		// 注释：修改状态失败，补救逻辑
+		// 注释：大概的意思就是，等待一小会在尝试修改
 		if oldval == _Gwaiting && gp.atomicstatus == _Grunnable {
 			throw("casgstatus: waiting for Gwaiting but is Grunnable")
 		}
@@ -958,7 +960,7 @@ func casgstatus(gp *g, oldval, newval uint32) {
 		}
 		if nanotime() < nextYield {
 			for x := 0; x < 10 && gp.atomicstatus != oldval; x++ {
-				procyield(1)
+				procyield(1) // 注释：cup暂停一次
 			}
 		} else {
 			osyield()
@@ -3534,6 +3536,9 @@ func goyield_m(gp *g) {
 }
 
 // Finishes execution of the current goroutine.
+// 注释：译：完成当前goroutine的执行
+// 注释：函数退出执行goexit然后里面执行这个函数
+// 注释：执行函数退出动作，并且执行下一次调度
 func goexit1() {
 	if raceenabled {
 		racegoend()
@@ -3541,14 +3546,15 @@ func goexit1() {
 	if trace.enabled {
 		traceGoEnd()
 	}
-	mcall(goexit0)
+	mcall(goexit0) // 注释：用系统栈(g0)执行goexit0函数
 }
 
 // goexit continuation on g0.
+// 注释：协成退出时执行该函数
 func goexit0(gp *g) {
-	_g_ := getg()
+	_g_ := getg() // 注释：获取G
 
-	casgstatus(gp, _Grunning, _Gdead)
+	casgstatus(gp, _Grunning, _Gdead) // 注释：(原子操作)设置G的状态从_Grunning设置为_Gdead
 	if isSystemGoroutine(gp, false) {
 		atomic.Xadd(&sched.ngsys, -1)
 	}

@@ -1247,7 +1247,7 @@ const (
 	// the heap size reaches the trigger heap size computed by the
 	// controller.
 	// 注释：译：gcTriggerHeap表示当堆大小达到控制器计算的触发堆大小时，应该启动一个循环。
-	gcTriggerHeap gcTriggerKind = iota // 注释：分配内存时出发GC
+	gcTriggerHeap gcTriggerKind = iota // 注释：分配内存时出发GC(如果申请新的span的时候会触发GCstart，并传入这个参数)
 
 	// gcTriggerTime indicates that a cycle should be started when
 	// it's been more than forcegcperiod nanoseconds since the

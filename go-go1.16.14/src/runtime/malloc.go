@@ -910,9 +910,9 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
-		c.refill(spc)       // 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
+		c.refill(spc)       // 注释：(从中心缓存或堆中拿空间)从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
 		shouldhelpgc = true // 注释：是否申请新的span
-		s = c.alloc[spc]    //	注释：新span地址
+		s = c.alloc[spc]    // 注释：新span地址
 
 		freeIndex = s.nextFreeIndex() // 注释：重新获取空块下标
 	}
@@ -1179,13 +1179,16 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	// collector. Otherwise, on weakly ordered machines,
 	// the garbage collector could follow a pointer to x,
 	// but see uninitialized memory or stale heap bits.
+	// 注释：译：确保在调用方可以使x对垃圾收集器可见之前，上面将x初始化为类型安全内存并设置堆位的存储发生。
+	//		否则，在弱排序的机器上，垃圾收集器可能会跟随指向x的指针，但会看到未初始化的内存或过时的堆位。
 	publicationBarrier()
 
 	// Allocate black during GC.
 	// All slots hold nil so no scanning is needed.
 	// This may be racing with GC so do it atomically if there can be
 	// a race marking the bit.
-	if gcphase != _GCoff {
+	// 注释：译：GC期间分配黑色。所有插槽保持为零，因此不需要扫描。这可能是在与GC竞争，所以如果可能存在标记位的竞争，则以原子方式进行。
+	if gcphase != _GCoff { // 注释：如果运行了GC
 		gcmarknewobject(span, uintptr(x), size, scanSize)
 	}
 
@@ -1227,9 +1230,9 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		assistG.gcAssistBytes -= int64(size - dataSize)
 	}
 
-	if shouldhelpgc {
-		if t := (gcTrigger{kind: gcTriggerHeap}); t.test() {
-			gcStart(t)
+	if shouldhelpgc { // 注释：是否有新的span申请
+		if t := (gcTrigger{kind: gcTriggerHeap}); t.test() { // 注释：判断是否需要起开GC
+			gcStart(t) // 注释：开启GC
 		}
 	}
 

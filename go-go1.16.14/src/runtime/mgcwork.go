@@ -52,6 +52,23 @@ func init() {
 // the garbage collector from transitioning to mark termination since
 // gcWork may locally hold GC work buffers. This can be done by
 // disabling preemption (systemstack or acquirem).
+// 注释：译：垃圾收集器工作池抽象。
+//
+//		这实现了指向灰色对象的指针的生产者/消费者模型。灰色对象是在工作队列中标记的对象。黑色对象已标记，但不在工作队列中。
+//
+//		写入障碍、根发现、堆栈扫描和对象扫描生成指向灰色对象的指针。扫描消耗指向灰色对象的指针，从而使它们变黑，然后扫描它们，可能会产生指向灰色对象新的指针。
+//
+//		gcWork提供了为垃圾收集器生成和使用工作的接口。
+//
+//		gcWork可以在堆栈上使用，如下所示：
+//
+//			（必须禁用抢占）
+//			gcw:=&getg（）.m.p.ptr（）.gcw
+//			..调用gcw.put（）进行生产，调用gcw.tryGet（）进行消费。。
+//
+//		重要的是，在标记阶段使用gcWork可以防止垃圾收集器转换到标记终止，因为gcWork可能在本地保存GC工作缓冲区。这可以通过禁用抢占（systemstack或acquirem）来实现。
+//
+// 注释：P处理器上GC写屏障缓冲区
 type gcWork struct {
 	// wbuf1 and wbuf2 are the primary and secondary work buffers.
 	//
@@ -71,21 +88,31 @@ type gcWork struct {
 	// next.
 	//
 	// Invariant: Both wbuf1 and wbuf2 are nil or neither are.
+	// 注释：译：wbuf1和wbuf2是主要和次要工作缓冲区。
+	//
+	//		这可以被认为是两个工作缓冲区的指针连接在一起的堆栈。当我们弹出最后一个指针时，我们通过引入一个新的满缓冲区并丢弃一个空缓冲区，将堆栈向上移动一个工作缓冲区。
+	//		当我们填充两个缓冲区时，我们通过引入一个新的空缓冲区并丢弃一个满的缓冲区，将堆栈下移一个工作缓冲区。
+	//		这样，我们就有了一个缓冲区的滞后，这将获得或放置工作缓冲区的成本分摊到至少一个工作缓冲区上，并减少了全局工作列表上的争用。
+	//
+	//		wbuf1始终是我们当前推送和弹出的缓冲区，wbuf2是下一个将被丢弃的缓冲区。
+	//
+	//		不变：wbuf1和wbuf2都为零或都不为零。
 	wbuf1, wbuf2 *workbuf
 
 	// Bytes marked (blackened) on this gcWork. This is aggregated
 	// into work.bytesMarked by dispose.
-	bytesMarked uint64
+	bytesMarked uint64 // 注释：(标记黑色位图)此gcWork上标记（变黑）的字节的GC写屏障缓冲区。会在方法 gcWork.dispose 中将 bytesMarked 统一放到 gcWork.bytesMarked 中
 
 	// Scan work performed on this gcWork. This is aggregated into
 	// gcController by dispose and may also be flushed by callers.
-	scanWork int64
+	scanWork int64 // 【ing】注释：扫描在此gcWork上执行的工作。这通过 gcWork.dispose 统一聚合同步到 gcController (就是 gcControllerState.scanWork )中，也可以由调用方刷新。
 
 	// flushedWork indicates that a non-empty work buffer was
 	// flushed to the global work list since the last gcMarkDone
 	// termination check. Specifically, this indicates that this
 	// gcWork may have communicated work to another gcWork.
-	flushedWork bool
+	// 注释：flushdWork表示自上次gcMarkDone终止检查以来，已将非空工作缓冲区刷新到全局工作列表中。具体来说，这表明这个gcWork可能已经将工作传达给了另一个gcWork。
+	flushedWork bool // 【ing】
 }
 
 // Most of the methods of gcWork are go:nowritebarrierrec because the

@@ -283,7 +283,7 @@ type heapArena struct {
 	// Reads and writes are atomic.
 	// 注释：译：pageInUse是一个位图，指示哪些跨度处于mSpanInUse状态。此位图按页码进行索引，但仅使用与每个跨度中的第一页相对应的位。
 	//		读取和写入是原子的。
-	pageInUse [pagesPerArena / 8]uint8
+	pageInUse [pagesPerArena / 8]uint8 // 注释：已使用的页分组，(每个数组是8页)（LinuxAMD64下最大1024个组，共8192页）
 
 	// pageMarks is a bitmap that indicates which spans have any
 	// marked objects on them. Like pageInUse, only the bit
@@ -526,7 +526,7 @@ type mspan struct {
 	// h->sweepgen在每次垃圾回收后会增加2。
 	sweepgen    uint32        // 注释：向 mheap.sweepgen 标记看齐
 	divMul      uint16        // for divide by elemsize - divMagic.mul
-	baseMask    uint16        // if non-0, elemsize is a power of 2, & this will get object allocation base
+	baseMask    uint16        // 注释：译：如果不是0，elemsize是2的幂，这将获得对象分配基数 if non-0, elemsize is a power of 2, & this will get object allocation base
 	allocCount  uint16        // 注释：已分配块的个数(分配的对象数) // number of allocated objects
 	spanclass   spanClass     // 注释：span的ID(也叫做对象ID，对应【class】字段，位置：/src/runtime/sizeclasses.go) // size class and noscan (uint8)
 	state       mSpanStateBox // 注释：span的状态 // mSpanInUse etc; accessed atomically (get/set methods)
@@ -642,6 +642,7 @@ func (sc spanClass) noscan() bool {
 // 注释：arena二维矩阵的组合下标（返回arena的正数倍数）
 // 注释：arenaIdx的高位（L1），低位（L2），用来表示：mheap_.arenas[L1][L2]，用一个整型表示二维矩阵的组合下标
 // 注释：低位(L1)是低22位,高位(L2)是arenaIdx>>22，每个架构不同这里是Linux AMD64架构
+// 注释：入参span.base()基地址，返回arena的下标
 //go:nosplit
 func arenaIndex(p uintptr) arenaIdx {
 	return arenaIdx((p - arenaBaseOffset) / heapArenaBytes) // 注释：返回arena的正数倍数
@@ -777,11 +778,12 @@ func spanOfHeap(p uintptr) *mspan {
 
 // pageIndexOf returns the arena, page index, and page mask for pointer p.
 // The caller must ensure p is in the heap.
+// 注释：入参span基地址，返回：arena *heapArena, pageIdx:页的偏移量, pageMask:页的位图标记
 func pageIndexOf(p uintptr) (arena *heapArena, pageIdx uintptr, pageMask uint8) {
-	ai := arenaIndex(p)
-	arena = mheap_.arenas[ai.l1()][ai.l2()]
-	pageIdx = ((p / pageSize) / 8) % uintptr(len(arena.pageInUse))
-	pageMask = byte(1 << ((p / pageSize) % 8))
+	ai := arenaIndex(p)                                            // 注释：获取arena下标
+	arena = mheap_.arenas[ai.l1()][ai.l2()]                        // 注释：获取arena(通过arena下标获取arena)
+	pageIdx = ((p / pageSize) / 8) % uintptr(len(arena.pageInUse)) // 注释：页组下标（页组偏移量）
+	pageMask = byte(1 << ((p / pageSize) % 8))                     // 注释：页每组下的位图标记(后期会atomic.Or8(&arena.pageMarks[pageIdx], pageMask))
 	return
 }
 

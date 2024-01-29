@@ -75,7 +75,7 @@ func Load8(ptr *uint8) uint8 {
 func And8(ptr *uint8, val uint8)
 
 //go:noescape
-func Or8(ptr *uint8, val uint8)
+func Or8(ptr *uint8, val uint8) // 注释：原子或操作：ptr |= val
 
 //go:noescape
 func And(ptr *uint32, val uint32)

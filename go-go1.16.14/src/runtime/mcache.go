@@ -156,7 +156,7 @@ func getMCache() *mcache {
 // c could change.
 // 注释：必须在不可抢占的上下文中运行，否则c的所有者可能会更改。
 //
-// 注释：从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
+// 注释：(从中心缓存或堆中拿空间)从新填装空span到mcache里，确保mcache缓存中只要有一个可以使用的span里的空闲块
 // 注释：函数步骤：
 //		1.获取旧span
 //		2.把旧span放到中心缓存mcentral的已清里队列中

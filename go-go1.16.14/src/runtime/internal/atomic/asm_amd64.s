@@ -158,12 +158,13 @@ TEXT runtime∕internal∕atomic·Store64(SB), NOSPLIT, $0-16
 	RET
 
 // void	runtime∕internal∕atomic·Or8(byte volatile*, byte);
+// 注释：原子或操作：ptr |= val
 TEXT runtime∕internal∕atomic·Or8(SB), NOSPLIT, $0-9
-	MOVQ	ptr+0(FP), AX
-	MOVB	val+8(FP), BX
-	LOCK
-	ORB	BX, (AX)
-	RET
+	MOVQ	ptr+0(FP), AX   // 注释：ptr地址，第一个参数
+	MOVB	val+8(FP), BX   // 注释：val，第二个参数
+	LOCK                    // 注释：同步锁，用来同步多核内的缓冲里的值
+	ORB	BX, (AX)            // 注释：0(AX) |= BX；解释：AX地址里的值或等于（|=）BX
+	RET                     // 注释：函数返回
 
 // void	runtime∕internal∕atomic·And8(byte volatile*, byte);
 TEXT runtime∕internal∕atomic·And8(SB), NOSPLIT, $0-9

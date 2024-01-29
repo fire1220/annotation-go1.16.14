@@ -723,7 +723,8 @@ type p struct {
 	// gcw is this P's GC work buffer cache. The work buffer is
 	// filled by write barriers, drained by mutator assists, and
 	// disposed on certain GC state transitions.
-	gcw gcWork
+	// 注释：译：gcw是这个P的GC工作缓冲区缓存。工作缓冲区由写屏障填充，由赋值器辅助耗尽，并在某些GC状态转换时进行处理。
+	gcw gcWork // 注释：(P处理器上GC写屏障缓冲区)每个P处理的GC写屏障缓冲区，之后会统一刷到GC里
 
 	// wbBuf is this P's GC write barrier buffer.
 	//

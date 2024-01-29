@@ -135,8 +135,8 @@ var _ = heapBits{arena: (1<<heapAddrBits)/heapArenaBytes - 1}
 // marking purposes.
 // 注释：span对应对象的位图（GC 使用）
 type markBits struct {
-	bytep *uint8  // 注释：位图，第几组的地址（地址对应的是一个uint8的位图）
-	mask  uint8   // 注释：位图1标记0未标记，组里(uint8的组)的第几位(上面控制组)，标记后可以执行清理操作
+	bytep *uint8  // 注释：真正的位图，第几组的地址（地址对应的是一个uint8的位图），所有标记最终标记在这个字段里，标记时执行atomic.Or8(m.bytep, m.mask)，其实是执行：bytep|=mask
+	mask  uint8   // 注释：（临时标记变量）位图1标记0未标记，组里(uint8的组)的第几位(上面控制组)，标记后可以执行清理操作
 	index uintptr // 注释：span中的第几个对象
 }
 
@@ -254,14 +254,16 @@ func (s *mspan) isFree(index uintptr) bool {
 	return *bytep&mask == 0
 }
 
+// 注释：获取span的下标（偏移量）
 func (s *mspan) objIndex(p uintptr) uintptr {
-	byteOffset := p - s.base()
+	byteOffset := p - s.base() // 注释：获取span的偏移量
 	if byteOffset == 0 {
 		return 0
 	}
 	if s.baseMask != 0 {
 		// s.baseMask is non-0, elemsize is a power of two, so shift by s.divShift
-		return byteOffset >> s.divShift
+		// 注释：译：s.baseMask是非0，elemsize是2的幂，所以按s.divShift移位
+		return byteOffset >> s.divShift // 注释：偏移一个配置
 	}
 	return uintptr(((uint64(byteOffset) >> s.divShift) * uint64(s.divMul)) >> s.divShift2)
 }
@@ -273,6 +275,7 @@ func markBitsForAddr(p uintptr) markBits {
 }
 
 // 注释：标记位图，8个一组，返回结构，包含第几组的地址，当前组的第几位来控制对象分配情况，和第几个对象
+// 注释：通过下标获取位图标记结构体
 func (s *mspan) markBitsForIndex(objIndex uintptr) markBits {
 	bytep, mask := s.gcmarkBits.bitp(objIndex) // 注释：bytep是所属组的指针；mask是8位里span所属的位置
 	return markBits{bytep, mask, objIndex}     // 注释：组装数据
@@ -289,11 +292,14 @@ func (m markBits) isMarked() bool {
 }
 
 // setMarked sets the marked bit in the markbits, atomically.
+// 注释：译：setMarked以原子方式设置标记位中的标记位。
+// 注释：标记位图，把mask上对应的标记，最终标记到位图上（m.bytep）
 func (m markBits) setMarked() {
 	// Might be racing with other updates, so use atomic update always.
 	// We used to be clever here and use a non-atomic update in certain
 	// cases, but it's not worth the risk.
-	atomic.Or8(m.bytep, m.mask)
+	// 注释：译：可能正在与其他更新竞争，所以始终使用原子更新。我们过去在这里很聪明，在某些情况下使用非原子更新，但这不值得冒险。
+	atomic.Or8(m.bytep, m.mask) // 注释：原子或操作：m.bytep |= m.mask
 }
 
 // setMarkedNonAtomic sets the marked bit in the markbits, non-atomically.

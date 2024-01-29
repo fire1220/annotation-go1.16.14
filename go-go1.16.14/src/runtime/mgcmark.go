@@ -1512,6 +1512,8 @@ func gcDumpObject(label string, obj, off uintptr) {
 // not contain any non-nil pointers.
 //
 // This is nosplit so it can manipulate a gcWork without preemption.
+// 注释：译：gcmarknewobject将新分配的对象标记为黑色。obj不能包含任何非零指针。
+//		这是nosplit，所以它可以在没有抢占的情况下操作gcWork。
 //
 //go:nowritebarrier
 //go:nosplit
@@ -1521,18 +1523,20 @@ func gcmarknewobject(span *mspan, obj, size, scanSize uintptr) {
 	}
 
 	// Mark object.
-	objIndex := span.objIndex(obj)
-	span.markBitsForIndex(objIndex).setMarked()
+	// 注释：译：标记对象
+	objIndex := span.objIndex(obj)              // 注释：获取对象下标（span的偏移量）
+	span.markBitsForIndex(objIndex).setMarked() // 注释：标记对象
 
 	// Mark span.
-	arena, pageIdx, pageMask := pageIndexOf(span.base())
-	if arena.pageMarks[pageIdx]&pageMask == 0 {
-		atomic.Or8(&arena.pageMarks[pageIdx], pageMask)
+	// 注释：译：标记span
+	arena, pageIdx, pageMask := pageIndexOf(span.base()) // 注释：入参span基地址，返回：arena *heapArena, pageIdx:页的偏移量, pageMask:页的位图标记
+	if arena.pageMarks[pageIdx]&pageMask == 0 {          // 注释：如果对应页的位图没有标记，则进行标记
+		atomic.Or8(&arena.pageMarks[pageIdx], pageMask) // 注释：比较页的位图
 	}
 
-	gcw := &getg().m.p.ptr().gcw
-	gcw.bytesMarked += uint64(size)
-	gcw.scanWork += int64(scanSize)
+	gcw := &getg().m.p.ptr().gcw    // 注释：获取P处理下的GC写屏障缓冲区指针
+	gcw.bytesMarked += uint64(size) // 注释：标记黑色的位图
+	gcw.scanWork += int64(scanSize) // 注释：设置缓冲区扫描的大小
 }
 
 // gcMarkTinyAllocs greys all active tiny alloc blocks.

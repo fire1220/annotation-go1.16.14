@@ -4320,9 +4320,9 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	if trace.enabled {
 		traceGoCreate(newg, newg.startpc)
 	}
-	releasem(_g_.m)
+	releasem(_g_.m) // 注释：释放M锁
 
-	return newg
+	return newg // 注释：返回新的G
 }
 
 // saveAncestors copies previous ancestors of the given caller g and

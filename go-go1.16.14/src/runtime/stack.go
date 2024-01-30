@@ -1097,13 +1097,13 @@ func nilfunc() {
 // and then did an immediate gosave.
 // 注释：记录调用链，fv是调用方的PC（方法指针）值，会存放到上下文gobuf.ctxt里, 例如A执行go后fv为A的PC值
 func gostartcallfn(gobuf *gobuf, fv *funcval) {
-	var fn unsafe.Pointer
-	if fv != nil {
-		fn = unsafe.Pointer(fv.fn)
+	var fn unsafe.Pointer // 注释：初始哈fn，其实就是初始话PC
+	if fv != nil {        // 注释：如果fv存在
+		fn = unsafe.Pointer(fv.fn) // 注释：获取fv的PC值
 	} else {
-		fn = unsafe.Pointer(funcPC(nilfunc))
+		fn = unsafe.Pointer(funcPC(nilfunc)) // 注释：初始化一个空的PC值位置
 	}
-	gostartcall(gobuf, fn, unsafe.Pointer(fv))
+	gostartcall(gobuf, fn, unsafe.Pointer(fv)) // 注释：保存现场，保存:SP栈基地址、PC指令计数器、ctxt上下文（调用方函数指针，用来链路追踪）
 }
 
 // isShrinkStackSafe returns whether it's safe to attempt to shrink

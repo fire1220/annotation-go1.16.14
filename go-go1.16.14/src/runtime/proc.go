@@ -467,6 +467,9 @@ func releaseSudog(s *sudog) {
 // the same function in the address space). To be safe, don't use the
 // results of this function in any == expression. It is only safe to
 // use the result as an address at which to start executing code.
+// 注释：译：funcPC返回函数f的入口PC。它假设f是一个func值。否则行为是未定义的。
+//		小心：在带有插件的程序中，funcPC可以为同一函数返回不同的值（因为在地址空间中实际上有同一函数的多个副本）。
+//		为了安全起见，不要在任何==表达式中使用此函数的结果。只有将结果用作开始执行代码的地址才是安全的。
 // 注释：获取方法的PC值
 //go:nosplit
 func funcPC(f interface{}) uintptr {
@@ -4296,13 +4299,14 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	memclrNoHeapPointers(unsafe.Pointer(&newg.sched), unsafe.Sizeof(newg.sched)) // 注释：(初始化清空sched)清空newg.sched内存数据
 	newg.sched.sp = sp                                                           // 注释：(保存现场)保存SP寄存器地址（参数的开始地址）
 	newg.stktopsp = sp                                                           // 注释：(保存现场)录栈基地址，用于追溯
-	newg.sched.pc = funcPC(goexit) + sys.PCQuantum                               // 注释：(保存现场)存PC指令地址,新建的G执行完成后执行这里退出 // +PCQuantum so that previous instruction is in same function
-	newg.sched.g = guintptr(unsafe.Pointer(newg))                                // 注释：(保存现场)存当前的G地址
-	gostartcallfn(&newg.sched, fn)                                               // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
-	newg.gopc = callerpc                                                         // 注释：调用者的PC值;例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
-	newg.ancestors = saveAncestors(callergp)                                     // 注释：把当前的G的信息保存到调用链上，用于debug追溯时使用
-	newg.startpc = fn.fn                                                         // 注释：(go fn()中fn指令对应的pc值)要调用方法的PC
-	if _g_.m.curg != nil {                                                       // 注释：如果线程M正在运行G存在时
+	// 注释：这里太巧妙了，内存地址执行指令的顺序是高地址向低地址执行，这里初始化PC是个高地址1位
+	newg.sched.pc = funcPC(goexit) + sys.PCQuantum // 注释：初始化PC指令地址空间(返回后执行goexit),新建的G执行完成后执行这里退出 // +PCQuantum so that previous instruction is in same function
+	newg.sched.g = guintptr(unsafe.Pointer(newg))  // 注释：(保存现场)存当前的G地址
+	gostartcallfn(&newg.sched, fn)                 // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
+	newg.gopc = callerpc                           // 注释：调用者的PC值;例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
+	newg.ancestors = saveAncestors(callergp)       // 注释：把当前的G的信息保存到调用链上，用于debug追溯时使用
+	newg.startpc = fn.fn                           // 注释：(go fn()中fn指令对应的pc值)要调用方法的PC
+	if _g_.m.curg != nil {                         // 注释：如果线程M正在运行G存在时
 		newg.labels = _g_.m.curg.labels // 注释：如果线程M正在运行G存在时，同步探测器标签
 	}
 	if isSystemGoroutine(newg, false) { // 注释：是否是系统函数调用（runtime包里的函数）

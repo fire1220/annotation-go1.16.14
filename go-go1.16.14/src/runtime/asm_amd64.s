@@ -205,7 +205,7 @@ ok:
     // 注释：将该线程保存在m0
     // 注释：tls: Thread Local Storage
 	// set the per-goroutine and per-mach "registers"
-	get_tls(BX) // 注释：获取TLS数据，里面存储的是G的指针
+	get_tls(BX) // 注释：获取TLS数据，里面存储的是G的指针(宏定义位置：src/runtime/go_tls.h)(宏定义内容：#define	get_tls(r)	MOVQ TLS, r)
 	LEAQ	runtime·g0(SB), CX // 注释：把g0指针放到CX寄存器里
 	MOVQ	CX, g(BX)          // 注释：（把g0放到当前运行的G里）把g0放到TLS（线程运行的G上面）里
 	LEAQ	runtime·m0(SB), AX // 注释：把m0放到AX寄存器里
@@ -281,7 +281,7 @@ TEXT runtime·gosave(SB), NOSPLIT, $0-8
 	TESTQ	BX, BX // 注释：比较；逻辑与（&）运算，TEMP等于0时设置ZF为1；不等于0时设置ZF为0（ZF是条件寄存器）
 	JZ	2(PC)      // 注释：如果相等则跳转2(PC)执行指令
 	CALL	runtime·badctxt(SB) // 注释：调用函数runtime·badctxt
-	get_tls(CX)                 // 注释：获取TLS（*g）
+	get_tls(CX)                 // 注释：获取TLS（*g）(宏定义位置：src/runtime/go_tls.h)(宏定义内容：#define	get_tls(r)	MOVQ TLS, r)
 	MOVQ	g(CX), BX           // 注释：把G指针放到寄存器BX里
 	MOVQ	BX, gobuf_g(AX)     // 注释：(保存G指针)把G指针存储到gobuf.g里
 	RET
@@ -290,11 +290,12 @@ TEXT runtime·gosave(SB), NOSPLIT, $0-8
 // restore state from Gobuf; longjmp
 // 注释：从Gobuf恢复状态并执行
 // 注释：执行gogo函数指令，执行gobuf（之前保存的）中的数据(g.sched类型是gobuf)
+// 注释：执行G协成
 TEXT runtime·gogo(SB), NOSPLIT, $16-8
 	MOVQ	buf+0(FP), BX		// 注释：获取入参的gobuf结构体放到BX寄存器中 // gobuf
 	MOVQ	gobuf_g(BX), DX     // 注释：取出G放到DX寄存器中
 	MOVQ	0(DX), CX		    // 注释：初始化CX寄存器（DX数据放到寄存器CX中）(保证G不为空) // make sure g != nil
-	get_tls(CX) // 注释：取出TLS中的数据放到CX寄存器中，TLS存放了G的指针。定义位置：#define	get_tls(r)	MOVQ TLS, r
+	get_tls(CX) // 注释：取出TLS中的数据放到CX寄存器中，TLS存放了G的指针。(宏定义位置：src/runtime/go_tls.h)(宏定义内容：#define	get_tls(r)	MOVQ TLS, r)
 	MOVQ	DX, g(CX)           // 注释：把G放到TLS的G指针中（getg函数请求的就是TLS中的G指针）
 	MOVQ	gobuf_sp(BX), SP	// 注释：将runtime.goexit函数的PC恢复到SP中; 恢复g.sched.sp到SP寄存器中 // restore SP
 	MOVQ	gobuf_ret(BX), AX   // 注释：恢复g.sched.ret返回值位置到寄存器AX中
@@ -1411,7 +1412,9 @@ TEXT _cgo_topofstack(SB),NOSPLIT,$0
 // so as to make it identifiable to traceback (this
 // function it used as a sentinel; traceback wants to
 // see the func PC, not a wrapper PC).
+// 注释：译：goroutine上运行的最上面的函数返回goexit+PCQuantum。定义为ABIInteral，以便使其可被回溯识别（该函数用作哨兵；回溯希望看到函数PC，而不是包装PC）。
 // 注释：G调用完成后调用的退出函数
+// 注释：协成退出
 TEXT runtime·goexit<ABIInternal>(SB),NOSPLIT,$0-0
 	BYTE	$0x90	// NOP
 	CALL	runtime·goexit1(SB)	// 注释：永远不返回，因为执行了下一次调度 // does not return

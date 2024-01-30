@@ -4173,13 +4173,20 @@ func malg(stacksize int32) *g {
 // 注释：参数：siz是初始堆栈大小，一般情况下是0
 // 注释：(new procedure)新建G然后把G放到当前P里(所有新建G都是从这里出去的)
 // 注释：把fn放到新建的G里，并放到当前P里的G队列里
+// 注释：步骤：
+//		1.
+//		2.
+//		3.
+//		4.
+//		5.
+//		6.
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：fn向后扩大一个指针大小，存放P时使用（用fn + PtrSize 获取第一个参数的地址，也就是argp）
 	gp := getg()                                  // 注释：获取当前TLS数据位置指针（用来存储G的指针的）
 	pc := getcallerpc()                           // 注释：调用当前函数(newproc)的地址(PC)
 	// 注释：用g0的栈创建G对象
-	systemstack(func() { // 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G）
+	systemstack(func() { // 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的栈空间，就是系统线程栈空间，负责调度G）
 		newg := newproc1(fn, argp, siz, gp, pc) // 注释：用g0的栈创建G对象（此时已经切换g为g0）
 
 		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址

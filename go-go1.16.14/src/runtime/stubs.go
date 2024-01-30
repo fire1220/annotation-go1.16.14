@@ -239,6 +239,9 @@ type neverCallThisFunction struct{}
 // gentraceback assumes that goexit terminates the stack. A direct
 // call on the stack will cause gentraceback to stop walking the stack
 // prematurely and if there is leftover state it may panic.
+// 注释：译：goexit是每个goroutine调用堆栈顶部的返回存根。每个goroutine堆栈都被构造为goexit调用了goroutine的入口点函数，因此当入口点函数返回时，它将返回到goexit，
+//		后者将调用goexit1来执行实际退出。
+//		决不能直接调用此函数。请改为调用goexit1。gentraceback假设goexit终止堆栈。对堆栈的直接调用将导致gentraceback过早地停止遍历堆栈，如果存在剩余状态，它可能会死机。
 func goexit(neverCallThisFunction)
 
 // publicationBarrier performs a store/store barrier (a "publication"

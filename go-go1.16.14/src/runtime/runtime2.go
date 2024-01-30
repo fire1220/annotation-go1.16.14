@@ -330,7 +330,6 @@ func setMNoWB(mp **m, new *m) {
 // 注释：协成执行现场数据(调度信息)，G状态(g.atomicstatus)变更时，都需要保存当前G的上下文和寄存器等信息。保存协成切换中切走时的寄存器等数据
 type gobuf struct {
 	// The offsets of sp, pc, and g are known to (hard-coded in) libmach.
-	// 注释：寄存器 sp, pc 和 g 的偏移量，硬编码在 libmach
 	// ctxt is unusual with respect to GC: it may be a
 	// heap-allocated funcval, so GC needs to track it, but it
 	// needs to be set and cleared from assembly, where it's
@@ -341,6 +340,9 @@ type gobuf struct {
 	// and restores it doesn't need write barriers. It's still
 	// typed as a pointer so that any other writes from Go get
 	// write barriers.
+	// 注释：译：sp、pc和g的偏移量是libmach已知的（硬编码）。ctxt对于GC来说是不寻常的：它可能是一个堆分配的函数，所以GC需要跟踪它，但它需要设置并从程序集中清除，在程序集中很难有写障碍。
+	//		然而，ctxt实际上是一个保存的实时寄存器，我们只在真实寄存器和gobuf之间交换它。因此，我们在堆栈扫描期间将其视为根，这意味着保存和恢复它的程序集不需要写障碍。它仍然被键入为指针，
+	//		因此Go中的任何其他写入都会遇到写入障碍。
 	// 注释：调度器在将G由一种状态变更为另一种状态时，需要将上下文信息保存到这个gobuf结构体，当再次运行G的时候，再从这个结构体中读取出来，它主要用来暂存上下文信息。
 	// 注释：其中的栈指针 sp 和程序计数器 pc 会用来存储或者恢复寄存器中的值，设置即将执行的代码
 	sp   uintptr        // 注释：sp栈指针位置(保存CPU的rsp寄存器的值)

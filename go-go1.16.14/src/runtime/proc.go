@@ -3540,6 +3540,8 @@ func goyield_m(gp *g) {
 // 注释：译：完成当前goroutine的执行
 // 注释：函数退出执行goexit然后里面执行这个函数
 // 注释：执行函数退出动作，并且执行下一次调度
+// 注释：步骤：
+//		1.用系统栈(g0)执行goexit0函数(永不返回，会执行下一次调度)
 func goexit1() {
 	if raceenabled {
 		racegoend()
@@ -3547,7 +3549,7 @@ func goexit1() {
 	if trace.enabled {
 		traceGoEnd()
 	}
-	mcall(goexit0) // 注释：用系统栈(g0)执行goexit0函数
+	mcall(goexit0) // 注释：用系统栈(g0)执行goexit0函数(永不返回，会执行下一次调度)
 }
 
 // goexit continuation on g0.
@@ -3556,8 +3558,8 @@ func goexit0(gp *g) {
 	_g_ := getg() // 注释：获取G
 
 	casgstatus(gp, _Grunning, _Gdead) // 注释：(原子操作)设置G的状态从_Grunning设置为_Gdead
-	if isSystemGoroutine(gp, false) {
-		atomic.Xadd(&sched.ngsys, -1)
+	if isSystemGoroutine(gp, false) { // 注释：是否是系统函数调用（runtime包里的函数）
+		atomic.Xadd(&sched.ngsys, -1) // 注释：标记系统函数调用的次数
 	}
 	gp.m = nil
 	locked := gp.lockedm != 0

@@ -1030,6 +1030,9 @@ func topofstack(f funcInfo, g0 bool) bool {
 // If fixed is true, any goroutine that can vary between user and
 // system (that is, the finalizer goroutine) is considered a user
 // goroutine.
+// 注释：译：isSystemGoroutine报告在堆栈转储和死锁检测器中是否必须省略goroutine g。这是在运行时.*入口点启动的任何goroutine，
+//		除了runtime.main、runtime.handleAsyncEvent（仅限wasm），有时还有runtime.runnq。
+//		如果fixed为true，则可以在用户和系统之间变化的任何goroutine（即终结器goroutine）都被视为用户goroutine。
 func isSystemGoroutine(gp *g, fixed bool) bool {
 	// Keep this in sync with cmd/trace/trace.go:isSystemGoroutine.
 	f := findfunc(gp.startpc) // 注释：获取方法的详细信息

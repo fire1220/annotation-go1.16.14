@@ -158,6 +158,7 @@ func createfing() {
 }
 
 // This is the goroutine that runs all of the finalizers
+// 注释：译：这是运行所有终结器的goroutine
 func runfinq() {
 	var (
 		frame    unsafe.Pointer

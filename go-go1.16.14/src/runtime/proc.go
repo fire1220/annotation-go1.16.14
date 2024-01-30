@@ -467,9 +467,10 @@ func releaseSudog(s *sudog) {
 // the same function in the address space). To be safe, don't use the
 // results of this function in any == expression. It is only safe to
 // use the result as an address at which to start executing code.
+// 注释：获取方法的PC值
 //go:nosplit
 func funcPC(f interface{}) uintptr {
-	return *(*uintptr)(efaceOf(&f).data)
+	return *(*uintptr)(efaceOf(&f).data) // 注释：获取方法的PC值
 }
 
 // called from assembly
@@ -569,6 +570,7 @@ func atomicAllGIndex(ptr **g, i uintptr) *g {
 const (
 	// Number of goroutine ids to grab from sched.goidgen to local per-P cache at once.
 	// 16 seems to provide enough amortization, but other than that it's mostly arbitrary number.
+	// 注释：译：一次从sched.goidgen抓取到本地per-P缓存的goroutine ID数。16似乎提供了足够的摊销，但除此之外，它大多是任意数字。
 	_GoidCacheBatch = 16
 )
 
@@ -2644,11 +2646,11 @@ func gcstopm() {
 // If inheritTime is true, gp inherits the remaining time in the
 // current time slice. Otherwise, it starts a new time slice.
 // Never returns.
-// 注释：译：计划gp在当前M上运行。如果inheritTime为true，则gp将继承当前时间片中的剩余时间。否则，它将启动一个新的时间片。永不回头。
 //
 // Write barriers are allowed because this is called immediately after
 // acquiring a P in several places.
-// 注释：译：写入障碍是允许的，因为这是在几个地方获得P后立即调用的。
+// 注释：译：计划gp在当前M上运行。如果inheritTime为true，则gp将继承当前时间片中的剩余时间。否则，它将启动一个新的时间片。永不回头。
+// 		写入障碍是允许的，因为这是在几个地方获得P后立即调用的。
 //
 // 注释：如果inheritTime是true则立刻执行gp
 //
@@ -3326,8 +3328,7 @@ top:
 		goto top
 	}
 
-	// 注释：找到了g，那就执行g上的任务函数
-	execute(gp, inheritTime)
+	execute(gp, inheritTime) // 注释：找到了g，那就执行g上的任务函数
 }
 
 // dropg removes the association between m and the current goroutine m->curg (gp for short).
@@ -4171,6 +4172,7 @@ func malg(stacksize int32) *g {
 // 注释：参数：fn.fn是runtime.main函数指针
 // 注释：参数：siz是初始堆栈大小，一般情况下是0
 // 注释：(new procedure)新建G然后把G放到当前P里(所有新建G都是从这里出去的)
+// 注释：把fn放到新建的G里，并放到当前P里的G队列里
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：fn向后扩大一个指针大小，存放P时使用（用fn + PtrSize 获取第一个参数的地址，也就是argp）
@@ -4203,6 +4205,17 @@ func newproc(siz int32, fn *funcval) {
 // 注释：参数：callergp是调用者的G,例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
 // 注释：参数：callerpc是调用者的PC指令,例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
 // 注释：建立一个G
+// 注释：步骤：
+//		1.M加锁
+//		2.到本地（P里的）G队列拿出一个空闲G(此时G的状态是 _Gdead)
+//			a.如果没有拿到则创建新的空G
+//			b.设置G状态为 _Gdead
+//			c.把G放到全局G队列里
+//		3.拼装 g.sched 结构体，实际执行的就是这个结构体的G
+//		4.设置G状态从 _Gdead 设置到 _Grunnable
+//		5.
+//		6.
+//
 //go:systemstack
 func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerpc uintptr) *g {
 	// 注释：参数:narg是初始堆栈大小，一般情况下是0；
@@ -4249,7 +4262,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		prepGoExitFrame(sp)                 // 注释：AMD64架构什么都没有做，只有PPC64架构才触发汇编代码(PPC64架构就是处理LR,因为这个架构没有LR寄存器所以用R2寄存器代用）
 		spArg += sys.MinFrameSize           // 注释：栈基地址参数向上移动，去掉扩展里最小尺寸
 	}
-	if narg > 0 {
+	if narg > 0 { // 注释：narg是初始的参数大小，一般为0，如果大于0则需要把这部分的内存放到实际参数内存中
 		memmove(unsafe.Pointer(spArg), argp, uintptr(narg)) // 注释：(复制堆栈)复制narg个字节,把argp复制到spArg里
 		// This is a stack-to-stack copy. If write barriers
 		// are enabled and the source stack is grey (the
@@ -4269,23 +4282,23 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		}
 	}
 
-	// 注释：&newg.sched向后清空newg.sched个字节
-	memclrNoHeapPointers(unsafe.Pointer(&newg.sched), unsafe.Sizeof(newg.sched)) // 注释：清空newg.sched内存数据
+	// 注释：初始化清空sched(&newg.sched向后清空newg.sched个字节),并拼装sched结构体，实际执行的就是这个结构体的G
+	memclrNoHeapPointers(unsafe.Pointer(&newg.sched), unsafe.Sizeof(newg.sched)) // 注释：(初始化清空sched)清空newg.sched内存数据
 	newg.sched.sp = sp                                                           // 注释：(保存现场)保存SP寄存器地址（参数的开始地址）
 	newg.stktopsp = sp                                                           // 注释：(保存现场)录栈基地址，用于追溯
-	newg.sched.pc = funcPC(goexit) + sys.PCQuantum                               // 注释：(保存现场)存PC指令地址 // +PCQuantum so that previous instruction is in same function
+	newg.sched.pc = funcPC(goexit) + sys.PCQuantum                               // 注释：(保存现场)存PC指令地址,新建的G执行完成后执行这里退出 // +PCQuantum so that previous instruction is in same function
 	newg.sched.g = guintptr(unsafe.Pointer(newg))                                // 注释：(保存现场)存当前的G地址
 	gostartcallfn(&newg.sched, fn)                                               // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
 	newg.gopc = callerpc                                                         // 注释：调用者的PC值;例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
 	newg.ancestors = saveAncestors(callergp)                                     // 注释：把当前的G的信息保存到调用链上，用于debug追溯时使用
-	newg.startpc = fn.fn
-	if _g_.m.curg != nil {
+	newg.startpc = fn.fn                                                         // 注释：(go fn()中fn指令对应的pc值)要调用方法的PC
+	if _g_.m.curg != nil {                                                       // 注释：如果线程M正在运行G存在时
 		newg.labels = _g_.m.curg.labels // 注释：如果线程M正在运行G存在时，同步探测器标签
 	}
 	if isSystemGoroutine(newg, false) {
 		atomic.Xadd(&sched.ngsys, +1)
 	}
-	casgstatus(newg, _Gdead, _Grunnable)
+	casgstatus(newg, _Gdead, _Grunnable) // 注释：设置G状态为_Grunnable
 
 	if _p_.goidcache == _p_.goidcacheend {
 		// Sched.goidgen is the last allocated id,

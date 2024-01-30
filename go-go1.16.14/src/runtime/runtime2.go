@@ -217,11 +217,12 @@ type iface struct {
 // 注释：空接口的接头体(empyt interface)
 type eface struct {
 	_type *_type
-	data  unsafe.Pointer
+	data  unsafe.Pointer // 注释：*(*uintptr)(eface.data)可以获取PC值，使用：*(*uintptr)(efaceOf(&f).data)
 }
 
+// 注释：获取空接口地址
 func efaceOf(ep *interface{}) *eface {
-	return (*eface)(unsafe.Pointer(ep))
+	return (*eface)(unsafe.Pointer(ep)) // 注释：获取空接口地址
 }
 
 // The guintptr, muintptr, and puintptr are all used to bypass write barriers.
@@ -498,9 +499,9 @@ type g struct {
 	sigcode0       uintptr
 	sigcode1       uintptr
 	sigpc          uintptr
-	gopc           uintptr         // 注释：创建当前G的PC(调用者的PC(rip)) 例如：A调用B然后执行go指令，此时gopc是A的PC值 // pc of go statement that created this goroutine
-	ancestors      *[]ancestorInfo // 注释：创建此g的祖先信息g仅在debug.traceback祖先时使用 // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
-	startpc        uintptr         // 注释：任务函数(go func(){}中指令对应的pc值) // pc of goroutine function
+	gopc           uintptr         // 注释：(go关键词的父级PC)创建当前G的PC(调用者的PC(rip)) 例如：A调用B然后执行go指令，此时gopc是A的PC值 // pc of go statement that created this goroutine
+	ancestors      *[]ancestorInfo // 注释：(调用链信息,用于debug追溯时使用)创建此g的祖先信息g仅在debug.traceback祖先时使用 // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
+	startpc        uintptr         // 注释：任务函数(go fn()中fn指令对应的pc值) // pc of goroutine function
 	racectx        uintptr
 	waiting        *sudog         // 注释：等待的sudog链表头指针  // sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt        []uintptr      // cgo traceback context
@@ -636,6 +637,7 @@ type p struct {
 	deferpoolbuf [5][32]*_defer
 
 	// Cache of goroutine ids, amortizes accesses to runtime·sched.goidgen.
+	// 注释：译：goroutine id的缓存，摊销访问runtime·sched.goidgen
 	goidcache    uint64
 	goidcacheend uint64
 
@@ -895,7 +897,7 @@ type _func struct {
 	pcln      uint32
 	npcdata   uint32
 	cuOffset  uint32  // runtime.cutab offset of this function's CU
-	funcID    funcID  // set for certain special runtime functions
+	funcID    funcID  // 注释：方法ID // set for certain special runtime functions
 	_         [2]byte // pad
 	nfuncdata uint8   // must be last
 }

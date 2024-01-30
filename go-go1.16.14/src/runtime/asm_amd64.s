@@ -318,7 +318,7 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // 注释：步骤：
 //      1.保存现场
 //      2.切换g0
-//      3.执行fn，用g0执行fn
+//      3.执行fn，用g0执行fn，永不返回（需要执行下一次系统调度或休息）
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	fn+0(FP), DI                    // 注释：(参数fn地址,闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)
 
@@ -345,11 +345,11 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	PUSHQ	AX                              // 注释：(入栈)把业务G压入到栈里(AX是业务G)
 	MOVQ	DI, DX                          // 注释：把参数fn地址放到DX里
 	MOVQ	0(DI), DI                       // 注释：(拿出fn函数指令)闭包函数指令
-	CALL	DI                              // 注释：执行闭包函数(执行fn函数指令)
+	CALL	DI                              // 注释：执行fn闭包函数(永不返回，如果返回了则报错了)
 	POPQ	AX                              // 注释：(出栈)从栈中踢出业务G
-	MOVQ	$runtime·badmcall2(SB), AX
-	JMP	AX
-	RET
+	MOVQ	$runtime·badmcall2(SB), AX      // 注释：报错信息放到AX里(报错了)
+	JMP	AX                                  // 注释：跳转到报错(报错了)
+	RET                                     // 注释：程序退出
 
 // systemstack_switch is a dummy routine that systemstack leaves at the bottom
 // of the G stack. We need to distinguish the routine that

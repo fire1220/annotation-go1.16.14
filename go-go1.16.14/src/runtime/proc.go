@@ -4271,9 +4271,9 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		// barrier copy. We do this *after* the memmove
 		// because the destination stack may have garbage on
 		// it.
-		// 注释：【待标记】
-		if writeBarrier.needed && !_g_.m.curg.gcscandone {
-			f := findfunc(fn.fn)
+		// 注释：译：这是一个堆栈到堆栈的复制。如果启用了写屏障，并且源堆栈为灰色（目标始终为黑色），则执行屏障复制。我们在memmove之后这样做，因为目标堆栈上可能有垃圾。
+		if writeBarrier.needed && !_g_.m.curg.gcscandone { // 注释：需要写屏障，并且GC扫描未结束时
+			f := findfunc(fn.fn) // 注释：【ing】
 			stkmap := (*stackmap)(funcdata(f, _FUNCDATA_ArgsPointerMaps))
 			if stkmap.nbit > 0 {
 				// We're in the prologue, so it's always stack map index 0.

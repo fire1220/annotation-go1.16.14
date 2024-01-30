@@ -360,7 +360,7 @@ TEXT runtime·systemstack_switch(SB), NOSPLIT, $0-0
 	RET
 
 // func systemstack(fn func())
-// 注释：切换到系统堆栈执行闭包函数（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G）
+// 注释：切换到系统堆栈执行闭包函数（系统堆栈指的就是g0，有独立的栈空间，就是线程栈空间，负责调度G）
 // 注释：步骤：
 //      1.获取M下的G0（每个M下都有自己的G0）
 //      2.保存现场（把业务G的PC、SP、G、BP保存起来）

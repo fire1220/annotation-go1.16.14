@@ -4213,8 +4213,9 @@ func newproc(siz int32, fn *funcval) {
 //			c.把G放到全局G队列里
 //		3.拼装 g.sched 结构体，实际执行的就是这个结构体的G
 //		4.设置G状态从 _Gdead 设置到 _Grunnable
-//		5.
-//		6.
+//		5.(设置 g.goid )到P中的G的ID缓存中拿取一个G的ID，并且设置 g.goid ，设置成功后 p.goidcache++
+//			a.如果缓存已经满了（p.goidcache == p.goidcacheend），则到全局中拿取16个放到缓存里
+//		6.释放M锁并返回新的G
 //
 //go:systemstack
 func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerpc uintptr) *g {
@@ -4295,21 +4296,24 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	if _g_.m.curg != nil {                                                       // 注释：如果线程M正在运行G存在时
 		newg.labels = _g_.m.curg.labels // 注释：如果线程M正在运行G存在时，同步探测器标签
 	}
-	if isSystemGoroutine(newg, false) {
-		atomic.Xadd(&sched.ngsys, +1)
+	if isSystemGoroutine(newg, false) { // 注释：是否是系统函数调用（runtime包里的函数）
+		atomic.Xadd(&sched.ngsys, +1) // 注释：标记系统函数调用的次数
 	}
 	casgstatus(newg, _Gdead, _Grunnable) // 注释：设置G状态为_Grunnable
 
-	if _p_.goidcache == _p_.goidcacheend {
+	// 注释：到P中G的ID缓存中拿一个G的ID
+	if _p_.goidcache == _p_.goidcacheend { // 注释：如果缓存的开始和结束相等，表示没有缓存了，需要到全局中拿取16个ID缓存起来
 		// Sched.goidgen is the last allocated id,
 		// this batch must be [sched.goidgen+1, sched.goidgen+GoidCacheBatch].
 		// At startup sched.goidgen=0, so main goroutine receives goid=1.
-		_p_.goidcache = atomic.Xadd64(&sched.goidgen, _GoidCacheBatch)
-		_p_.goidcache -= _GoidCacheBatch - 1
-		_p_.goidcacheend = _p_.goidcache + _GoidCacheBatch
+		// 注释：译：Schedule.goidgen是最后一个分配的id，此批处理必须是[Sched.goidgen+1，Sched.goidgen+GoidCacheBatch]之间。
+		//		在启动时，Sched.giodgen=0，因此主goroutine接收到goid=1。
+		_p_.goidcache = atomic.Xadd64(&sched.goidgen, _GoidCacheBatch) // 注释：到全局中拿16个缓存到P里
+		_p_.goidcache -= _GoidCacheBatch - 1                           // 注释：设置缓存的开始位置数
+		_p_.goidcacheend = _p_.goidcache + _GoidCacheBatch             // 注释：设置缓存的结束位置数（G的ID<该字段）
 	}
-	newg.goid = int64(_p_.goidcache)
-	_p_.goidcache++
+	newg.goid = int64(_p_.goidcache) // 注释：设置G的ID
+	_p_.goidcache++                  // 注释：下一个空G的ID加1
 	if raceenabled {
 		newg.racectx = racegostart(callerpc)
 	}

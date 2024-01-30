@@ -637,9 +637,11 @@ type p struct {
 	deferpoolbuf [5][32]*_defer
 
 	// Cache of goroutine ids, amortizes accesses to runtime·sched.goidgen.
-	// 注释：译：goroutine id的缓存，摊销访问runtime·sched.goidgen
-	goidcache    uint64
-	goidcacheend uint64
+	// 注释：译：goroutine id的缓存，摊销访问 runtime.sched.goidgen
+	// 注释：下面两个字段goidcache、goidcacheend表示新G的ID池，新G的 g.goid = goidcache,然后 goidcache++，直到goidcache == goidcacheend时表示缓存已经用完。
+	// 注释：如果缓存用完，则会到全局 runtime.sched 结构体中 goidgen 字段拿取16个ID（atomic.Xadd64(&sched.goidgen, _GoidCacheBatch)）（原子操作全局变量）
+	goidcache    uint64 // 注释：G的ID缓存最小值，设置新申请的G的ID为该字段值，设置完成后该字段自增，直到等于goidcacheend时缓存的ID用完，需到全局 runtime.sched 中 goidgen 字段拿取16个
+	goidcacheend uint64 // 注释：G的ID缓存的最大值 g.goid 申请范围[goidcache, goidcacheend) 不包括goidcacheend
 
 	// Queue of runnable goroutines. Accessed without lock.
 	// 注释：本地g运行队列(用数组实现队列)
@@ -772,7 +774,7 @@ type p struct {
 // 注释：记录调度器的状态和g的全局运行队列：
 type schedt struct {
 	// accessed atomically. keep at top to ensure alignment on 32-bit systems.
-	goidgen   uint64
+	goidgen   uint64 // 注释：全局G协成ID的分配计数器（小于等于这个值表示已经分配给G作为ID，或者已经把ID给了P准备给G分配）(每次给P分配16个ID)(第一个协成main的ID是1，因为当时这个字段是0)
 	lastpoll  uint64 // time of last network poll, 0 if currently polling
 	pollUntil uint64 // time to which current poll is sleeping
 
@@ -789,7 +791,7 @@ type schedt struct {
 	nmsys        int32    // number of system m's not counted for deadlock
 	nmfreed      int64    // cumulative number of freed m's
 
-	ngsys uint32 // number of system goroutines; updated atomically
+	ngsys uint32 // 注释：译：系统goroutine的数量；以原子方式更新 // number of system goroutines; updated atomically
 
 	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表(这里指向的链表的头部)
 	npidle     uint32   // 注释：空闲的p结构体对象的数量

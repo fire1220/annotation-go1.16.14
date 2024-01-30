@@ -62,6 +62,9 @@ func mcall(fn func(*g))
 // It is common to use a func literal as the argument, in order
 // to share inputs and outputs with the code around the call
 // to system stack:
+// 注释：译：systemstack在系统堆栈上运行fn。如果从每个操作系统线程（g0）堆栈调用systemstack，或者从信号处理（gsignal）堆栈调用system stack，
+//		则systemstack直接调用fn并返回。否则，将从普通goroutine的有限堆栈调用systemstack。在这种情况下，systemstack切换到每个操作系统线程堆栈，
+//		调用fn，然后切换回来。通常使用func文字作为参数，以便与系统堆栈调用周围的代码共享输入和输出：
 //
 //	... set up y ...
 //	systemstack(func() {
@@ -69,7 +72,7 @@ func mcall(fn func(*g))
 //	})
 //	... use x ...
 //
-// 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的8M栈空间，负责调度G），汇编位置：TEXT runtime·systemstack(SB), NOSPLIT, $0-8
+// 注释：切换到系统堆栈（系统堆栈指的就是g0，有独立的栈空间，就是线程栈空间，负责调度G），汇编位置：TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 //
 //go:noescape
 func systemstack(fn func()) // 注释：切换系统栈执行

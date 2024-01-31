@@ -4174,6 +4174,10 @@ func malg(stacksize int32) *g {
 // This must be nosplit because this stack layout means there are
 // untypedasm_amd64.s arguments in newproc's argument frame. Stack copies won't
 // be able to adjust them and stack splits won't be able to copy them.
+// 注释：译：用siz字节的参数创建一个运行fn的新g。把它放在等待运行的g的队列中。编译器将go语句转换为对此的调用。
+//		此调用的堆栈布局不同寻常：它假设要传递给fn的参数在堆栈上的顺序紧跟在&fn之后。因此，它们在逻辑上是newproc参数框架的一部分，
+//		尽管它们没有出现在其签名中（而且不能出现，因为它们的类型在调用站点之间不同）。
+//		这必须是非拆分的，因为这个堆栈布局意味着在newproc的参数框架中有untypedasm_amd64.s参数。堆栈副本将无法调整它们，堆栈拆分也无法复制它们。
 // 注释：参数：fn.fn是runtime.main函数指针
 // 注释：参数：siz是初始堆栈大小，一般情况下是0，(入口汇编函数（runtime·rt0_go）传入的是0，debug函数有传入参数)
 // 注释：(new procedure)新建G然后把G放到当前P里(所有新建G都是从这里出去的)

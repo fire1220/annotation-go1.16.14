@@ -327,7 +327,7 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 
     // 注释：保存现场
 	get_tls(CX)                             // 注释：获取TLS的G地址，放到CX寄存器里(里第一个地址就是G地址)
-	MOVQ	g(CX), AX	                    // 注释：把G地址放到AX里 // save state in g->sched
+	MOVQ	g(CX), AX	                    // 注释：把业务G指针放到AX里 // save state in g->sched
 	MOVQ	0(SP), BX	                    // 注释：(要执行的PC)硬件寄存器栈指针(栈顶,低地址)(存储当前PC值) // caller's PC
 	MOVQ	BX, (g_sched+gobuf_pc)(AX)      // 注释：保存栈顶，低地址位置(硬件寄存器SP)
 	LEAQ	fn+0(FP), BX	                // 注释：(参数fn地址)第1个参数(闭包函数) // caller's SP
@@ -345,11 +345,11 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	JMP	AX                                  // 注释：如果相等则报错
 	MOVQ	SI, g(CX)	                    // 注释：切换到G0 // g = m->g0
 	MOVQ	(g_sched+gobuf_sp)(SI), SP	    // 注释：把G0里的SP拿出来 // sp = m->g0->sched.sp
-	PUSHQ	AX                              // 注释：(入栈)把业务G压入到栈里(AX是业务G)(这里把业务G作为fn的参数)
+	PUSHQ	AX                              // 注释：(入栈)把业务G压入到栈里(AX是业务G指针)(这里把业务G指针作为fn的参数)
 	MOVQ	DI, DX                          // 注释：把参数fn地址放到DX里
 	MOVQ	0(DI), DI                       // 注释：(拿出fn函数指令)闭包函数指令
 	CALL	DI                              // 注释：执行fn闭包函数(永不返回，如果返回了则报错了)
-	POPQ	AX                              // 注释：(出栈)从栈中踢出业务G
+	POPQ	AX                              // 注释：(出栈)从栈中踢出业务G指针
 	MOVQ	$runtime·badmcall2(SB), AX      // 注释：报错信息放到AX里(报错了)
 	JMP	AX                                  // 注释：跳转到报错(报错了)
 	RET                                     // 注释：程序退出

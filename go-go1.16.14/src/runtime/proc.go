@@ -3345,7 +3345,11 @@ top:
 //		调用方还负责安排在适当的时间使用ready重新启动gp。在调用dropg并安排稍后准备gp之后，调用者可以做其他工作，但最终应该调用schedule来重新启动该m上goroutines的调度。
 // 注释：删除当前线程M的G，并把G和M的关系一并删除
 // 注释：删除当前G(可能是G0、业务G)和M的联系
-// 注释：删除当前G
+// 注释：(断开G和M的相互绑定关系)删除当前G
+// 注释：步骤：
+// 		1.获取G
+// 		2.(断开G和M的关系)删除当前线程M对应G和M的关系
+// 		3.(断开M和G的关系)删除当前线程M的G
 func dropg() {
 	_g_ := getg() // 注释：获取当前G
 
@@ -3544,7 +3548,7 @@ func goyield_m(gp *g) {
 // 注释：函数退出执行goexit然后里面执行这个函数
 // 注释：执行函数退出动作，并且执行下一次调度
 // 注释：步骤：
-//		1.用系统栈(g0)执行goexit0函数(永不返回，会执行下一次调度)
+//		1.用系统栈(g0)执行goexit0函数(goexit0的入参是业务G（汇编代码在tls中获取的）)(永不返回，会执行下一次调度)
 func goexit1() {
 	if raceenabled {
 		racegoend()
@@ -3552,24 +3556,27 @@ func goexit1() {
 	if trace.enabled {
 		traceGoEnd()
 	}
-	mcall(goexit0) // 注释：用系统栈(g0)执行goexit0函数(永不返回，会执行下一次调度)
+	mcall(goexit0) // 注释：用系统栈(g0)执行goexit0函数(goexit0的入参是业务G（汇编代码在tls中获取的）)(永不返回，会执行下一次调度)
 }
 
 // goexit continuation on g0.
 // 注释：协成退出时执行该函数
 // 注释：步骤：
-//		1.
-//		2.
-//		3.
-//		4.
-//		5.
+//		1.入参gp是业务G，是在mcall汇编代码中把tls里的G压入栈中，传入到这个参数里
+//		2.这是业务G的状态为_Gdead
+//		3.如果是系统函数调用（runtime包里的函数），则标记调用次数减1
+//		4.清空业务G里的数据
+//		5. (断开G和M的相互绑定关系)删除当前G
+// 		6.把空闲G放到P的本地G队列里
+// 		7.执行下一次系统调度
 func goexit0(gp *g) {
 	_g_ := getg() // 注释：获取G
 
 	casgstatus(gp, _Grunning, _Gdead) // 注释：(原子操作)设置G的状态从_Grunning设置为_Gdead
 	if isSystemGoroutine(gp, false) { // 注释：是否是系统函数调用（runtime包里的函数）
-		atomic.Xadd(&sched.ngsys, -1) // 注释：标记系统函数调用的次数
+		atomic.Xadd(&sched.ngsys, -1) // 注释：标记系统函数调用的次数减1
 	}
+	// 注释：清空业务G里的数据
 	gp.m = nil
 	locked := gp.lockedm != 0
 	gp.lockedm = 0
@@ -3594,7 +3601,7 @@ func goexit0(gp *g) {
 		gp.gcAssistBytes = 0
 	}
 
-	dropg()
+	dropg() // 注释：(断开G和M的相互绑定关系)删除当前G
 
 	if GOARCH == "wasm" { // no threads yet on wasm
 		gfput(_g_.m.p.ptr(), gp)
@@ -3605,7 +3612,7 @@ func goexit0(gp *g) {
 		print("invalid m->lockedInt = ", _g_.m.lockedInt, "\n")
 		throw("internal lockOSThread error")
 	}
-	gfput(_g_.m.p.ptr(), gp)
+	gfput(_g_.m.p.ptr(), gp) // 注释：把空闲G放到P的本地G队列里
 	if locked {
 		// The goroutine may have locked this thread because
 		// it put it in an unusual kernel state. Kill it
@@ -3621,7 +3628,7 @@ func goexit0(gp *g) {
 			_g_.m.lockedExt = 0
 		}
 	}
-	schedule()
+	schedule() // 注释：执行下一次系统调度
 }
 
 // save updates getg().sched to refer to pc and sp so that a following

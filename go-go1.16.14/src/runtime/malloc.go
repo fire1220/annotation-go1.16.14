@@ -1035,14 +1035,12 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		// 注释：微型分配器。
 		if noscan && size < maxTinySize { // 注释：如果小于16KB表示是微小对象分配
 			// Tiny allocator.
-			// 注释：译：微型分配器。
 			//
 			// Tiny allocator combines several tiny allocation requests
 			// into a single memory block. The resulting memory block
 			// is freed when all subobjects are unreachable. The subobjects
 			// must be noscan (don't have pointers), this ensures that
 			// the amount of potentially wasted memory is bounded.
-			// 注释：译：微小分配器将几个微小的分配请求组合到一个内存块中。当所有子对象都无法访问时，将释放生成的内存块。子对象必须是noscan（没有指针），这样可以确保潜在浪费的内存量是有限的。
 			//
 			// Size of the memory block used for combining (maxTinySize) is tunable.
 			// Current setting is 16 bytes, which relates to 2x worst case memory
@@ -1052,24 +1050,26 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// 32 bytes provides more opportunities for combining,
 			// but can lead to 4x worst case wastage.
 			// The best case winning is 8x regardless of block size.
-			// 注释：译：用于组合的内存块的大小（maxTinySize）是可调的。当前设置为16字节，这与2倍最坏情况下的内存浪费有关（当除一个子对象外的所有子对象都无法访问时）。
-			// 		8个字节将导致完全没有浪费，但提供较少的组合机会。32字节提供了更多的组合机会，但在最坏情况下可能导致4倍的浪费。无论区块大小，最好的获胜方式是8倍。
 			//
 			// Objects obtained from tiny allocator must not be freed explicitly.
 			// So when an object will be freed explicitly, we ensure that
 			// its size >= maxTinySize.
-			// 注释：译：不能显式释放从微小分配器获得的对象。因此，当一个对象将被显式释放时，我们确保其大小>=maxTinySize。
 			//
 			// SetFinalizer has a special case for objects potentially coming
 			// from tiny allocator, it such case it allows to set finalizers
 			// for an inner byte of a memory block.
-			// 注释：译：SetFinalizer对于可能来自微小分配器的对象有一个特殊情况，它允许为内存块的内部字节设置终结器。
 			//
 			// The main targets of tiny allocator are small strings and
 			// standalone escaping variables. On a json benchmark
 			// the allocator reduces number of allocations by ~12% and
 			// reduces heap size by ~20%.
-			// 注释：译：微小分配器的主要目标是小字符串和独立的转义变量。在json基准测试中，分配器将分配数量减少了约12%，并将堆大小减少了约20%。
+			// 注释：译：微型分配器。
+			// 		微小分配器将几个微小的分配请求组合到一个内存块中。当所有子对象都无法访问时，将释放生成的内存块。子对象必须是noscan（没有指针），这样可以确保潜在浪费的内存量是有限的。
+			// 		用于组合的内存块的大小（maxTinySize）是可调的。当前设置为16字节，这与2倍最坏情况下的内存浪费有关（当除一个子对象外的所有子对象都无法访问时）。
+			// 		8个字节将导致完全没有浪费，但提供较少的组合机会。32字节提供了更多的组合机会，但在最坏情况下可能导致4倍的浪费。无论区块大小，最好的获胜方式是8倍。
+			// 		不能显式释放从微小分配器获得的对象。因此，当一个对象将被显式释放时，我们确保其大小>=maxTinySize。
+			// 		SetFinalizer对于可能来自微小分配器的对象有一个特殊情况，它允许为内存块的内部字节设置终结器。
+			// 		微小分配器的主要目标是小字符串和独立的转义变量。在json基准测试中，分配器将分配数量减少了约12%，并将堆大小减少了约20%。
 			off := c.tinyoffset
 			// Align tiny pointer for required (conservative) alignment.
 			if size&7 == 0 {

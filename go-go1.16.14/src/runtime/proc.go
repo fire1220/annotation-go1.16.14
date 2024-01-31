@@ -4318,6 +4318,10 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	//                    ********************
 	//      callee --->   *      fn()        *    <--- 下一个函数的PC
 	//                    ********************
+	// 注释：后面会把这个伪PC放到伪SP，然后后面跟上fn的伪PC就相当于：
+	//        go goexit(){
+	//            fn()
+	//        }()
 	newg.sched.pc = funcPC(goexit) + sys.PCQuantum // 注释：初始化PC指令地址空间(返回后执行goexit),新建的G执行完成后执行这里退出 // +PCQuantum so that previous instruction is in same function
 	newg.sched.g = guintptr(unsafe.Pointer(newg))  // 注释：(保存现场)存当前的G地址
 	gostartcallfn(&newg.sched, fn)                 // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值

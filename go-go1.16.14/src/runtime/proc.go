@@ -103,7 +103,7 @@ var main_init_done chan bool
 func main_main()
 
 // mainStarted indicates that the main M has started.
-var mainStarted bool
+var mainStarted bool // 注释：mainStarted表示主M已启动。
 
 // runtimeInitTime is the nanotime() at which the runtime started.
 var runtimeInitTime int64
@@ -4175,19 +4175,23 @@ func malg(stacksize int32) *g {
 // untypedasm_amd64.s arguments in newproc's argument frame. Stack copies won't
 // be able to adjust them and stack splits won't be able to copy them.
 // 注释：参数：fn.fn是runtime.main函数指针
-// 注释：参数：siz是初始堆栈大小，一般情况下是0
+// 注释：参数：siz是初始堆栈大小，一般情况下是0，(入口汇编函数（runtime·rt0_go）传入的是0，debug函数有传入参数)
 // 注释：(new procedure)新建G然后把G放到当前P里(所有新建G都是从这里出去的)
 // 注释：把fn放到新建的G里，并放到当前P里的G队列里
 // 注释：步骤：
-//		1.
-//		2.
-//		3.
-//		4.
-//		5.
-//		6.
+//		1.收集参数和变量：
+//			a.fn要用协成跑的方法；
+//			b.argp是fn地址向上（高位）移动一个指针，这里siz是0,只有siz>0的时候argp才会被使用；
+//			c.gp就是TLS本地线程存储的地址
+//			d.pc是runtime·rt0_go的PC值（调用当前函数(newproc)的地址(PC)）
+//		2.切换系统栈调用(用g0执行fn函数),系统栈有自己独立的栈空间，就是线程栈空间，每个M下都有个g0
+//			a.实例化新的空闲G
+//			b.获取当前G对应的P
+//			c.把新的G加入本地P的G队列里
+//			d.如果是第一个main函数（runtime.main）则直接唤醒P，执行里的G
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
-	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：fn向后扩大一个指针大小，存放P时使用（用fn + PtrSize 获取第一个参数的地址，也就是argp）
+	argp := add(unsafe.Pointer(&fn), sys.PtrSize) // 注释：fn地址向上一个指针大小（就是预留fn的参数位置）向后扩大一个指针大小，存放P时使用（用fn + PtrSize 获取第一个参数的地址，也就是argp）
 	gp := getg()                                  // 注释：获取当前TLS数据位置指针（用来存储G的指针的）
 	pc := getcallerpc()                           // 注释：调用当前函数(newproc)的地址(PC)
 	// 注释：用g0的栈创建G对象
@@ -4197,8 +4201,8 @@ func newproc(siz int32, fn *funcval) {
 		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址
 		runqput(_p_, newg, true) // 注释：把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
 
-		if mainStarted {
-			wakep()
+		if mainStarted { // 注释：如果是第一个main函数启动则直接唤醒，第一个main函数的g.goid是1
+			wakep() // 注释：唤醒P，就是那个M运行P，然后运行P里的G
 		}
 	})
 }
@@ -4239,7 +4243,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		throw("go of nil func value")
 	}
 	acquirem()           // 注释：获取M并加锁，这里没有用到返回值，所以是单纯的加锁，禁止被抢占 // disable preemption because it can be holding p in a local var
-	siz := narg          // 注释：初始堆栈大小，一般情况下是0；
+	siz := narg          // 注释：初始堆栈大小，一般情况下是0；(入口汇编函数（runtime·rt0_go）传入的是0，debug函数有传入参数)
 	siz = (siz + 7) &^ 7 // 注释：(永远保证是8的倍数)内存对齐，8位向上取整（最小单位是8位）
 
 	// We could allocate a larger initial stack if necessary.
@@ -4275,7 +4279,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 		prepGoExitFrame(sp)                 // 注释：AMD64架构什么都没有做，只有PPC64架构才触发汇编代码(PPC64架构就是处理LR,因为这个架构没有LR寄存器所以用R2寄存器代用）
 		spArg += sys.MinFrameSize           // 注释：栈基地址参数向上移动，去掉扩展里最小尺寸
 	}
-	if narg > 0 { // 注释：narg是初始的参数大小，一般为0，如果大于0则需要把这部分的内存放到实际参数内存中
+	if narg > 0 { // 注释：narg是初始的参数大小，一般为0，(入口汇编函数（runtime·rt0_go）传入的是0，debug函数有传入参数)，如果大于0则需要把这部分的内存放到实际参数内存中
 		memmove(unsafe.Pointer(spArg), argp, uintptr(narg)) // 注释：(复制堆栈)复制narg个字节,把argp复制到spArg里
 		// This is a stack-to-stack copy. If write barriers
 		// are enabled and the source stack is grey (the

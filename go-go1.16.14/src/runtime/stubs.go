@@ -267,12 +267,12 @@ func goexit(neverCallThisFunction)
 func publicationBarrier()
 
 // getcallerpc returns the program counter (PC) of its caller's caller.
-// 注释：getcallerrpc返回其调用者的程序计数器（PC）。
 // getcallersp returns the stack pointer (SP) of its caller's caller.
-// 注释：getcallersp返回其调用者的调用者的堆栈指针（SP）。
 // The implementation may be a compiler intrinsic; there is not
 // necessarily code implementing this on every platform.
-// 注释：该实现可以是编译器内部的；不一定有代码在每个平台上实现这一点。
+// 注释：译：getcallerrpc返回其调用者的程序计数器（PC）。
+// 		getcallersp返回其调用者的调用者的堆栈指针（SP）。
+// 		该实现可以是编译器内部的；不一定有代码在每个平台上实现这一点。
 //
 // For example:
 //
@@ -283,20 +283,20 @@ func publicationBarrier()
 //
 // These two lines find the PC and SP immediately following
 // the call to f (where f will return).
-// 注释：这两行在调用f（f将返回）之后立即找到PC和SP。
 //
 // The call to getcallerpc and getcallersp must be done in the
 // frame being asked about.
-// 注释：对getcallerrpc和getcallersp的调用必须在被询问的帧中完成。
 //
 // The result of getcallersp is correct at the time of the return,
 // but it may be invalidated by any subsequent call to a function
 // that might relocate the stack in order to grow or shrink it.
-// 注释：getcallersp的结果在返回时是正确的，但它可能会因随后对函数的任何调用而无效，该函数可能会重新定位堆栈以扩大或缩小堆栈。
 // A general rule is that the result of getcallersp should be used
 // immediately and can only be passed to nosplit functions.
-// 注释：一般规则是，getcallersp的结果应该立即使用，并且只能传递给nosplit函数
-
+// 注释：译：这两行在调用f（f将返回）之后立即找到PC和SP。
+// 		对getcallerrpc和getcallersp的调用必须在被询问的帧中完成。
+// 		getcallersp的结果在返回时是正确的，但它可能会因随后对函数的任何调用而无效，该函数可能会重新定位堆栈以扩大或缩小堆栈。
+// 		一般规则是，getcallersp的结果应该立即使用，并且只能传递给nosplit函数
+//
 // 注释：返回对所在函数的调用，上面案例中有解释
 // 注释：获取 caller(呼叫者，上游的函数)的PC（伪）指令寄存器，对应硬件IP寄存器
 //

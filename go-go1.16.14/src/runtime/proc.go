@@ -4218,6 +4218,8 @@ func newproc(siz int32, fn *funcval) {
 //
 // This must run on the system stack because it's the continuation of
 // newproc, which cannot split the stack.
+// 注释：译：在状态_Grunnable中创建一个新的g，从fn开始，参数的narg字节从argp开始。callerrpc是创建它的go语句的地址。调用方负责将新g添加到调度程序中。
+//		这必须在系统堆栈上运行，因为它是newproc的延续，不能拆分堆栈。
 //
 // 注释：参数：fn.fn初始是runtime.main函数指针，后面表示调用方的PC值（例如：方法A里使用go指令生成新的G时，参数fn.fn为A方法的地址PC值）
 // 注释：参数：argp是P的指针；narg是初始堆栈大小，一般情况下是0；

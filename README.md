@@ -12,3 +12,12 @@ go1.16.14中文注释
 - 管道
 - 启动流程 - 调度循环
 - 内存分配
+- Syscall【汇编】系统调用
+- runtime·mcall【汇编】切换G0执行fn,永不返回
+- atomic·Xadd64【汇编】交换相加后返回
+- runtime·systemstack【汇编】切换G0系统栈执行fn
+- runtime·gosave【汇编】保存现场
+- runtime·gogo【汇编】执行G协成
+- runtime·goexit【汇编】协成退出
+- runtime.mallocgc
+

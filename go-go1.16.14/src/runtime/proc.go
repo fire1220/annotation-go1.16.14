@@ -4181,7 +4181,7 @@ func malg(stacksize int32) *g {
 // 注释：参数：fn.fn是runtime.main函数指针
 // 注释：参数：siz是初始堆栈大小，一般情况下是0，(入口汇编函数（runtime·rt0_go）传入的是0，debug函数有传入参数)
 // 注释：(new procedure)新建G然后把G放到当前P里(所有新建G都是从这里出去的)
-// 注释：把fn放到新建的G里，并放到当前P里的G队列里
+// 注释：把fn组装到G里，然后放到P的G本地队列里，等待唤醒，如果是runtime.main函数则直接唤醒
 // 注释：步骤：
 //		1.收集参数和变量：
 //			a.fn要用协成跑的方法；

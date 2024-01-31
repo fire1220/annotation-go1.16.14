@@ -30,7 +30,7 @@ func gostartcall(buf *gobuf, fn, ctxt unsafe.Pointer) {
 	//                    ********************
 	//      callee --->   *      fn()        *    <--- 下一个函数的PC
 	//                    ********************
-	*(*uintptr)(unsafe.Pointer(sp)) = buf.pc // 注释：【ing】把buf.pc放到sp里（此时是向下移动一个指针之后的位置，其实就是return addr的位置，一般是LR寄存器存储的地址）
+	*(*uintptr)(unsafe.Pointer(sp)) = buf.pc // 注释：把buf.pc放到sp里（此时是向下移动一个指针之后的位置，其实就是return addr的位置，一般是LR寄存器存储的地址）
 	buf.sp = sp                              // 注释：保存伪SP基地址，这里是goexit函数+一个内存单位(在上层定义的)
 	buf.pc = uintptr(fn)                     // 注释：PC指令计数器(如果ctxt存在值则该值为ctxt)
 	buf.ctxt = ctxt                          // 注释：ctxt上下文（调用方函数指针，用来链路追踪）

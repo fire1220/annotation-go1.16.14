@@ -11,6 +11,8 @@ go1.16.14中文注释
 - 切片
 - 管道
 - 启动流程 - 调度循环
+- runtime·rt0_go【汇编】程序入口
+- runtime.newproc用协成执行fn
 - Syscall【汇编】系统调用
 - runtime·mcall【汇编】切换G0执行fn,永不返回
 - atomic·Xadd64【汇编】交换相加后返回

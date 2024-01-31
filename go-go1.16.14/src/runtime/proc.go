@@ -3557,6 +3557,12 @@ func goexit1() {
 
 // goexit continuation on g0.
 // 注释：协成退出时执行该函数
+// 注释：步骤：
+//		1.
+//		2.
+//		3.
+//		4.
+//		5.
 func goexit0(gp *g) {
 	_g_ := getg() // 注释：获取G
 

@@ -317,9 +317,11 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // 注释：执行 runtime.mcall 函数的汇编函数
 // 注释：每个M下都会保存一个g0，是自己独立的栈空间(系统线程栈空间)。
 // 注释：步骤：
-//      1.保存现场
-//      2.切换g0
-//      3.执行fn，用g0执行fn，永不返回（需要执行下一次系统调度或休息）
+//      1.获取业务G（tls里的G）
+//      2.保存现场
+//      3.切换g0
+//      4.把业务G压入栈中，作为fn的入参
+//      5.执行fn，用g0执行fn，(业务G是入参),永不返回（需要执行下一次系统调度或休息）
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	fn+0(FP), DI                    // 注释：(参数fn地址,闭包函数指令地址)第一个参数是闭包函数(存储的时候闭包函数指令的指针)
 
@@ -343,7 +345,7 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	JMP	AX                                  // 注释：如果相等则报错
 	MOVQ	SI, g(CX)	                    // 注释：切换到G0 // g = m->g0
 	MOVQ	(g_sched+gobuf_sp)(SI), SP	    // 注释：把G0里的SP拿出来 // sp = m->g0->sched.sp
-	PUSHQ	AX                              // 注释：(入栈)把业务G压入到栈里(AX是业务G)
+	PUSHQ	AX                              // 注释：(入栈)把业务G压入到栈里(AX是业务G)(这里把业务G作为fn的参数)
 	MOVQ	DI, DX                          // 注释：把参数fn地址放到DX里
 	MOVQ	0(DI), DI                       // 注释：(拿出fn函数指令)闭包函数指令
 	CALL	DI                              // 注释：执行fn闭包函数(永不返回，如果返回了则报错了)

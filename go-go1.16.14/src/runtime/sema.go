@@ -51,9 +51,11 @@ var semtable [semTabSize]struct {
 	pad  [cpu.CacheLinePadSize - unsafe.Sizeof(semaRoot{})]byte
 }
 
+// 注释：别名：sync.runtime_Semacquire
+// 注释：获取设置信号量
 //go:linkname sync_runtime_Semacquire sync.runtime_Semacquire
 func sync_runtime_Semacquire(addr *uint32) {
-	semacquire1(addr, false, semaBlockProfile, 0)
+	semacquire1(addr, false, semaBlockProfile, 0) // 注释：获取设置信号量
 }
 
 //go:linkname poll_runtime_Semacquire internal/poll.runtime_Semacquire
@@ -61,9 +63,11 @@ func poll_runtime_Semacquire(addr *uint32) {
 	semacquire1(addr, false, semaBlockProfile, 0)
 }
 
+// 注释：别名：sync.runtime_Semrelease
+// 注释：信号量释放
 //go:linkname sync_runtime_Semrelease sync.runtime_Semrelease
 func sync_runtime_Semrelease(addr *uint32, handoff bool, skipframes int) {
-	semrelease1(addr, handoff, skipframes)
+	semrelease1(addr, handoff, skipframes) // 注释：信号量释放
 }
 
 //go:linkname sync_runtime_SemacquireMutex sync.runtime_SemacquireMutex

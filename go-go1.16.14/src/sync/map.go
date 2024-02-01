@@ -26,7 +26,7 @@ import (
 // The zero Map is empty and ready for use. A Map must not be copied after first use.
 // 注释：sync.Map的结构体，这个结构适合多读少新增修改的情况下使用，可以实现几乎不加锁读取
 type Map struct {
-	mu Mutex
+	mu Mutex // 注释：互斥锁
 
 	// read contains the portion of the map's contents that are safe for
 	// concurrent access (with or without mu held).

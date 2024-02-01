@@ -4420,7 +4420,20 @@ func saveAncestors(callergp *g) *[]ancestorInfo {
 
 // Put on gfree list.
 // If local list is too long, transfer a batch to the global list.
+// 注释：译：列入gfree list里。如果本地列表太长，请将一个批转移到全局列表。
 // 注释：空G放到本地P空G队列里，如果到达64个时，拿出一半放到全局空G队列里
+// 注释：步骤：
+//		1.获取栈大小
+//		2.如果栈空间不是固定大小（不同系统固定大小不同，Linux是2048），释放栈空间，并清空栈的高地址、底地址、爆栈地址
+//		3.把G放到本地队列里(P的G队列)
+//		4.本地空闲G数量加1
+//		5.如果本地空闲G数量>=64
+//			a.(加锁)获取全局空闲G队列锁
+//			b.拿出一半（32个）放到全局空闲G队列里
+//			c.如果G无栈空间，放到【无栈空间】【全局空G队列】里
+//			d.如果G有栈空间，放到【有栈空间】【全局空G队列】里
+//			e.全局空G队列个数加1
+//			f.(解锁)释放全局空闲G队列锁
 func gfput(_p_ *p, gp *g) {
 	if readgstatus(gp) != _Gdead {
 		throw("gfput: bad status (not Gdead)")
@@ -4440,18 +4453,18 @@ func gfput(_p_ *p, gp *g) {
 	_p_.gFree.push(gp)     // 注释：把空G放到本地空队列里
 	_p_.gFree.n++          // 注释：本地空队列计数加1
 	if _p_.gFree.n >= 64 { // 注释：如果本地队列个数到达64个时，拿出一半放到全局空队列里
-		lock(&sched.gFree.lock) // 注释：锁定全局空G队列
+		lock(&sched.gFree.lock) // 注释：(加锁)锁定全局空G队列(获取全局空闲G队列锁)
 		for _p_.gFree.n >= 32 { // 注释：拿出32个放到全局空G队列里
 			_p_.gFree.n--         // 注释：本地空G个数减1
 			gp = _p_.gFree.pop()  // 注释：在本地空G队列中拿出一个空G
-			if gp.stack.lo == 0 { // 注释：如果G没有栈顶（没有栈空间）则放到全局空G队列sched.gFree.noStack里
-				sched.gFree.noStack.push(gp)
-			} else {
-				sched.gFree.stack.push(gp) // 注释：如果G有栈顶（有栈空间）则放到全局空G队列sched.gFree.stack里
+			if gp.stack.lo == 0 { // 注释：如果G没有栈顶（没有栈空间）则放到全局空G无栈空间队列 schedt.gFree.noStack 里
+				sched.gFree.noStack.push(gp) // 注释：放到全局空G无栈空间队列里
+			} else { // 注释：如果G有栈顶（有栈空间）则放到全局空G有栈空间队列sched.gFree.stack里
+				sched.gFree.stack.push(gp) // 注释：放到全局空G有栈空间队列里
 			}
 			sched.gFree.n++ // 注释：全局空G队列个数加1
 		}
-		unlock(&sched.gFree.lock) // 注释：全局空G队列解锁
+		unlock(&sched.gFree.lock) // 注释：(解锁)全局空G队列解锁(释放全局空闲G队列锁)
 	}
 }
 
@@ -6380,7 +6393,7 @@ func (q *gQueue) popList() gList {
 // on one gQueue or gList at a time.
 // 注释：G队列结构体
 type gList struct {
-	head guintptr
+	head guintptr // 注释：（G列表的头部G指针）head是G的指针
 }
 
 // empty reports whether l is empty.
@@ -6403,10 +6416,12 @@ func (l *gList) pushAll(q gQueue) {
 }
 
 // pop removes and returns the head of l. If l is empty, it returns nil.
+// 注释：译：pop移除并返回l的头。如果l为空，则返回nil。
+// 注释：(出栈)从头部移出1个G
 func (l *gList) pop() *g {
-	gp := l.head.ptr()
-	if gp != nil {
-		l.head = gp.schedlink
+	gp := l.head.ptr() // 注释：g列表头指针
+	if gp != nil {     // 注释：如果存在则，从头部移出一个G。否则直接返回nil
+		l.head = gp.schedlink // 注释：从头部移出一个G
 	}
 	return gp
 }

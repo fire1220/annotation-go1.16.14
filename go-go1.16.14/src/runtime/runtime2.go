@@ -673,7 +673,7 @@ type p struct {
 	// 注释：如果n>=64则会把本地P空G拿出一半（32个）放到全局空闲队列里,执行方法是：func gfput(_p_ *p, gp *g) {}
 	// 注释：如果n==0则会到全局空闲列表里拿回32个,执行方法是：func gfget(_p_ *p) *g {}
 	gFree struct { // 注释：空G队列
-		gList       // 注释：空G的头指针
+		gList       // 注释：空G的头指针(gList.head 是G指针,是G列表的头部G指针)
 		n     int32 // 注释：空G的个数，最大是64程序控制。
 	}
 

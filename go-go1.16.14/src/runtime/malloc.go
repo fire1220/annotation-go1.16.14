@@ -937,14 +937,16 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // 注释：（用户分配内存起始函数）分配对象（处理分配对象和GC一些标记工作）
 // 注释：返回申请后的内存首地址
 // 注释：步骤：
-// 		1.微对象分配
+//		1.获取线程锁
+// 		2.微对象分配
 // 			a.微对象ID是2，分配的单个块对象大小为16字节（两个指针大小），共1024个块（注释位置参考：src/runtime/sizeclasses.go）
 // 			b.16byte分为2、4、8三个等级(会根据这三个等级进行内存对齐)，根据要分配对象大小分配存储在不同等级上
 //			c.如果当前块无法容纳时，会使用下一个块，并根据这两个块的使用情况，决定下次使用剩余空间最大的块。
-// 		2.小对象分配
-// 		3.大对象分配
-// 		4.
-// 		5.
+// 		3.小对象分配
+// 		4.大对象分配
+// 		5.GC的辅助工作
+// 		6.释放线程锁
+//		7.返回对象首地址
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if gcphase == _GCmarktermination { // 注释：如果GC标记为_GCmarktermination则报错
 		throw("mallocgc called with gcphase == _GCmarktermination")

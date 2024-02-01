@@ -37,6 +37,9 @@ type Map struct {
 	// Entries stored in read may be updated concurrently without mu, but updating
 	// a previously-expunged entry requires that the entry be copied to the dirty
 	// map and unexpunged with mu held.
+	// 注释：译：read包含对并发访问安全的映射内容部分（无论是否持有mu）。
+	//		读取字段本身总是可以安全加载的，但必须仅在保持mu的情况下存储。
+	//		存储在read中的条目可以在没有mu的情况下同时更新，但更新之前删除的条目需要将该条目复制到脏映射中，并在保持mu时取消删除。
 	read atomic.Value // 注释：存储读取的数据(只读) // readOnly
 
 	// dirty contains the portion of the map's contents that require mu to be
@@ -49,6 +52,9 @@ type Map struct {
 	//
 	// If the dirty map is nil, the next write to the map will initialize it by
 	// making a shallow copy of the clean map, omitting stale entries.
+	// 注释：译：dirty包含映射内容中需要保存mu的部分。为了确保脏映射可以快速升级为读取映射，它还包括读取映射中所有未删除的条目。
+	//		删除的条目不会存储在脏映射中。必须先取消清除干净映射中已删除的条目并将其添加到脏映射中，然后才能将新值存储到其中。
+	//		如果脏映射为nil，则下一次对映射的写入将通过制作干净映射的浅拷贝来初始化它，省略过时的条目。
 	dirty map[interface{}]*entry // 注释：新增数据放在这里(读写)，当read里没有读到的时候会到这里读取
 
 	// misses counts the number of loads since the read map was last updated that
@@ -57,6 +63,8 @@ type Map struct {
 	// Once enough misses have occurred to cover the cost of copying the dirty
 	// map, the dirty map will be promoted to the read map (in the unamended
 	// state) and the next store to the map will make a new dirty copy.
+	// 注释：译：miss统计自上次更新读取映射以来需要锁定mu以确定密钥是否存在的加载次数。
+	//		一旦发生了足够多的未命中以支付复制脏映射的成本，脏映射将升级为已读映射（处于未修改状态），映射的下一个存储将生成新的脏拷贝。
 	misses int // 注释：计数read未读到数据的次数，如果次数达到dirty的数量时，就会把dirty赋值到read里，并清空dirty和misses
 }
 

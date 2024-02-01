@@ -67,40 +67,49 @@ const (
 	// to each stack below the usual guard area for OS-specific
 	// purposes like signal handling. Used on Windows, Plan 9,
 	// and iOS because they do not use a separate stack.
-	_StackSystem = sys.GoosWindows*512*sys.PtrSize + sys.GoosPlan9*512 + sys.GoosIos*sys.GoarchArm64*1024 // 注释：额外的系统栈空间大小，每个操作系统大小不同
+	// 注释：译：StackSystem是为了操作系统特定的目的（如信号处理）而添加到通常保护区域下方的每个堆栈的多个额外字节。在Windows、Plan 9和iOS上使用，因为它们不使用单独的堆栈。
+	_StackSystem = sys.GoosWindows*512*sys.PtrSize + sys.GoosPlan9*512 + sys.GoosIos*sys.GoarchArm64*1024 // 注释：额外的系统栈空间大小，每个操作系统大小不同(Linux是0)
 
 	// The minimum size of stack used by Go code
+	// 注释：译：Go代码使用的堆栈的最小大小
 	_StackMin = 2048 // 注释：栈最小空间大小。（G的空间大小是 round2(_StackSystem + _StackMin)二进制最小容纳(_StackSystem+_StackMin)的2次幂对应的值）
 
 	// The minimum stack size to allocate.
 	// The hackery here rounds FixedStack0 up to a power of 2.
-	_FixedStack0 = _StackMin + _StackSystem
-	_FixedStack1 = _FixedStack0 - 1
-	_FixedStack2 = _FixedStack1 | (_FixedStack1 >> 1)
-	_FixedStack3 = _FixedStack2 | (_FixedStack2 >> 2)
-	_FixedStack4 = _FixedStack3 | (_FixedStack3 >> 4)
-	_FixedStack5 = _FixedStack4 | (_FixedStack4 >> 8)
-	_FixedStack6 = _FixedStack5 | (_FixedStack5 >> 16)
-	_FixedStack  = _FixedStack6 + 1
+	// 注释：译：要分配的最小堆栈大小。这里的技巧是将FixedStack0取整到2的幂。
+	// 注释：二进制向上取整
+	// 注释：下面以plan9为例：_FixedStack0 = 2560 = 101000000000
+	_FixedStack0 = _StackMin + _StackSystem            // 注释：1010 0000 0000
+	_FixedStack1 = _FixedStack0 - 1                    // 注释：1001 1111 1111
+	_FixedStack2 = _FixedStack1 | (_FixedStack1 >> 1)  // 注释：1101 1111 1111 = 1001 1111 1111 | 0100 1111 1111
+	_FixedStack3 = _FixedStack2 | (_FixedStack2 >> 2)  // 注释：1111 1111 1111 = 1101 1111 1111 | 0011 0111 1111
+	_FixedStack4 = _FixedStack3 | (_FixedStack3 >> 4)  // 注释：1111 1111 1111 = 1111 1111 1111 | 0000 1111 1111
+	_FixedStack5 = _FixedStack4 | (_FixedStack4 >> 8)  // 注释：1111 1111 1111 = 1111 1111 1111 | 0000 0000 1111
+	_FixedStack6 = _FixedStack5 | (_FixedStack5 >> 16) // 注释：1111 1111 1111 = 1111 1111 1111 | 0000 0000 0000
+	_FixedStack  = _FixedStack6 + 1                    // 注释：1 0000 0000 0000
 
 	// Functions that need frames bigger than this use an extra
 	// instruction to do the stack split check, to avoid overflow
 	// in case SP - framesize wraps below zero.
 	// This value can be no bigger than the size of the unmapped
 	// space at zero.
+	// 注释：译：需要大于此值的帧的函数会使用一条额外的指令来进行堆栈拆分检查，以避免在SP帧大小小于零的情况下溢出。该值不能大于零处未映射空间的大小。
 	_StackBig = 4096
 
 	// The stack guard is a pointer this many bytes above the
 	// bottom of the stack.
+	// 注释：译：堆栈保护是一个指针，它位于堆栈底部的上方这么多字节。
 	_StackGuard = 928*sys.StackGuardMultiplier + _StackSystem // 注释：G栈保护的额为空间，用来确定爆栈警告的栈指针时使用
 
 	// After a stack split check the SP is allowed to be this
 	// many bytes below the stack guard. This saves an instruction
 	// in the checking sequence for tiny frames.
+	// 注释：在堆栈拆分检查之后，允许SP位于堆栈保护之下这么多字节。这将在检查小帧的序列中保存一条指令。
 	_StackSmall = 128
 
 	// The maximum number of bytes that a chain of NOSPLIT
 	// functions can use.
+	// 注释：译：NOSPLIT函数链可以使用的最大字节数。
 	_StackLimit = _StackGuard - _StackSystem - _StackSmall
 )
 

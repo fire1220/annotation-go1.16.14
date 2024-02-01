@@ -360,8 +360,17 @@ func goready(gp *g, traceskip int) {
 	})
 }
 
-// 注释：获取一个空闲的G
+// 注释：获取空闲带阻塞G
 // 注释：如果当前P中空闲G列表存在，并且全局空闲G有数据时。(去全局空闲G链表中拿出P中的空闲G总数的一半)
+// 注释：步骤：
+// 		1.线程加锁，并获取P指针
+// 		2.如果P里空闲待阻塞栈里没有sudog时(栈是由数组实现的)
+//			a.获取全局锁
+//			b.填充本地队列容量的一半，从全局链表中拿取
+//			c.如果本地队列还没有sudog，则实例化1个新的sudog放到本地队列中
+// 		3.(出栈)从P空闲待阻塞栈里出栈
+// 		4.释放线程锁
+// 		5.返回空闲待阻塞的sudog
 //go:nosplit
 func acquireSudog() *sudog {
 	// Delicate dance: the semaphore implementation calls
@@ -372,6 +381,8 @@ func acquireSudog() *sudog {
 	// Break the cycle by doing acquirem/releasem around new(sudog).
 	// The acquirem/releasem increments m.locks during new(sudog),
 	// which keeps the garbage collector from being invoked.
+	// 注释：译：精致的舞蹈：信号量实现调用acquireSudog，acquireSudog调用new（sudog），new调用malloc，malloc可以调用垃圾收集器，垃圾收集器调用stopTheWorld中的信号量实现。
+	//		通过围绕新事物（sudog）进行获取/发布来打破循环。acquirem/releasem在new（sudog）过程中增加m.locks，从而防止垃圾收集器被调用。
 	mp := acquirem() // 注释：获得当前的M（当前G对应的M）对象
 	pp := mp.p.ptr() // 注释：当前M对应的P指针
 

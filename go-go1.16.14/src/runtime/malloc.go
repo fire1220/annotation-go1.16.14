@@ -1201,7 +1201,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	}
 
 	mp.mallocing = 0
-	releasem(mp)
+	releasem(mp) // 注释：释放线程锁
 
 	if debug.malloc {
 		if debug.allocfreetrace != 0 {

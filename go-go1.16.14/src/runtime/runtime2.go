@@ -369,6 +369,9 @@ type gobuf struct {
 // 注释：sudog是从一个特殊的池中分配的。使用acquireSudog和releaseSudog来分配和释放它们。
 //
 // 注释：等待(阻塞)的G（通常是全局G链表或当前P中等待的G列表中的成员），所有要执行的G都是以这个结构体的形式存在
+// 注释：有两个地方在使用
+//		1.管道chan：读取阻塞sudog，发送阻塞sudog，在chan里是两个链表结构
+//		2.信号，阻塞sudog，在信号里是通过一个全局二叉树查找（大堆排序），节点是个sudog链表
 type sudog struct {
 	// The following fields are protected by the hchan.lock of the
 	// channel this sudog is blocking on. shrinkstack depends on

@@ -376,6 +376,7 @@ type sudog struct {
 	// The following fields are protected by the hchan.lock of the
 	// channel this sudog is blocking on. shrinkstack depends on
 	// this for sudogs involved in channel ops.
+	// 注释：译：以下字段受此sudog阻塞的通道的hchan.lock保护。对于通道操作中涉及的sudog，shrinkstack取决于此。
 
 	g *g // 注释：需要休眠的G
 
@@ -387,6 +388,7 @@ type sudog struct {
 	// For channels, waitlink is only accessed by g.
 	// For semaphores, all fields (including the ones above)
 	// are only accessed when holding a semaRoot lock.
+	// 注释：译：以下字段永远不会同时访问。对于通道，waitlink只能由g访问。对于信号量，所有字段（包括上面的字段）只有在持有semaRoot锁时才能访问。
 
 	acquiretime int64 // 注释：初始胡的时间
 	releasetime int64 // 注释：释放时的时间,-1代表send是再设置时间，如果大于0，会把cputicks()设置进来（CPU时钟周期计数器）。启动阻塞事件，blockevent阻塞监听的时间是当前值减去当时cputicks()值
@@ -394,12 +396,14 @@ type sudog struct {
 
 	// isSelect indicates g is participating in a select, so
 	// g.selectDone must be CAS'd to win the wake-up race.
+	// 注释：译：isSelect表示g正在参与选择，因此g.selectDone必须是CAS才能赢得唤醒比赛。
 	isSelect bool // 注释：（是否是select导致的阻塞）是否参与select
 
 	// success indicates whether communication over channel c
 	// succeeded. It is true if the goroutine was awoken because a
 	// value was delivered over channel c, and false if awoken
 	// because c was closed.
+	// 注释：译：success表示通过信道c的通信是否成功。如果goroutine是因为通过通道c传递值而被唤醒的，则为true；如果是因为c关闭而被唤醒，则为false。
 	// 注释：信道c上的通信是否成功。如果goroutine因为值通过通道c传递而被唤醒，则为true，如果因为c被关闭而被唤醒则为false
 	success bool // 注释：是否因通道唤醒(管道非关闭时唤醒为true，关闭时唤醒为false)
 

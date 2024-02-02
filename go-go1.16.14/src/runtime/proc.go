@@ -5452,6 +5452,7 @@ func checkdead() {
 var forcegcperiod int64 = 2 * 60 * 1e9
 
 // Always runs without a P, so write barriers are not allowed.
+// 注释：译：总是在没有P的情况下运行，因此不允许出现写障碍。
 //
 // 注释：系统监控（system monitor）
 //go:nowritebarrierrec

@@ -4529,7 +4529,17 @@ retry:
 }
 
 // Purge all cached G's from gfree list to the global list.
+// 注释：译：将所有缓存的G从gfree列表中清除到全局列表中。
 // 注释：(清空本地P的空G队列)把本地P上空G放到全局空G的链表里，把有栈空间的空G放到sched.gFree.stack里，把没有栈空间的空G放到sched.gFree.noStack里
+// 注释：步骤：
+//		1.加锁
+//		2.遍历本地空闲G列表
+//			a.本地空闲G出栈
+//			b.本地空闲G计数器减去1
+//			c.如果无栈空间，则入栈到全局无栈空间链表里
+//			b.如果有栈空间，则入栈到全局有占空间链表里
+//			b.全局空闲G链表计数器加1
+//		3.解锁
 func gfpurge(_p_ *p) {
 	lock(&sched.gFree.lock)  // 注释：全局空G链表锁：修改前上锁
 	for !_p_.gFree.empty() { // 注释：如果局部空G有数据时

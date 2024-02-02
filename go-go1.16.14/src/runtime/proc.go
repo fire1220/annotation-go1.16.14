@@ -535,6 +535,8 @@ var (
 	// Access via the slice is protected by allglock or stop-the-world.
 	// Readers that cannot take the lock may (carefully!) use the atomic
 	// variables below.
+	// 注释：译：allgs包含所有曾经创造过的g（包括死亡的g），因此永远不会收缩。
+	//		通过切片访问受到allglock或stop the world的保护。无法获取锁的读者可以（小心！）使用下面的原子变量。
 	allglock mutex // 注释：全局G的切片的锁
 	allgs    []*g  // 注释：保存所有的g的切片
 
@@ -550,6 +552,10 @@ var (
 	// allgptr copies should always be stored as a concrete type or
 	// unsafe.Pointer, not uintptr, to ensure that GC can still reach it
 	// even if it points to a stale array.
+	// 注释：译：allglen和allgptr是分别包含len（allg）和&allg[0]的原子变量。正确的订购取决于完全订购的装载和存储。写入受allglock保护。
+	//		allgptr在allglen之前更新。读者应在allgptr之前阅读allglen，以确保allglen始终<=len（allgptr）。比赛期间附加的新Gs可能会错过。
+	//		为了对所有Gs有一个一致的看法，必须持有allglock。
+	//		所有gptr副本应始终存储为具体类型或不安全类型。指针，而不是uintptr，以确保即使GC指向过时的数组，它仍然可以访问它。
 	allglen uintptr // 注释：全局G切片个数
 	allgptr **g     // 注释：全局G切片第一个元素的指针
 )
@@ -4664,10 +4670,16 @@ func badunlockosthread() {
 	throw("runtime: internal error: misuse of lockOSThread/unlockOSThread")
 }
 
+// 注释：统计已使用G的个数
+// 注释：步骤：
+//		1.全局业务G个数(已使用的) = 获取全部G点个数 - 全局空闲G个数 - 系统G个数
+//		2.所有业务G个数(已使用的) = 遍历所有P，减去P里空闲的G个数
+//		3.如果数量小于1则设置为1，并返回
 func gcount() int32 {
+	// 注释：全局业务G个数(已使用的) = 获取全部G点个数 - 全局空闲G个数 - 系统G个数
 	n := int32(atomic.Loaduintptr(&allglen)) - sched.gFree.n - int32(atomic.Load(&sched.ngsys))
-	for _, _p_ := range allp {
-		n -= _p_.gFree.n
+	for _, _p_ := range allp { // 注释：遍历所有P，减去P里空闲的G个数
+		n -= _p_.gFree.n // 注释：减去P里空闲的G个数
 	}
 
 	// All these variables can be changed concurrently, so the result can be inconsistent.
@@ -4678,8 +4690,9 @@ func gcount() int32 {
 	return n
 }
 
+// 注释：所有已使用的M的数量
 func mcount() int32 {
-	return int32(sched.mnext - sched.nmfreed)
+	return int32(sched.mnext - sched.nmfreed) // 注释：所有已使用的M的数量 = 下一个空M的ID - 已经释放的M数量
 }
 
 var prof struct {

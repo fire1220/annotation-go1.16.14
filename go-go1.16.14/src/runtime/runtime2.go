@@ -797,7 +797,7 @@ type schedt struct {
 	nmidlelocked int32    // number of locked m's waiting for work
 	mnext        int64    // 注释：下一个新m的主键ID值(用来创建新m时使用) // number of m's that have been created and next M ID
 	maxmcount    int32    // maximum number of m's allowed (or die)  // 注释：最多只能创建maxmcount个工作线程m
-	nmsys        int32    // number of system m's not counted for deadlock
+	nmsys        int32    // 注释：译：不计入死锁的系统m数 // number of system m's not counted for deadlock
 	nmfreed      int64    // 注释：释放的m的累积数 // cumulative number of freed m's
 
 	ngsys uint32 // 注释：译：系统goroutine的数量；以原子方式更新 // number of system goroutines; updated atomically

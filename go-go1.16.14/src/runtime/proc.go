@@ -535,6 +535,8 @@ var (
 	// Access via the slice is protected by allglock or stop-the-world.
 	// Readers that cannot take the lock may (carefully!) use the atomic
 	// variables below.
+	// 注释：译：allgs包含所有曾经创造过的g（包括死亡的g），因此永远不会收缩。
+	//		通过切片访问受到allglock或stop the world的保护。无法获取锁的读者可以（小心！）使用下面的原子变量。
 	allglock mutex // 注释：全局G的切片的锁
 	allgs    []*g  // 注释：保存所有的g的切片
 
@@ -550,6 +552,10 @@ var (
 	// allgptr copies should always be stored as a concrete type or
 	// unsafe.Pointer, not uintptr, to ensure that GC can still reach it
 	// even if it points to a stale array.
+	// 注释：译：allglen和allgptr是分别包含len（allg）和&allg[0]的原子变量。正确的订购取决于完全订购的装载和存储。写入受allglock保护。
+	//		allgptr在allglen之前更新。读者应在allgptr之前阅读allglen，以确保allglen始终<=len（allgptr）。比赛期间附加的新Gs可能会错过。
+	//		为了对所有Gs有一个一致的看法，必须持有allglock。
+	//		所有gptr副本应始终存储为具体类型或不安全类型。指针，而不是uintptr，以确保即使GC指向过时的数组，它仍然可以访问它。
 	allglen uintptr // 注释：全局G切片个数
 	allgptr **g     // 注释：全局G切片第一个元素的指针
 )
@@ -4420,7 +4426,20 @@ func saveAncestors(callergp *g) *[]ancestorInfo {
 
 // Put on gfree list.
 // If local list is too long, transfer a batch to the global list.
+// 注释：译：列入gfree list里。如果本地列表太长，请将一个批转移到全局列表。
 // 注释：空G放到本地P空G队列里，如果到达64个时，拿出一半放到全局空G队列里
+// 注释：步骤：
+//		1.获取栈大小
+//		2.如果栈空间不是固定大小（不同系统固定大小不同，Linux是2048），释放栈空间，并清空栈的高地址、底地址、爆栈地址
+//		3.把G放到本地队列里(P的G队列)
+//		4.本地空闲G数量加1
+//		5.如果本地空闲G数量>=64
+//			a.(加锁)获取全局空闲G队列锁
+//			b.拿出一半（32个）放到全局空闲G队列里
+//			c.如果G无栈空间，放到【无栈空间】【全局空G队列】里
+//			d.如果G有栈空间，放到【有栈空间】【全局空G队列】里
+//			e.全局空G队列个数加1
+//			f.(解锁)释放全局空闲G队列锁
 func gfput(_p_ *p, gp *g) {
 	if readgstatus(gp) != _Gdead {
 		throw("gfput: bad status (not Gdead)")
@@ -4440,24 +4459,37 @@ func gfput(_p_ *p, gp *g) {
 	_p_.gFree.push(gp)     // 注释：把空G放到本地空队列里
 	_p_.gFree.n++          // 注释：本地空队列计数加1
 	if _p_.gFree.n >= 64 { // 注释：如果本地队列个数到达64个时，拿出一半放到全局空队列里
-		lock(&sched.gFree.lock) // 注释：锁定全局空G队列
+		lock(&sched.gFree.lock) // 注释：(加锁)锁定全局空G队列(获取全局空闲G队列锁)
 		for _p_.gFree.n >= 32 { // 注释：拿出32个放到全局空G队列里
 			_p_.gFree.n--         // 注释：本地空G个数减1
 			gp = _p_.gFree.pop()  // 注释：在本地空G队列中拿出一个空G
-			if gp.stack.lo == 0 { // 注释：如果G没有栈顶（没有栈空间）则放到全局空G队列sched.gFree.noStack里
-				sched.gFree.noStack.push(gp)
-			} else {
-				sched.gFree.stack.push(gp) // 注释：如果G有栈顶（有栈空间）则放到全局空G队列sched.gFree.stack里
+			if gp.stack.lo == 0 { // 注释：如果G没有栈顶（没有栈空间）则放到全局空G无栈空间队列 schedt.gFree.noStack 里
+				sched.gFree.noStack.push(gp) // 注释：放到全局空G无栈空间队列里
+			} else { // 注释：如果G有栈顶（有栈空间）则放到全局空G有栈空间队列sched.gFree.stack里
+				sched.gFree.stack.push(gp) // 注释：放到全局空G有栈空间队列里
 			}
 			sched.gFree.n++ // 注释：全局空G队列个数加1
 		}
-		unlock(&sched.gFree.lock) // 注释：全局空G队列解锁
+		unlock(&sched.gFree.lock) // 注释：(解锁)全局空G队列解锁(释放全局空闲G队列锁)
 	}
 }
 
 // Get from gfree list.
 // If local list is empty, grab a batch from global list.
+// 注释：译：从gfree列表中获取。如果本地列表为空，请从全局列表中获取一个批。
 // 注释：获取空G：从gfree列表中获取。如果本地列表为空，从全局列表中获取一批
+// 注释：步骤：
+//		1.如果本地P里没有空闲G && 全局里有空闲G（包括有栈空间和无栈空间）
+//			a.(加锁)
+//			b.从全局里拿出32个（本地空闲G队列的一半）放到本地空闲G队列里
+//				(1).(全局出栈)先去全局有栈空间的空闲栈里拿，如果没有则去全局无栈空间里拿，如果还没有则直接返回
+//				(2).拿完以后全局空闲G列表计数器减去1
+//				(3).(本地入栈)从头部加入本地链表
+//			f.(解锁)
+//		2.从本地出栈一个空闲G，如果没有则直接返回
+//		3.本地空闲G计数器减去1
+//		4.如果没有栈空间则申请栈空间
+//		5.返回空闲G
 func gfget(_p_ *p) *g {
 retry:
 	// 注释：判断本地P空G队列是否有值，如果为空并且全局空G队里里有值时，把全局空G队列里的空G拿出一半(32个)放到本地P空G队列里，然后跳到retry处重新执行
@@ -4478,7 +4510,7 @@ retry:
 			_p_.gFree.n++      // 注释：本地队列计数加1
 		}
 		unlock(&sched.gFree.lock) // 注释：全局空G解锁
-		goto retry                // 注释：跳到retry从新执行
+		goto retry                // 注释：跳到retry从新执行(其实这里不用重试就可以，即便重试也无法进入本if语句中，所以无需重试)
 	}
 	gp := _p_.gFree.pop() // 注释：到本地P中取出一个空G，如果没有取到则退出
 	if gp == nil {
@@ -4503,7 +4535,17 @@ retry:
 }
 
 // Purge all cached G's from gfree list to the global list.
+// 注释：译：将所有缓存的G从gfree列表中清除到全局列表中。
 // 注释：(清空本地P的空G队列)把本地P上空G放到全局空G的链表里，把有栈空间的空G放到sched.gFree.stack里，把没有栈空间的空G放到sched.gFree.noStack里
+// 注释：步骤：
+//		1.加锁
+//		2.遍历本地空闲G列表
+//			a.本地空闲G出栈
+//			b.本地空闲G计数器减去1
+//			c.如果无栈空间，则入栈到全局无栈空间链表里
+//			b.如果有栈空间，则入栈到全局有占空间链表里
+//			b.全局空闲G链表计数器加1
+//		3.解锁
 func gfpurge(_p_ *p) {
 	lock(&sched.gFree.lock)  // 注释：全局空G链表锁：修改前上锁
 	for !_p_.gFree.empty() { // 注释：如果局部空G有数据时
@@ -4628,10 +4670,16 @@ func badunlockosthread() {
 	throw("runtime: internal error: misuse of lockOSThread/unlockOSThread")
 }
 
+// 注释：统计已使用G的个数
+// 注释：步骤：
+//		1.全局业务G个数(已使用的) = 获取全部G点个数 - 全局空闲G个数 - 系统G个数
+//		2.所有业务G个数(已使用的) = 遍历所有P，减去P里空闲的G个数
+//		3.如果数量小于1则设置为1，并返回
 func gcount() int32 {
+	// 注释：全局业务G个数(已使用的) = 获取全部G点个数 - 全局空闲G个数 - 系统G个数
 	n := int32(atomic.Loaduintptr(&allglen)) - sched.gFree.n - int32(atomic.Load(&sched.ngsys))
-	for _, _p_ := range allp {
-		n -= _p_.gFree.n
+	for _, _p_ := range allp { // 注释：遍历所有P，减去P里空闲的G个数
+		n -= _p_.gFree.n // 注释：减去P里空闲的G个数
 	}
 
 	// All these variables can be changed concurrently, so the result can be inconsistent.
@@ -4642,8 +4690,9 @@ func gcount() int32 {
 	return n
 }
 
+// 注释：所有已使用的M的数量
 func mcount() int32 {
-	return int32(sched.mnext - sched.nmfreed)
+	return int32(sched.mnext - sched.nmfreed) // 注释：所有已使用的M的数量 = 下一个空M的ID - 已经释放的M数量
 }
 
 var prof struct {
@@ -5403,8 +5452,9 @@ func checkdead() {
 var forcegcperiod int64 = 2 * 60 * 1e9
 
 // Always runs without a P, so write barriers are not allowed.
+// 注释：译：总是在没有P的情况下运行，因此不允许出现写障碍。
 //
-// 注释：系统监控（system monitor）
+// 注释：系统监控（system monitor）【ing】
 //go:nowritebarrierrec
 func sysmon() {
 	lock(&sched.lock)
@@ -6380,7 +6430,7 @@ func (q *gQueue) popList() gList {
 // on one gQueue or gList at a time.
 // 注释：G队列结构体
 type gList struct {
-	head guintptr
+	head guintptr // 注释：（G列表的头部G指针）head是G的指针
 }
 
 // empty reports whether l is empty.
@@ -6403,10 +6453,12 @@ func (l *gList) pushAll(q gQueue) {
 }
 
 // pop removes and returns the head of l. If l is empty, it returns nil.
+// 注释：译：pop移除并返回l的头。如果l为空，则返回nil。
+// 注释：(出栈)从头部移出1个G
 func (l *gList) pop() *g {
-	gp := l.head.ptr()
-	if gp != nil {
-		l.head = gp.schedlink
+	gp := l.head.ptr() // 注释：g列表头指针
+	if gp != nil {     // 注释：如果存在则，从头部移出一个G。否则直接返回nil
+		l.head = gp.schedlink // 注释：从头部移出一个G
 	}
 	return gp
 }

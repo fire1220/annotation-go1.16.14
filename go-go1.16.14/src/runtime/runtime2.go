@@ -673,7 +673,7 @@ type p struct {
 	// 注释：如果n>=64则会把本地P空G拿出一半（32个）放到全局空闲队列里,执行方法是：func gfput(_p_ *p, gp *g) {}
 	// 注释：如果n==0则会到全局空闲列表里拿回32个,执行方法是：func gfget(_p_ *p) *g {}
 	gFree struct { // 注释：空G队列
-		gList       // 注释：空G的头指针
+		gList       // 注释：空G的头指针(gList.head 是G指针,是G列表的头部G指针)
 		n     int32 // 注释：空G的个数，最大是64程序控制。
 	}
 
@@ -795,10 +795,10 @@ type schedt struct {
 	midle        muintptr // idle m's waiting for work               // 注释：由空闲的工作线程m组成链表(midle和m.schedlink组成的链表)(midle值是m,m中的m.schedlink连接下一个midle)
 	nmidle       int32    // number of idle m's waiting for work     // 注释：空闲的工作线程m的数量
 	nmidlelocked int32    // number of locked m's waiting for work
-	mnext        int64    // number of m's that have been created and next M ID // 注释：下一个新m的主键ID值(用来创建新m时使用)
+	mnext        int64    // 注释：下一个新m的主键ID值(用来创建新m时使用) // number of m's that have been created and next M ID
 	maxmcount    int32    // maximum number of m's allowed (or die)  // 注释：最多只能创建maxmcount个工作线程m
-	nmsys        int32    // number of system m's not counted for deadlock
-	nmfreed      int64    // cumulative number of freed m's
+	nmsys        int32    // 注释：译：不计入死锁的系统m数 // number of system m's not counted for deadlock
+	nmfreed      int64    // 注释：释放的m的累积数 // cumulative number of freed m's
 
 	ngsys uint32 // 注释：译：系统goroutine的数量；以原子方式更新 // number of system goroutines; updated atomically
 

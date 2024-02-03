@@ -24,6 +24,13 @@ import (
 // contention compared to a Go map paired with a separate Mutex or RWMutex.
 //
 // The zero Map is empty and ready for use. A Map must not be copied after first use.
+// 注释：译：Map类似于Go映射[interface{}]接口{}，但可以安全地由多个goroutine并发使用，而无需额外的锁定或协调。加载、存储和删除以摊销的恒定时间运行。
+//		Map类型是专用的。大多数代码应该使用带有单独锁定或协调的普通Go映射，以获得更好的类型安全性，并更容易维护映射内容中的其他不变量。
+//		Map类型针对两种常见的用例进行了优化：
+//			（1）当给定键的条目只写一次但读多次时，如在只增长的缓存中
+//			（2）当多个goroutine读取、写入和覆盖不相交的键集的条目时。
+//		在这两种情况下，与单独的Mutex或RWMutex配对的Go映射相比，使用Map可以显著减少锁争用。
+//		zero Map为空，可供使用。首次使用后不得复制贴图。
 // 注释：sync.Map的结构体，这个结构适合多读少新增修改的情况下使用，可以实现几乎不加锁读取
 type Map struct {
 	mu Mutex // 注释：互斥锁
@@ -69,6 +76,7 @@ type Map struct {
 }
 
 // readOnly is an immutable struct stored atomically in the Map.read field.
+// 注释：译：readOnly是一个原子存储在Map.read字段中的不可变结构。
 type readOnly struct {
 	m       map[interface{}]*entry
 	amended bool // 注释：如果是true时，标记m里没有对应key的数据 // true if the dirty map contains some key not in m.

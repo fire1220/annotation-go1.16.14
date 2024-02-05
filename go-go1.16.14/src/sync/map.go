@@ -47,7 +47,7 @@ type Map struct {
 	// 注释：译：read包含对并发访问安全的映射内容部分（无论是否持有mu）。
 	//		读取字段本身总是可以安全加载的，但必须仅在保持mu的情况下存储。
 	//		存储在read中的条目可以在没有mu的情况下同时更新，但更新之前删除的条目需要将该条目复制到脏映射中，并在保持mu时取消删除。
-	read atomic.Value // 注释：存储读取的数据(只读) // readOnly
+	read atomic.Value // 注释：存储读取的数据(只读)，存储的结构体题是 readOnly  // readOnly
 
 	// dirty contains the portion of the map's contents that require mu to be
 	// held. To ensure that the dirty map can be promoted to the read map quickly,
@@ -72,21 +72,24 @@ type Map struct {
 	// state) and the next store to the map will make a new dirty copy.
 	// 注释：译：miss统计自上次更新读取映射以来需要锁定mu以确定密钥是否存在的加载次数。
 	//		一旦发生了足够多的未命中以支付复制脏映射的成本，脏映射将升级为已读映射（处于未修改状态），映射的下一个存储将生成新的脏拷贝。
-	misses int // 注释：计数read未读到数据的次数，如果次数达到dirty的数量时，就会把dirty赋值到read里，并清空dirty和misses
+	misses int // 注释：从read中未读到数据的次数，如果次数大于len(Map.dirty)时，就会把dirty赋值到read里，并清空dirty和misses
 }
 
 // readOnly is an immutable struct stored atomically in the Map.read field.
 // 注释：译：readOnly是一个原子存储在Map.read字段中的不可变结构。
+// 注释：首先会到 Map.read.m 中找，如果没有找到，并且 amended 为true时，则会到 Map.dirty 中继续寻找
 type readOnly struct {
-	m       map[interface{}]*entry
-	amended bool // 注释：如果是true时，标记m里没有对应key的数据 // true if the dirty map contains some key not in m.
+	m       map[interface{}]*entry // 注释：只读数据里的map数据，该字段没有找到，并且 amended 是true则会到 Map.dirty 里取寻找
+	amended bool                   // 注释：是否允许到 Map.dirty 里查找(是否允许修正数据) // true if the dirty map contains some key not in m.
 }
 
 // expunged is an arbitrary pointer that marks entries which have been deleted
 // from the dirty map.
+// 注释：译：expunged是一个任意指针，用于标记已从脏映射中删除的条目。
 var expunged = unsafe.Pointer(new(interface{}))
 
 // An entry is a slot in the map corresponding to a particular key.
+// 注释：译：条目是映射中与特定键相对应的槽。
 type entry struct {
 	// p points to the interface{} value stored for the entry.
 	//
@@ -106,6 +109,12 @@ type entry struct {
 	// p != expunged. If p == expunged, an entry's associated value can be updated
 	// only after first setting m.dirty[key] = e so that lookups using the dirty
 	// map find the entry.
+	// 注释：译：p指向为该条目存储的接口｛｝值。
+	//		如果p==nil，则表示该条目已被删除，m.dirty==nil。
+	//		如果p==已删除，则该条目已被删除，m.dirty！=nil，并且m.dirty中缺少该条目。
+	//		否则，该条目是有效的，并记录在m.read.m[key]中，如果m.dirty！=nil，用m.dirty[key]表示。
+	//		可以通过用nil进行原子替换来删除条目：当下次创建m.dirty时，它将用expunged原子替换nil，并保留m.dirty[key]未设置。
+	//		条目的相关值可以通过原子替换来更新，前提是p！=删除。如果p==expunged，则只有在首次设置m.dirty[key]=e以便使用脏映射查找条目后，才能更新条目的关联值。
 	p unsafe.Pointer // *interface{}
 }
 
@@ -116,13 +125,21 @@ func newEntry(i interface{}) *entry {
 // Load returns the value stored in the map for a key, or nil if no
 // value is present.
 // The ok result indicates whether value was found in the map.
+// 注释：译：Load返回存储在映射中的键的值，如果没有值，则返回nil。ok结果表示是否在映射中找到值。
 // 注释：sync.Map读取数据
+// 注释：步骤：
+//		1.Map.read.m中找(只读映射中找)
+//		2.如果没有找并且 Map.read.amended 为true时
+//			a.加锁(这里加锁成功后会重新查找Map.read.m，这里操作时原子操作查找，如果依然没有找到则到脏映射里找)
+//			b.到Map.dirty中找(脏映射中找)
+//			c.累加Map.misses次数（Map.read.m未找到的次数），如果次数大于len(Map.dirty)时，就会把dirty赋值到read里，并清空dirty和misses
+//			d.解锁
+//		3.如果没有找到返回nil,false，否则原子获取entry.p数据，并转换成接口类型
 func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
-	read, _ := m.read.Load().(readOnly)
-	e, ok := read.m[key]
+	read, _ := m.read.Load().(readOnly) // 注释：获取 Map.read，并断言成readOnly类型
+	e, ok := read.m[key]                // 注释：获取read的map中的数据
 	if !ok && read.amended {
-		// 注释：如果没有读到，则加锁到dirty里读取
-		m.mu.Lock()
+		m.mu.Lock() // 注释：如果没有读到，则加锁到dirty里读取
 		// Avoid reporting a spurious miss if m.dirty got promoted while we were
 		// blocked on m.mu. (If further loads of the same key will not miss, it's
 		// not worth copying the dirty map for this key.)
@@ -133,22 +150,23 @@ func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
 			// Regardless of whether the entry was present, record a miss: this key
 			// will take the slow path until the dirty map is promoted to the read
 			// map.
-			m.missLocked() // 注释：累加未读到数据的次数，如果次数达到len(dirty)时，会把dirty赋值到raed里，并清空dirty和misses
+			m.missLocked() // 注释：累加未读到数据的次数(Map.misses)，如果次数达到len(dirty)时，会把dirty赋值到raed里，并清空Map.dirty和Map.misses
 		}
-		m.mu.Unlock()
+		m.mu.Unlock() // 注释：解锁
 	}
 	if !ok {
 		return nil, false
 	}
-	return e.load()
+	return e.load() // 注释：原子获取entry.p数据，并转换成接口类型
 }
 
+// 注释：原子获取数据
 func (e *entry) load() (value interface{}, ok bool) {
-	p := atomic.LoadPointer(&e.p)
-	if p == nil || p == expunged {
+	p := atomic.LoadPointer(&e.p)  // 注释：原子获取数据地址
+	if p == nil || p == expunged { // 注释：如果地址不存在或者等于删除（expunged）则直接返回nil，false
 		return nil, false
 	}
-	return *(*interface{})(p), true
+	return *(*interface{})(p), true // 注释：返回接口和布尔值
 }
 
 // Store sets the value for a key.

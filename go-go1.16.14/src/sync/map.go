@@ -86,10 +86,11 @@ type readOnly struct {
 // expunged is an arbitrary pointer that marks entries which have been deleted
 // from the dirty map.
 // 注释：译：expunged是一个任意指针，用于标记已从脏映射中删除的条目。
-var expunged = unsafe.Pointer(new(interface{}))
+var expunged = unsafe.Pointer(new(interface{})) // 注释：这个地址标记已经删除
 
 // An entry is a slot in the map corresponding to a particular key.
 // 注释：译：条目是映射中与特定键相对应的槽。
+// 注释：(sync.Map 中read字段map的value)存储sync.Map的只读数，是sync.Map.read字段
 type entry struct {
 	// p points to the interface{} value stored for the entry.
 	//
@@ -115,7 +116,7 @@ type entry struct {
 	//		否则，该条目是有效的，并记录在m.read.m[key]中，如果m.dirty！=nil，用m.dirty[key]表示。
 	//		可以通过用nil进行原子替换来删除条目：当下次创建m.dirty时，它将用expunged原子替换nil，并保留m.dirty[key]未设置。
 	//		条目的相关值可以通过原子替换来更新，前提是p！=删除。如果p==expunged，则只有在首次设置m.dirty[key]=e以便使用脏映射查找条目后，才能更新条目的关联值。
-	p unsafe.Pointer // *interface{}
+	p unsafe.Pointer // 注释：(数据)具体的数据指针，原子操作，最终会断言成接口类型 // *interface{}
 }
 
 func newEntry(i interface{}) *entry {
@@ -126,10 +127,12 @@ func newEntry(i interface{}) *entry {
 // value is present.
 // The ok result indicates whether value was found in the map.
 // 注释：译：Load返回存储在映射中的键的值，如果没有值，则返回nil。ok结果表示是否在映射中找到值。
-// 注释：sync.Map读取数据
+// 注释：sync.Map读取数据：(两个数据源)
+//			1.Map.read(不加锁)
+//			2.Map.dirty(加锁)
 // 注释：步骤：
 //		1.Map.read.m中找(只读映射中找)
-//		2.如果没有找并且 Map.read.amended 为true时
+//		2.如果没有找并且 Map.read.amended 为true时，原子读Map.dirty操作
 //			a.加锁(这里加锁成功后会重新查找Map.read.m，这里操作时原子操作查找，如果依然没有找到则到脏映射里找)
 //			b.到Map.dirty中找(脏映射中找)
 //			c.累加Map.misses次数（Map.read.m未找到的次数），如果次数大于len(Map.dirty)时，就会把dirty赋值到read里，并清空dirty和misses
@@ -170,7 +173,8 @@ func (e *entry) load() (value interface{}, ok bool) {
 }
 
 // Store sets the value for a key.
-// 注释：sync.Map写入数据
+// 注释：译：存储设置键的值
+// 注释：sync.Map写入数据(原子操作)
 func (m *Map) Store(key, value interface{}) {
 	read, _ := m.read.Load().(readOnly)
 	if e, ok := read.m[key]; ok && e.tryStore(&value) {

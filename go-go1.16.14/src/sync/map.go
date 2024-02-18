@@ -78,6 +78,7 @@ type Map struct {
 // readOnly is an immutable struct stored atomically in the Map.read field.
 // 注释：译：readOnly是一个原子存储在Map.read字段中的不可变结构。
 // 注释：首先会到 Map.read.m 中找，如果没有找到，并且 amended 为true时，则会到 Map.dirty 中继续寻找
+// 注释：如果 amended 是true时 m 是sync.map的全部数据，如果 amended 是false时 Map.dirty 是sync.map的全部数据，这时 m 可能是部分数据
 type readOnly struct {
 	m       map[interface{}]*entry // 注释：只读数据里的map数据，该字段没有找到，并且 amended 是true则会到 Map.dirty 里取寻找
 	amended bool                   // 注释：是否允许到 Map.dirty 里查找(是否允许修正数据) // true if the dirty map contains some key not in m.
@@ -91,6 +92,7 @@ var expunged = unsafe.Pointer(new(interface{})) // 注释：这个地址标记�
 // An entry is a slot in the map corresponding to a particular key.
 // 注释：译：条目是映射中与特定键相对应的槽。
 // 注释：(sync.Map 中read字段map的value)存储sync.Map的只读数，是sync.Map.read字段
+// 注释：sync.Map 的value指针
 type entry struct {
 	// p points to the interface{} value stored for the entry.
 	//
@@ -119,6 +121,7 @@ type entry struct {
 	p unsafe.Pointer // 注释：(数据)具体的数据指针，原子操作，最终会断言成接口类型 // *interface{}
 }
 
+// 注释：构建map的value指针
 func newEntry(i interface{}) *entry {
 	return &entry{p: unsafe.Pointer(&i)}
 }
@@ -175,48 +178,62 @@ func (e *entry) load() (value interface{}, ok bool) {
 // Store sets the value for a key.
 // 注释：译：存储设置键的值
 // 注释：sync.Map写入数据(原子操作)
+// 注释：步骤
+//		1.到只读映射里找对应的key，如果找到了则尝试修改，修改成功立即返回
+//		2.加锁，准备处理脏映射
+//		3.(只读映射查找，同时修改只读映射和脏映射)重新到只读映射里找对应的key，这里是原子操作，因为上面加锁了
+//			如果找到：
+//			a.尝试把只读映射key对应value指针从删除标识更改为nil，成功后则设置脏映射key对应的value
+//			b.修改只读映射key对应的value指针，指针是指向新的value
+//		4.(脏映射查找，并修改脏映射)到脏映射查找key，如果存在，则修改脏映射key对应的value
+//		5.如果没有找打则在脏映射创建key和value
+//			a.如果不允许到脏映射里查找，则把只读映射数据拷贝到脏映射里，并且设置可以到脏映射里寻找
+//		6.解锁
 func (m *Map) Store(key, value interface{}) {
-	read, _ := m.read.Load().(readOnly)
-	if e, ok := read.m[key]; ok && e.tryStore(&value) {
+	read, _ := m.read.Load().(readOnly)                 // 注释：获取sync.map的只读数据指针
+	if e, ok := read.m[key]; ok && e.tryStore(&value) { // 注释：(修改只读字段数据)如果只读数据指针对应的map存在相应的key时，并且尝试修改成功，则返回
 		return
 	}
 
-	m.mu.Lock()
-	read, _ = m.read.Load().(readOnly)
+	// 注释：下面是对脏映射进行修改，修改时需要加锁
+	m.mu.Lock()                        // 注释：加锁
+	read, _ = m.read.Load().(readOnly) // 重新尝试从只读字段数据中获取数据，（这里的读是原子操作）
 	// 注释：read里有数据（之前软删除），则修改read和dirty里对应的值
-	if e, ok := read.m[key]; ok {
-		if e.unexpungeLocked() {
+	if e, ok := read.m[key]; ok { // 注释：如果读到了
+		if e.unexpungeLocked() { // 注释：尝试把map的key对应的value指针从已删除更改为nil，如果更改成功修改脏映射的map数据
 			// The entry was previously expunged, which implies that there is a
 			// non-nil dirty map and this entry is not in it.
-			m.dirty[key] = e
+			m.dirty[key] = e // 注释：把脏映射的map根据key修改value
 		}
-		e.storeLocked(&value)
-	} else if e, ok := m.dirty[key]; ok { // 注释：如果dirty里有数据（之前软删除），则修改dirty里对应的数据
-		e.storeLocked(&value)
-	} else {
-		// 注释：如果没有找到对应的值时，在dirty里新增数据
-		if !read.amended {
+		// 注释：这里无论脏映射里是否修改数据，只读映射里都是要修改的
+		e.storeLocked(&value) // 注释：(修改只读映射)同时把value放到只读映射对应的key对应的value指针（修改只读映射的key对应的value）
+	} else if e, ok := m.dirty[key]; ok { // 注释：(如果只读映射里没有对应的key则会到脏映射里的找对应的key)如果dirty里有数据（之前软删除），则修改dirty里对应的数据
+		e.storeLocked(&value) // 注释：(修改脏映射)同时把value放到脏映射对应的key对应的value指针（修改只读映射的key对应的value）
+	} else { // 注释：如果没有找到对应的值时，在dirty里新增数据
+		if !read.amended { // 注释：如果允许到脏映射里寻找时
 			// We're adding the first new key to the dirty map.
 			// Make sure it is allocated and mark the read-only map as incomplete.
-			m.dirtyLocked()
-			m.read.Store(readOnly{m: read.m, amended: true}) // 注释：如果amended是true时，标记m里没有对应key的数据
+			m.dirtyLocked()                                  // 注释：如果脏映射不存在，则创建脏映射，并且把只读映射里的数据拷贝到脏映射里
+			m.read.Store(readOnly{m: read.m, amended: true}) // 注释：把只读映射里的是否可以到脏数据里查找标识打开。如果amended是true时，标记m里没有对应key的数据
 		}
-		m.dirty[key] = newEntry(value) // 注释：在dirty里新增数据
+		// 注释：上面代码能够保证，如果amended是true(表示可以到脏数据里查找)时 m.dirty 是sync.map的全部数据，否则m.read是sync.map的全部数据
+		m.dirty[key] = newEntry(value) // 注释：（构建value指针）新增脏映射key对应value值
 	}
-	m.mu.Unlock()
+	m.mu.Unlock() // 注释：解锁
 }
 
 // tryStore stores a value if the entry has not been expunged.
 //
 // If the entry is expunged, tryStore returns false and leaves the entry
 // unchanged.
+// 注释：尝试修改map对应的key的值的指针，（之前map的key指针指向旧值更改为指向新值）
 func (e *entry) tryStore(i *interface{}) bool {
-	for {
-		p := atomic.LoadPointer(&e.p)
-		if p == expunged {
+	for { // 注释：多次尝试修改
+		p := atomic.LoadPointer(&e.p) // 注释：获取map中key对应的value的指针
+		if p == expunged {            // 注释：如果指针是已经删除的标识时则直接返回false
 			return false
 		}
-		if atomic.CompareAndSwapPointer(&e.p, p, unsafe.Pointer(i)) {
+		if atomic.CompareAndSwapPointer(&e.p, p, unsafe.Pointer(i)) { // 注释：把map对应的key的value指针从旧值更改为新值（如果等于旧值则修改为新值的指针）
 			return true
 		}
 	}
@@ -404,27 +421,40 @@ func (m *Map) missLocked() {
 	m.misses = 0
 }
 
+// 注释：如果脏映射不存在，则创建脏映射，并且把只读映射里的数据拷贝到脏映射里
+// 注释：步骤：
+//		1.如果存在脏映射则直接返回
+//		2.获取只读映射对象
+//		3.创建脏映射
+//		4.把只读映射拷贝到脏映射里
 func (m *Map) dirtyLocked() {
-	if m.dirty != nil {
+	if m.dirty != nil { // 注释：如果存在脏映射，则直接返回
 		return
 	}
 
-	read, _ := m.read.Load().(readOnly)
-	m.dirty = make(map[interface{}]*entry, len(read.m))
-	for k, e := range read.m {
-		if !e.tryExpungeLocked() {
-			m.dirty[k] = e
+	read, _ := m.read.Load().(readOnly)                 // 注释：获取只读映射对象
+	m.dirty = make(map[interface{}]*entry, len(read.m)) // 注释：创建脏映射
+	for k, e := range read.m {                          // 注释：把只读映射数据拷贝到脏映射里
+		if !e.tryExpungeLocked() { // 注释：判断脏映射key对应value指针是否等于已删除标识，如果不是则执行修改操作
+			m.dirty[k] = e // 注释：(把只读映射的数据拷贝到脏映射里)修改脏映射的value值
 		}
 	}
 }
 
+// 注释：判断脏映射（这里只有脏映射在调用）key对应value指针是否等于已删除
+// 注释：判断脏映射(这里只有脏映射在调用)key对应的value是否是已删除，（如果可以是nil则修改成已删除）
+// 注释：步骤
+//		1.获取key对应的value地址
+//			a.如果地址是nil则修改成已删除表示，并返回true
+//			b.如果设置已删除失败，则重新获取地址（因为查询时是非原子操作，所以修改的时候和查询的时候的地址会存在不一致）
+//		3.判断地址是否等于已删除
 func (e *entry) tryExpungeLocked() (isExpunged bool) {
-	p := atomic.LoadPointer(&e.p)
-	for p == nil {
-		if atomic.CompareAndSwapPointer(&e.p, nil, expunged) {
+	p := atomic.LoadPointer(&e.p) // 注释：获取映射key对应的value指针
+	for p == nil {                // 注释：如果指针为nil，修改为已删除，如果修改失败则说明，其他协成已经修改过了
+		if atomic.CompareAndSwapPointer(&e.p, nil, expunged) { // 注释：尝试把key对应的value指针设置为已删除标识，成功后直接返回true
 			return true
 		}
-		p = atomic.LoadPointer(&e.p)
+		p = atomic.LoadPointer(&e.p) // 注释：从新获取key对应的value指针，（如果程序走到这里说明其他协成已经把指针修改为已删除的状态了或者其他状态）
 	}
-	return p == expunged
+	return p == expunged // 注释：比较指针是否等于已删除
 }

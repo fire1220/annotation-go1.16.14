@@ -62,7 +62,7 @@ type Map struct {
 	// 注释：译：dirty包含映射内容中需要保存mu的部分。为了确保脏映射可以快速升级为读取映射，它还包括读取映射中所有未删除的条目。
 	//		删除的条目不会存储在脏映射中。必须先取消清除干净映射中已删除的条目并将其添加到脏映射中，然后才能将新值存储到其中。
 	//		如果脏映射为nil，则下一次对映射的写入将通过制作干净映射的浅拷贝来初始化它，省略过时的条目。
-	dirty map[interface{}]*entry // 注释：新增数据放在这里(读写)，当read里没有读到的时候会到这里读取
+	dirty map[interface{}]*entry // 注释：(这里是全部数据,就是和普通的map一样)(加锁读写)，当read里没有读到的时候会加锁到这里读取
 
 	// misses counts the number of loads since the read map was last updated that
 	// needed to lock mu to determine whether the key was present.
@@ -78,10 +78,9 @@ type Map struct {
 // readOnly is an immutable struct stored atomically in the Map.read field.
 // 注释：译：readOnly是一个原子存储在Map.read字段中的不可变结构。
 // 注释：首先会到 Map.read.m 中找，如果没有找到，并且 amended 为true时，则会到 Map.dirty 中继续寻找
-// 注释：如果 amended 是true时 m 是sync.map的全部数据，如果 amended 是false时 Map.dirty 是sync.map的全部数据，这时 m 可能是部分数据
 type readOnly struct {
 	m       map[interface{}]*entry // 注释：只读数据里的map数据，该字段没有找到，并且 amended 是true则会到 Map.dirty 里取寻找
-	amended bool                   // 注释：是否允许到 Map.dirty 里查找(是否允许修正数据) // true if the dirty map contains some key not in m.
+	amended bool                   // 注释：是否需要修正，true表示m是部分数据，false表示m是全部数据，需要到 Map.dirty 里查找 // true if the dirty map contains some key not in m.
 }
 
 // expunged is an arbitrary pointer that marks entries which have been deleted
@@ -199,22 +198,23 @@ func (m *Map) Store(key, value interface{}) {
 	m.mu.Lock()                        // 注释：加锁
 	read, _ = m.read.Load().(readOnly) // 重新尝试从只读字段数据中获取数据，（这里的读是原子操作）
 	// 注释：read里有数据（之前软删除），则修改read和dirty里对应的值
-	if e, ok := read.m[key]; ok { // 注释：如果读到了
+	if e, ok := read.m[key]; ok { // 注释：(修改只读映射)如果读到了
 		if e.unexpungeLocked() { // 注释：尝试把map的key对应的value指针从已删除更改为nil，如果更改成功修改脏映射的map数据
 			// The entry was previously expunged, which implies that there is a
 			// non-nil dirty map and this entry is not in it.
-			m.dirty[key] = e // 注释：把脏映射的map根据key修改value
+			m.dirty[key] = e // 注释：(修改只读映射)把脏映射的map根据key修改value
 		}
 		// 注释：这里无论脏映射里是否修改数据，只读映射里都是要修改的
 		e.storeLocked(&value) // 注释：(修改只读映射)同时把value放到只读映射对应的key对应的value指针（修改只读映射的key对应的value）
-	} else if e, ok := m.dirty[key]; ok { // 注释：(如果只读映射里没有对应的key则会到脏映射里的找对应的key)如果dirty里有数据（之前软删除），则修改dirty里对应的数据
+	} else if e, ok := m.dirty[key]; ok { // 注释：(修改脏映射)(如果只读映射里没有对应的key则会到脏映射里的找对应的key)如果dirty里有数据（之前软删除），则修改dirty里对应的数据
 		e.storeLocked(&value) // 注释：(修改脏映射)同时把value放到脏映射对应的key对应的value指针（修改只读映射的key对应的value）
-	} else { // 注释：如果没有找到对应的值时，在dirty里新增数据
-		if !read.amended { // 注释：如果允许到脏映射里寻找时
+	} else { // 注释：(创建脏映射)如果没有找到对应的值时，在dirty脏映射里新增数据
+		if !read.amended { // 注释：如果只读映射不需要修正时，则设置成需要修改。如果没有脏映射则创建脏映射
 			// We're adding the first new key to the dirty map.
 			// Make sure it is allocated and mark the read-only map as incomplete.
+			// 注释：译：我们正在将第一个新密钥添加到脏映射中。确保已分配，并将只读映射标记为不完整。
 			m.dirtyLocked()                                  // 注释：如果脏映射不存在，则创建脏映射，并且把只读映射里的数据拷贝到脏映射里
-			m.read.Store(readOnly{m: read.m, amended: true}) // 注释：把只读映射里的是否可以到脏数据里查找标识打开。如果amended是true时，标记m里没有对应key的数据
+			m.read.Store(readOnly{m: read.m, amended: true}) // 注释：(设置标识)把只读映射里的是否可以到脏数据里查找标识打开。如果amended是true时，标记m里没有对应key的数据
 		}
 		// 注释：上面代码能够保证，如果amended是true(表示可以到脏数据里查找)时 m.dirty 是sync.map的全部数据，否则m.read是sync.map的全部数据
 		m.dirty[key] = newEntry(value) // 注释：（构建value指针）新增脏映射key对应value值

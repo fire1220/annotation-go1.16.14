@@ -62,7 +62,8 @@ type Map struct {
 	// 注释：译：dirty包含映射内容中需要保存mu的部分。为了确保脏映射可以快速升级为读取映射，它还包括读取映射中所有未删除的条目。
 	//		删除的条目不会存储在脏映射中。必须先取消清除干净映射中已删除的条目并将其添加到脏映射中，然后才能将新值存储到其中。
 	//		如果脏映射为nil，则下一次对映射的写入将通过制作干净映射的浅拷贝来初始化它，省略过时的条目。
-	dirty map[interface{}]*entry // 注释：(这里是全部数据,就是和普通的map一样)(加锁读写)，当read里没有读到的时候会加锁到这里读取
+	// 注释：如果read.amended是true时该字段有值，不过修改map时优先尝试原子修改read，如果修改成，则会出现read里是新值，dirty里是旧值的现象，查询是优先到read里取值
+	dirty map[interface{}]*entry // 注释：(这里是全部数据,数据会有旧的情况,就是和普通的map一样)(加锁读写)，当read里没有读到的时候会加锁到这里读取
 
 	// misses counts the number of loads since the read map was last updated that
 	// needed to lock mu to determine whether the key was present.

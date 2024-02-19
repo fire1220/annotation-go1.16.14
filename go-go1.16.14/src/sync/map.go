@@ -47,7 +47,9 @@ type Map struct {
 	// 注释：译：read包含对并发访问安全的映射内容部分（无论是否持有mu）。
 	//		读取字段本身总是可以安全加载的，但必须仅在保持mu的情况下存储。
 	//		存储在read中的条目可以在没有mu的情况下同时更新，但更新之前删除的条目需要将该条目复制到脏映射中，并在保持mu时取消删除。
-	read atomic.Value // 注释：存储读取的数据(只读)，存储的结构体题是 readOnly  // readOnly
+	// 注释：read是单独的map，对应结构体是： readOnly
+	// 注释：如果read里找到对应的key时，可以不加锁查询和修改，当多协成同时修改时，其中一个会不加锁修改成功，其他的会进入加锁修改
+	read atomic.Value // 注释：(不加锁读取、修改)存储读取的数据，存储的结构体是 readOnly  // readOnly
 
 	// dirty contains the portion of the map's contents that require mu to be
 	// held. To ensure that the dirty map can be promoted to the read map quickly,
@@ -62,7 +64,9 @@ type Map struct {
 	// 注释：译：dirty包含映射内容中需要保存mu的部分。为了确保脏映射可以快速升级为读取映射，它还包括读取映射中所有未删除的条目。
 	//		删除的条目不会存储在脏映射中。必须先取消清除干净映射中已删除的条目并将其添加到脏映射中，然后才能将新值存储到其中。
 	//		如果脏映射为nil，则下一次对映射的写入将通过制作干净映射的浅拷贝来初始化它，省略过时的条目。
-	// 注释：如果read.amended是true时该字段有值，不过修改map时优先尝试原子修改read，如果修改成，则会出现read里是新值，dirty里是旧值的现象，查询是优先到read里取值
+	// 注释：如果read.amended是true时dirty为全量的map值，如果read.amended是false时，read是全量的值，dirty则为空值
+	// 注释：dirty其实理解为普通的map来看待
+	// 注释：dirty和read理解为两个不同的map，新增是会在dirty里新增，如果新增是dirty为nil则会创建dirty并且把read中每个值复制到dirty里（此时性能损耗最大）
 	dirty map[interface{}]*entry // 注释：(这里是全部数据,数据会有旧的情况,就是和普通的map一样)(加锁读写)，当read里没有读到的时候会加锁到这里读取
 
 	// misses counts the number of loads since the read map was last updated that
@@ -73,20 +77,26 @@ type Map struct {
 	// state) and the next store to the map will make a new dirty copy.
 	// 注释：译：miss统计自上次更新读取映射以来需要锁定mu以确定密钥是否存在的加载次数。
 	//		一旦发生了足够多的未命中以支付复制脏映射的成本，脏映射将升级为已读映射（处于未修改状态），映射的下一个存储将生成新的脏拷贝。
-	misses int // 注释：从read中未读到数据的次数，如果次数大于len(Map.dirty)时，就会把dirty赋值到read里，并清空dirty和misses
+	// 注释：misses是读取dirty的此时，当read中没有并且read.amended为true时会去dirty中读取，此时misses计数器加1
+	misses int // 注释：读取dirty的次数，如果misses计数器大于等于len(Map.dirty)时，就会把dirty指针赋值到read里，并清空dirty和misses
 }
 
 // readOnly is an immutable struct stored atomically in the Map.read field.
 // 注释：译：readOnly是一个原子存储在Map.read字段中的不可变结构。
 // 注释：首先会到 Map.read.m 中找，如果没有找到，并且 amended 为true时，则会到 Map.dirty 中继续寻找
+// 注释：readOnly.amended 表示是否需要到 Map.dirty 中读取
+// 注释：amended是true时：readOnly.m 是部分数据 Map.dirty 是全部数据
+// 注释：amended是false时：readOnly.m 是全部数据 Map.dirty 是nil
 type readOnly struct {
 	m       map[interface{}]*entry // 注释：只读数据里的map数据，该字段没有找到，并且 amended 是true则会到 Map.dirty 里取寻找
-	amended bool                   // 注释：是否需要修正，true表示m是部分数据，false表示m是全部数据，需要到 Map.dirty 里查找 // true if the dirty map contains some key not in m.
+	amended bool                   // 注释：是否需要到 Map.dirty 中读取 // true if the dirty map contains some key not in m.
 }
 
 // expunged is an arbitrary pointer that marks entries which have been deleted
 // from the dirty map.
 // 注释：译：expunged是一个任意指针，用于标记已从脏映射中删除的条目。
+// 注释：在新增的key的时候，如果发现key在 Map.read 中存在并且是nil的时候，会把 Map.read 对应的可以设置成expunged
+// 注释：删除时会把 Map.read 中的key设置为nil，再新增这个key的时候会设置成expunged
 var expunged = unsafe.Pointer(new(interface{})) // 注释：这个地址标记已经删除
 
 // An entry is a slot in the map corresponding to a particular key.
@@ -244,8 +254,9 @@ func (e *entry) tryStore(i *interface{}) bool {
 //
 // If the entry was previously expunged, it must be added to the dirty map
 // before m.mu is unlocked.
+// 注释：尝试把map的key对应的value指针从已删除更改为nil
 func (e *entry) unexpungeLocked() (wasExpunged bool) {
-	return atomic.CompareAndSwapPointer(&e.p, expunged, nil)
+	return atomic.CompareAndSwapPointer(&e.p, expunged, nil) // 注释：尝试把map的key对应的value指针从已删除更改为nil
 }
 
 // storeLocked unconditionally stores a value to the entry.
@@ -413,13 +424,13 @@ func (m *Map) Range(f func(key, value interface{}) bool) {
 
 // 注释：计数读取不到的次数，如果大于len(m.dirty)时，把dirty拷贝到read里，并清空dirty和misses
 func (m *Map) missLocked() {
-	m.misses++
-	if m.misses < len(m.dirty) {
+	m.misses++                   // 注释：查询dirty的次数
+	if m.misses < len(m.dirty) { // 注释：如果查询dirty次数小于dirty总数时直接返回，否则把dirty指针赋值到read里，并且清空计数器和dirty
 		return
 	}
-	m.read.Store(readOnly{m: m.dirty})
-	m.dirty = nil
-	m.misses = 0
+	m.read.Store(readOnly{m: m.dirty}) // 注释：把dirty指针赋值到read里，并且清空amended标识为false，标识不启用dirty(因为此时dirty为空值)
+	m.dirty = nil                      // 注释：清空dirty
+	m.misses = 0                       // 注释：清空计数器
 }
 
 // 注释：如果脏映射不存在，则创建脏映射，并且把只读映射里的数据拷贝到脏映射里
@@ -436,14 +447,14 @@ func (m *Map) dirtyLocked() {
 	read, _ := m.read.Load().(readOnly)                 // 注释：获取只读映射对象
 	m.dirty = make(map[interface{}]*entry, len(read.m)) // 注释：创建脏映射
 	for k, e := range read.m {                          // 注释：把只读映射数据拷贝到脏映射里
-		if !e.tryExpungeLocked() { // 注释：判断脏映射key对应value指针是否等于已删除标识，如果不是则执行修改操作
+		if !e.tryExpungeLocked() { // 注释：只读映射 Map.read 中key是否有效，true有效false无效
 			m.dirty[k] = e // 注释：(把只读映射的数据拷贝到脏映射里)修改脏映射的value值
 		}
 	}
 }
 
-// 注释：判断脏映射（这里只有脏映射在调用）key对应value指针是否等于已删除
-// 注释：判断脏映射(这里只有脏映射在调用)key对应的value是否是已删除，（如果可以是nil则修改成已删除）
+// 注释：只读映射 Map.read 中key是否有效，true有效false无效（如果是nil则修改成已删除）
+// 注释：判断脏映射(这里只有脏映射在调用)key对应的value是否是已删除
 // 注释：步骤
 //		1.获取key对应的value地址
 //			a.如果地址是nil则修改成已删除表示，并返回true

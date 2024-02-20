@@ -154,23 +154,25 @@ func newEntry(i interface{}) *entry {
 func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
 	read, _ := m.read.Load().(readOnly) // 注释：获取 Map.read，并断言成readOnly类型
 	e, ok := read.m[key]                // 注释：获取read的map中的数据
-	if !ok && read.amended {
+	if !ok && read.amended {            // 注释：如果没有对应的key并且允许到Map.dirty中读取时执行
 		m.mu.Lock() // 注释：如果没有读到，则加锁到dirty里读取
 		// Avoid reporting a spurious miss if m.dirty got promoted while we were
 		// blocked on m.mu. (If further loads of the same key will not miss, it's
 		// not worth copying the dirty map for this key.)
-		read, _ = m.read.Load().(readOnly)
-		e, ok = read.m[key]
-		if !ok && read.amended {
-			e, ok = m.dirty[key]
+		// 注释：译：如果m.dirty被提升，而我们在m.mu上被阻止，请避免报告虚假的未命中。（如果同一密钥的进一步加载不会错过，则不值得复制此密钥的脏映射。）
+		read, _ = m.read.Load().(readOnly) // 注释：获取 Map.read，并断言成readOnly类型
+		e, ok = read.m[key]                // 注释：查找对应的key
+		if !ok && read.amended {           // 注释：如果没有对应的key并且允许到Map.dirty中读取时执行
+			e, ok = m.dirty[key] // 注释：在dirty中找key
 			// Regardless of whether the entry was present, record a miss: this key
 			// will take the slow path until the dirty map is promoted to the read
 			// map.
+			// 注释：译：无论条目是否存在，都要记录一个未命中：该键将采用慢速路径，直到脏映射升级为读取映射
 			m.missLocked() // 注释：累加未读到数据的次数(Map.misses)，如果次数达到len(dirty)时，会把dirty赋值到raed里，并清空Map.dirty和Map.misses
 		}
 		m.mu.Unlock() // 注释：解锁
 	}
-	if !ok {
+	if !ok { // 注释：都没有找到则返回
 		return nil, false
 	}
 	return e.load() // 注释：原子获取entry.p数据，并转换成接口类型
@@ -178,11 +180,11 @@ func (m *Map) Load(key interface{}) (value interface{}, ok bool) {
 
 // 注释：原子获取数据
 func (e *entry) load() (value interface{}, ok bool) {
-	p := atomic.LoadPointer(&e.p)  // 注释：原子获取数据地址
+	p := atomic.LoadPointer(&e.p)  // 注释：原子获取数据地址(指针的地址)
 	if p == nil || p == expunged { // 注释：如果地址不存在或者等于删除（expunged）则直接返回nil，false
 		return nil, false
 	}
-	return *(*interface{})(p), true // 注释：返回接口和布尔值
+	return *(*interface{})(p), true // 注释：返回接口(值的指针转换为接口)和布尔值
 }
 
 // Store sets the value for a key.
@@ -213,6 +215,7 @@ func (m *Map) Store(key, value interface{}) {
 		if e.unexpungeLocked() { // 注释：尝试把map的key对应的value指针从已删除更改为nil，如果更改成功修改脏映射的map数据
 			// The entry was previously expunged, which implies that there is a
 			// non-nil dirty map and this entry is not in it.
+			// 注释：译：该条目先前已被删除，这意味着存在非零脏映射，并且该条目不在其中。
 			m.dirty[key] = e // 注释：(修改只读映射)把脏映射的map根据key修改value
 		}
 		// 注释：这里无论脏映射里是否修改数据，只读映射里都是要修改的
@@ -339,42 +342,46 @@ func (e *entry) tryLoadOrStore(i interface{}) (actual interface{}, loaded, ok bo
 
 // LoadAndDelete deletes the value for a key, returning the previous value if any.
 // The loaded result reports whether the key was present.
+// 注释：查询并删除
 func (m *Map) LoadAndDelete(key interface{}) (value interface{}, loaded bool) {
-	read, _ := m.read.Load().(readOnly)
-	e, ok := read.m[key]
-	if !ok && read.amended {
-		m.mu.Lock()
-		read, _ = m.read.Load().(readOnly)
-		e, ok = read.m[key]
-		if !ok && read.amended {
-			e, ok = m.dirty[key]
-			delete(m.dirty, key)
+	read, _ := m.read.Load().(readOnly) // 注释：获取read指针并断言成readOnly类型
+	e, ok := read.m[key]                // 注释：在read中查找key
+	if !ok && read.amended {            // 注释：如果没有找到，并且允许到map.dirty中查找，则执行。下面是到dirty中查找，并删除
+		m.mu.Lock()                        // 注释：加互斥锁
+		read, _ = m.read.Load().(readOnly) // 注释：获取read指针并断言成readOnly类型
+		e, ok = read.m[key]                // 注释：在read中查找key
+		if !ok && read.amended {           // 注释：如果没有找到，并且允许到map.dirty中查找，则执行
+			e, ok = m.dirty[key] // 注释：(取出数据)到dirty中查找key
+			delete(m.dirty, key) // 注释：(删除map中的数据)删除出dirty中的key
 			// Regardless of whether the entry was present, record a miss: this key
 			// will take the slow path until the dirty map is promoted to the read
 			// map.
-			m.missLocked()
+			// 注释：译：无论条目是否存在，都要记录一个未命中：该键将采用慢速路径，直到脏映射升级为读取映射。
+			m.missLocked() // 注释：自增查找dirty的次数
 		}
-		m.mu.Unlock()
+		m.mu.Unlock() // 注释：解锁
 	}
 	if ok {
-		return e.delete()
+		return e.delete() // 注释：软删除对应的key，就是把key对应的值设置成nil
 	}
 	return nil, false
 }
 
 // Delete deletes the value for a key.
+// 注释：删除对应key
 func (m *Map) Delete(key interface{}) {
-	m.LoadAndDelete(key)
+	m.LoadAndDelete(key) // 注释：查询并删除
 }
 
+// 注释：软删除对应的key，就是把key对应的值设置成nil
 func (e *entry) delete() (value interface{}, ok bool) {
 	for {
-		p := atomic.LoadPointer(&e.p)
-		if p == nil || p == expunged {
+		p := atomic.LoadPointer(&e.p)  // 注释：(原子查询)获取value指针
+		if p == nil || p == expunged { // 注释：如果value的地址是nil或者标记成已删除状态则直接返回false
 			return nil, false
 		}
-		if atomic.CompareAndSwapPointer(&e.p, p, nil) {
-			return *(*interface{})(p), true
+		if atomic.CompareAndSwapPointer(&e.p, p, nil) { // 注释：(原子修改)把value的指针设置成nil
+			return *(*interface{})(p), true // 注释：返回删除前的数据和true
 		}
 	}
 }

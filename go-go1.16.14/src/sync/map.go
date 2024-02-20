@@ -423,6 +423,12 @@ func (m *Map) Range(f func(key, value interface{}) bool) {
 }
 
 // 注释：计数读取不到的次数，如果大于len(m.dirty)时，把dirty拷贝到read里，并清空dirty和misses
+// 注释：步骤：
+//		1.(计数器misses自增)累加访问dirty数量
+//		2.判断如果累加数量>=dirty数量时
+//			a.(重置read)清空read，然后把dirty指针赋值到read.m里，此时read.amended设置为false
+//			b.清空dirty
+//			c.清空计数器misses
 func (m *Map) missLocked() {
 	m.misses++                   // 注释：查询dirty的次数
 	if m.misses < len(m.dirty) { // 注释：如果查询dirty次数小于dirty总数时直接返回，否则把dirty指针赋值到read里，并且清空计数器和dirty

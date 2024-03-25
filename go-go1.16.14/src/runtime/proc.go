@@ -6111,23 +6111,28 @@ func runqempty(_p_ *p) bool {
 const randomizeScheduler = raceenabled // 注释：随机打乱P队列的G位置
 
 // runqput tries to put g on the local runnable queue.
-// 注释：runqput尝试将g放入本地可运行队列
 // If next is false, runqput adds g to the tail of the runnable queue.
-// 注释：如果next为false，则runqput将g添加到可运行队列的尾部
 // If next is true, runqput puts g in the _p_.runnext slot.
-// 注释：如果next为true，runqput将g放入_p_中。运行下一个插槽
 // If the run queue is full, runnext puts g on the global queue.
-// 注释：如果运行队列已满，runnext会将g放入全局队列
 // Executed only by the owner P.
-// 注释：仅提供P的所有者执行
+// 注释：译：runqput尝试将g放入本地可运行队列
+// 		如果next为false，则runqput将g添加到可运行队列的尾部
+// 		如果next为true，runqput将g放入_p_中。运行下一个插槽
+// 		如果运行队列已满，runnext会将g放入全局队列
+// 		仅提供P的所有者执行
 //
 // 注释：把gp放到本地队列_p_里，并且标记是否下一就执行
 // 注释：把G放到P队列里，next表示是否下一个就马上处理gp
+// 注释：执行步骤：
+// 		1.如果需要处理runnext字段
+//			a.把runnext和新的G（gp）调换位置(把G放到runnext,后面会把旧的runnext放到队列里)
+// 		2.把G放到队列尾部，如果本地队列满了，拿出一半放到全局队列里
 func runqput(_p_ *p, gp *g, next bool) {
 	if randomizeScheduler && next && fastrand()%2 == 0 {
 		next = false
 	}
 
+	// 注释：如果next里有值，则把next的值放到队列里，然后把新的值放到next里
 	if next { // 注释：是否需要处理p.runnext字段
 	retryNext:
 		oldnext := _p_.runnext                                       // 注释：获取P的runnext值,旧值拿出来

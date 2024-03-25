@@ -941,7 +941,7 @@ func gopanic(e interface{}) {
 		// If defer was started by earlier panic or Goexit (and, since we're back here, that triggered a new panic),
 		// take defer off list. An earlier panic will not continue running, but we will make sure below that an
 		// earlier Goexit does continue running.
-		if d.started {
+		if d.started { // 注释：如果defer已经开始了
 			if d._panic != nil {
 				d._panic.aborted = true
 			}
@@ -961,7 +961,7 @@ func gopanic(e interface{}) {
 		// Mark defer as started, but keep on list, so that traceback
 		// can find and update the defer's argument frame if stack growth
 		// or a garbage collection happens before reflectcall starts executing d.fn.
-		d.started = true
+		d.started = true // 注释：标记defer已经开始了
 
 		// Record the panic that is running the defer.
 		// If there is a new panic during the deferred call, that panic
@@ -969,6 +969,7 @@ func gopanic(e interface{}) {
 		d._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
 
 		done := true
+		// 注释：执行defer里的函数
 		if d.openDefer {
 			done = runOpenDeferFrame(gp, d)
 			if done && !d._panic.recovered {
@@ -1104,7 +1105,10 @@ func gorecover(argp uintptr) interface{} {
 	// If they match, the caller is the one who can recover.
 	gp := getg()
 	p := gp._panic
-	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) {
+	// 注释：recover执行判断条件
+	//		!p.goexit && !p.recovered 没有正常退出，并且没有被recover过
+	// 		p.argp可以理解为伪FP地址,argp是当前函数的伪FP地址，如果不是在同一个函数则地址不同
+	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) { // 注释：recover中argp和p.argp是伪FP,在同一个函数里则相等
 		p.recovered = true
 		return p.arg
 	}

@@ -976,7 +976,7 @@ func gopanic(e interface{}) {
 				addOneOpenDeferFrame(gp, 0, nil)
 			}
 		} else {
-			p.argp = unsafe.Pointer(getargp(0))                                                // 注释：记录当前栈请求参数的位置指针，访问下一个函数准备参数和返回值的位置地址。
+			p.argp = unsafe.Pointer(getargp(0))                                                // 注释：(记录"伪FP"地址)记录当前栈请求参数的位置指针，访问下一个函数准备参数和返回值的位置地址。
 			reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz)) // 注释：这里会调用d.fn函数，就是refer里执行的函数
 		}
 		p.argp = nil // 注释：这里存放的是为d.fn函数（refer执行的函数）的入参地址，refer执行完后就清除掉

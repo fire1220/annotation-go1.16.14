@@ -4233,7 +4233,7 @@ func newproc(siz int32, fn *funcval) {
 		newg := newproc1(fn, argp, siz, gp, pc) // 注释：用g0的栈创建G对象（此时已经切换g为g0）
 
 		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址
-		runqput(_p_, newg, true) // 注释：把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
+		runqput(_p_, newg, true) // 注释：[newproc]把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
 
 		if mainStarted { // 注释：如果是runtime.main函数启动则直接唤醒，runtime.main函数的g.goid是1
 			wakep() // 注释：唤醒P，就是那个M运行P，然后运行P里的G

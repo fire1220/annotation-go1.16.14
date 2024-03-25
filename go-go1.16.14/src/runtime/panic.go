@@ -367,6 +367,7 @@ func testdefersizes() {
 
 // The arguments associated with a deferred call are stored
 // immediately after the _defer header in memory.
+// 注释：译：与延迟调用相关联的自变量立即存储在存储器中的_defer标头之后
 //
 //go:nosplit
 func deferArgs(d *_defer) unsafe.Pointer {

@@ -208,20 +208,24 @@ func asminit()
 func setg(gg *g)
 func breakpoint()
 
-// reflectcall calls fn with a copy of the n argument bytes pointed at by arg. // 注释：reflectcall使用arg指向的n个参数字节的副本调用fn。
+// reflectcall calls fn with a copy of the n argument bytes pointed at by arg.
 // After fn returns, reflectcall copies n-retoffset result bytes
 // back into arg+retoffset before returning. If copying result bytes back,
 // the caller should pass the argument frame type as argtype, so that
 // call can execute appropriate write barriers during the copy.
-// 注释：在fn返回后，reflectcall在返回之前将n-retoffset结果字节复制回arg+retoffset。如果复制结果字节，调用方应将参数帧类型作为argtype传递，以便调用可以在复制期间执行适当的写屏障。
 //
 // Package reflect always passes a frame type. In package runtime,
 // Windows callbacks are the only use of this that copies results
 // back, and those cannot have pointers in their results, so runtime
 // passes nil for the frame type.
-// 注释：包反射总是通过一个帧类型。在包运行时中，Windows回调是将结果复制回的唯一用途，并且这些回调的结果中不能有指针，因此运行时为帧类型传递nil。
 //
-// Package reflect accesses this symbol through a linkname. // 注释：包反射通过链接名访问此符号。
+// Package reflect accesses this symbol through a linkname.
+// 注释：译：reflectcall使用arg指向的n个参数字节的副本调用fn。
+// 		在fn返回后，reflectcall在返回之前将n-retoffset结果字节复制回arg+retoffset。如果复制结果字节，调用方应将参数帧类型作为argtype传递，
+//		以便调用可以在复制期间执行适当的写屏障。
+// 		包反射总是通过一个帧类型。在包运行时中，Windows回调是将结果复制回的唯一用途，并且这些回调的结果中不能有指针，因此运行时为帧类型传递nil。
+// 		包反射通过链接名访问此符号。
+//
 // 注释：这里会调用d.fn函数，就是refer里执行的函数
 func reflectcall(argtype *_type, fn, arg unsafe.Pointer, argsize uint32, retoffset uint32)
 

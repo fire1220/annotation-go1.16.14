@@ -1094,6 +1094,13 @@ func getargp(x int) uintptr {
 //
 // TODO(rsc): Once we commit to CopyStackAlways,
 // this doesn't need to be nosplit.
+// 注释：defer里执行的recover
+// 注释：判定条件：
+// 注释：	1.必须有panic
+// 注释：	2.没有执行退出函数
+// 注释：	3.没有被recover过
+// 注释：	4.recover必须在defer指向的函数里(不能嵌套函数，否则永远返回nil)
+// 注释：该函数就是把panic设置的值返回，并且设置painc节点的标记，标记为recover
 //
 //go:nosplit
 func gorecover(argp uintptr) interface{} {

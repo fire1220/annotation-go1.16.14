@@ -219,6 +219,8 @@ func panicmemAddr(addr uintptr) {
 
 // Create a new deferred function fn with siz bytes of arguments.
 // The compiler turns a defer statement into a call to this.
+// 注释：译：使用siz字节的参数创建一个新的延迟函数fn。编译器将defer语句转换为对此的调用。
+// 注释：当执行defer语句时执行该函数
 //
 //go:nosplit
 func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
@@ -234,7 +236,7 @@ func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
 	// to somewhere safe. The memmove below does that.
 	// Until the copy completes, we can only call nosplit routines.
 	sp := getcallersp()
-	argp := uintptr(unsafe.Pointer(&fn)) + unsafe.Sizeof(fn)
+	argp := uintptr(unsafe.Pointer(&fn)) + unsafe.Sizeof(fn) // 注释：这里就是"伪FP"地址，则是调用defer的参数"伪FP"
 	callerpc := getcallerpc()
 
 	d := newdefer(siz)

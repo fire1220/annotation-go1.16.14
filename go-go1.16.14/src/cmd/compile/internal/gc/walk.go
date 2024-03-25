@@ -636,7 +636,7 @@ opswitch:
 			n = walkexpr(n, init)
 			break opswitch
 
-		case OAPPEND:
+		case OAPPEND: // 注释：执行append语句时执行
 			// x = append(...)
 			r := n.Right
 			if r.Type.Elem().NotInHeap() {
@@ -647,9 +647,9 @@ opswitch:
 				// x = append(y, make([]T, y)...)
 				r = extendslice(r, init)
 			case r.IsDDD():
-				r = appendslice(r, init) // also works for append(slice, string).
+				r = appendslice(r, init) // 注释：格式是append(src，x...)时执行 // also works for append(slice, string).
 			default:
-				r = walkappend(r, init, n)
+				r = walkappend(r, init, n) // 注释：格式是append(src，x，y，z)时执行
 			}
 			n.Right = r
 			if r.Op == OAPPEND {
@@ -3009,6 +3009,8 @@ func extendslice(n *Node, init *Nodes) *Node {
 // initialization statements before the append.
 // For normal code generation, stop there and leave the
 // rest to cgen_append.
+// 注释：译：重写append（src，x，y，z），以便在进行append之前的初始化语句中评估x、y、z中的任何副作用（包括运行时死机）。
+//		对于正常的代码生成，请到此为止，将其余部分留给cgen_append。
 //
 // For race detector, expand append(src, a [, b]* ) to
 //

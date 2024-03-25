@@ -22,3 +22,28 @@ go1.16.14中文注释
 - runtime·goexit【汇编】协成退出
 - runtime.mallocgc 内存分配
 
+### go语句对应执行的函数；语句 -> 函数（函数位置）
+- go -> newproc (src/runtime/proc.go)
+- defer -> deferproc (src/runtime/panic.go)
+- panic -> gopanic (src/runtime/panic.go)
+- recover -> gorecover (src/runtime/panic.go)
+- make语句，包含三种情况，分别是slice、map、chan
+  - make(slice) -> makeslice (src/runtime/slice.go)
+  - make(map) -> makemap (src/runtime/map.go)
+  - make(chan) -> makechan (src/runtime/chan.go)
+- append语句，包含三总格式
+  - append(y, make([]T, y)...) -> extendslice (src/cmd/compile/internal/gc/walk.go)
+  - append(src，x...) -> appendslice (src/cmd/compile/internal/gc/walk.go)
+  - append(src，x，y，z) -> walkappend (src/cmd/compile/internal/gc/walk.go)
+  - 如果发生扩容时 -> growslice (src/runtime/slice.go)
+- chan管道操作
+  - 读取操作 -> chanrecv (src/runtime/chan.go)
+  - 写入操作 -> chansend (src/runtime/chan.go)
+- map操作
+  - 读取操作:包含两种格式
+    - v := m["xx"] -> mapaccess1 (src/runtime/map.go)
+    - v,ok := m["xx"] -> mapaccess2 (src/runtime/map.go)
+  - 写入操作 -> mapassign (src/runtime/map.go)
+
+
+

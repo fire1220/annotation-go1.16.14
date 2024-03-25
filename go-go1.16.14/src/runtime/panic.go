@@ -926,14 +926,16 @@ func gopanic(e interface{}) {
 	p.link = gp._panic                                  // 注释：panic的链表，把新的panic放在链表的头部
 	gp._panic = (*_panic)(noescape(unsafe.Pointer(&p))) // 注释：把panic放到链表的头部
 
-	atomic.Xadd(&runningPanicDefers, 1)
+	atomic.Xadd(&runningPanicDefers, 1) // 注释：全局defer数量加1
 
 	// By calculating getcallerpc/getcallersp here, we avoid scanning the
 	// gopanic frame (stack scanning is slow...)
+	// 注释：译：通过在这里计算getcallerrpc/getcallersp，我们可以避免扫描gopanic帧（堆栈扫描很慢…）
 	addOneOpenDeferFrame(gp, getcallerpc(), unsafe.Pointer(getcallersp()))
 
+	// 注释：开始执行defer链表里的方法
 	for {
-		d := gp._defer
+		d := gp._defer // 注释：拿出一个defer
 		if d == nil {
 			break
 		}
@@ -941,16 +943,19 @@ func gopanic(e interface{}) {
 		// If defer was started by earlier panic or Goexit (and, since we're back here, that triggered a new panic),
 		// take defer off list. An earlier panic will not continue running, but we will make sure below that an
 		// earlier Goexit does continue running.
+		// 注释：译：如果defer是由早期的恐慌或Goexit启动的（由于我们回到这里，这引发了新的恐慌），请将defer从列表中删除。
+		//		早期的恐慌不会继续运行，但我们将在下面确保早期的Goexit确实会继续运行。
 		if d.started { // 注释：如果defer已经开始了
-			if d._panic != nil {
-				d._panic.aborted = true
+			if d._panic != nil { // 注释：如果有panic则强制终止
+				d._panic.aborted = true // 注释：强制终止
 			}
-			d._panic = nil
+			d._panic = nil // 注释：清空panic
 			if !d.openDefer {
 				// For open-coded defers, we need to process the
 				// defer again, in case there are any other defers
 				// to call in the frame (not including the defer
 				// call that caused the panic).
+				// 注释：译：对于开放编码的延迟，我们需要再次处理延迟，以防在帧中有任何其他延迟要调用（不包括导致恐慌的延迟调用）。
 				d.fn = nil
 				gp._defer = d.link
 				freedefer(d)
@@ -997,14 +1002,15 @@ func gopanic(e interface{}) {
 			gp._defer = d.link
 			freedefer(d)
 		}
-		if p.recovered {
+		if p.recovered { // 注释：如果已经有recover(在recover是在上面defer里执行的)
 			gp._panic = p.link
 			if gp._panic != nil && gp._panic.goexit && gp._panic.aborted {
 				// A normal recover would bypass/abort the Goexit.  Instead,
 				// we return to the processing loop of the Goexit.
+				// 注释：译：正常恢复将绕过/中止Goexit。相反，我们返回到Goexit的处理循环。
 				gp.sigcode0 = uintptr(gp._panic.sp)
 				gp.sigcode1 = uintptr(gp._panic.pc)
-				mcall(recovery)
+				mcall(recovery)                   // 注释：永不返回
 				throw("bypassed recovery failed") // mcall should not return
 			}
 			atomic.Xadd(&runningPanicDefers, -1)
@@ -1149,6 +1155,7 @@ func throw(s string) {
 // runningPanicDefers is non-zero while running deferred functions for panic.
 // runningPanicDefers is incremented and decremented atomically.
 // This is used to try hard to get a panic stack trace out when exiting.
+// 注释：译：运行panic的延迟函数时，runningPanicDefers为非零。 runningPanicDefers以原子方式递增和递减。 这是用来在退出时努力获取恐慌堆栈跟踪的。
 var runningPanicDefers uint32
 
 // panicking is non-zero when crashing the program for an unrecovered panic.
@@ -1162,8 +1169,10 @@ var paniclk mutex
 // Unwind the stack after a deferred function calls recover
 // after a panic. Then arrange to continue running as though
 // the caller of the deferred function returned normally.
+// 注释：译：延迟函数调用recover后，在死机后展开堆栈。然后安排继续运行，就像延迟函数的调用方正常返回一样。
 func recovery(gp *g) {
 	// Info about defer passed in G struct.
+	// 注释：译：在G结构中传递了有关defer的信息。
 	sp := gp.sigcode0
 	pc := gp.sigcode1
 
@@ -1176,11 +1185,12 @@ func recovery(gp *g) {
 	// Make the deferproc for this d return again,
 	// this time returning 1. The calling function will
 	// jump to the standard return epilogue.
+	// 注释：译：再次为这个d返回deferproc，这次返回1。调用函数将跳转到标准的返回尾声。
 	gp.sched.sp = sp
 	gp.sched.pc = pc
 	gp.sched.lr = 0
 	gp.sched.ret = 1
-	gogo(&gp.sched)
+	gogo(&gp.sched) // 注释：从gobuf恢复状态并执行
 }
 
 // fatalthrow implements an unrecoverable runtime throw. It freezes the

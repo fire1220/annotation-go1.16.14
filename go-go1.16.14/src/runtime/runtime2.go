@@ -505,8 +505,8 @@ type g struct {
 	lockedm        muintptr // 注释：g被锁定,只在这个m上运行
 	sig            uint32
 	writebuf       []byte
-	sigcode0       uintptr
-	sigcode1       uintptr
+	sigcode0       uintptr // 注释：用来存储临时值，一般用来存"伪SP"值
+	sigcode1       uintptr // 注释：用来存储临时值，一般用来存PC值
 	sigpc          uintptr
 	gopc           uintptr         // 注释：(go关键词的父级PC)创建当前G的PC(调用者的PC(rip)) 例如：A调用B然后执行go指令，此时gopc是A的PC值 // pc of go statement that created this goroutine
 	ancestors      *[]ancestorInfo // 注释：(调用链信息,用于debug追溯时使用)创建此g的祖先信息g仅在debug.traceback祖先时使用 // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)

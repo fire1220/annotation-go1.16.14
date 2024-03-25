@@ -49,7 +49,7 @@ func getg() *g
 // 注释：步骤：
 //      1.保存现场
 //      2.切换g0
-//      3.执行fn，用g0执行fn
+//      3.执行fn，用g0执行fn，永不返回（需要执行下一次系统调度或休息）
 func mcall(fn func(*g))
 
 // systemstack runs fn on a system stack.
@@ -301,13 +301,13 @@ func publicationBarrier()
 // 注释：获取 caller(呼叫者，上游的函数)的PC（伪）指令寄存器，对应硬件IP寄存器
 //
 //go:noescape
-func getcallerpc() uintptr
+func getcallerpc() uintptr // 注释：返回呼叫者"伪PC"
 
 // 注释：返回对所在函数的返回，上面案例中有解释
 // 注释：获取 caller(呼叫者，上游的函数)的SP（伪）寄存器，对应硬件BP寄存器（函数栈帧底部）
 //
 //go:noescape
-func getcallersp() uintptr // implemented as an intrinsic on all platforms
+func getcallersp() uintptr // 注释：返回呼叫者"伪SP" // implemented as an intrinsic on all platforms
 
 // getclosureptr returns the pointer to the current closure.
 // getclosureptr can only be used in an assignment statement

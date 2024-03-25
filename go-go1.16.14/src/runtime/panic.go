@@ -1080,12 +1080,13 @@ func gopanic(e interface{}) {
 // 注释：getargp返回调用者编写传出函数调用参数的位置。
 // 注释：这里比较有意思，就是把入参拷贝的函数内的变量（第一个入参变量），获取地址并且返回（就是上一个函数栈准备的入参位置的地址）
 // 注释：（这里准备的大小为18字节，8字节是入参，8字节是返回值）
+// 注释：其实这里就是"伪FP"地址
 //
 //go:nosplit
 //go:noinline
 func getargp(x int) uintptr {
 	// x is an argument mainly so that we can return its address. // 注释：x是一个参数，主要是为了返回它的地址。
-	return uintptr(noescape(unsafe.Pointer(&x))) // 注释：返回上一个函数栈实参的栈地址
+	return uintptr(noescape(unsafe.Pointer(&x))) // 注释：(返回"伪FP"地址)返回上一个函数栈实参的栈地址
 }
 
 // The implementation of the predeclared function recover.

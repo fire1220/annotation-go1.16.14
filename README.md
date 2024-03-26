@@ -23,8 +23,8 @@ go1.16.14中文注释
 - runtime.mallocgc 内存分配
 
 ### go语句对应执行的函数；语句 -> 函数（函数位置）
-- go -> newproc (src/runtime/proc.go)
 - defer -> deferproc (src/runtime/panic.go)
+- go -> newproc (src/runtime/proc.go)
 - panic -> gopanic (src/runtime/panic.go)
 - recover -> gorecover (src/runtime/panic.go)
 - make语句，包含三种情况，分别是slice、map、chan

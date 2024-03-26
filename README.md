@@ -8,8 +8,8 @@ go1.16.14中文注释
 
 ### 已经备注的内容
 - map
-- 切片
-- 管道
+- slice
+- channel
 - 启动流程 - 调度循环
 - runtime·rt0_go【汇编】程序入口
 - runtime.newproc用协成执行fn

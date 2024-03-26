@@ -45,5 +45,12 @@ go1.16.14中文注释
     - v,ok := m["xx"] -> mapaccess2 (src/runtime/map.go)
   - 写入操作 -> mapassign (src/runtime/map.go)
 
+### go调度流程
+- runtime·rt0_go【汇编】程序入口 (src/runtime/asm_amd64.s)
+  - runtime·args(SB)      处理args
+  - runtime·osinit(SB)    os初始化(os_linux.go)
+  - runtime·schedinit(SB) 调度系统初始化(proc.go)(会进行p的初始化，也会把m0和某个p绑定)
+  - runtime·newproc(SB)   将runtime.main函数放进新建的g里，然后插入m0绑定的p的本地队列里
+  - runtime·mstart(SB)    启动线程m，进入启动调度系统（开始执行调度和业务代码），永不返回
 
 

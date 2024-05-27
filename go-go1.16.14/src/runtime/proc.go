@@ -4236,7 +4236,7 @@ func newproc(siz int32, fn *funcval) {
 		runqput(_p_, newg, true) // 注释：把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
 
 		if mainStarted { // 注释：如果是runtime.main函数启动则直接唤醒，runtime.main函数的g.goid是1
-			wakep() // 注释：唤醒P，就是那个M运行P，然后运行P里的G
+			wakep() // 注释：（启动进程）唤醒P，就是拿个M运行P里的G，如果没有则自旋
 		}
 	})
 }

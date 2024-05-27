@@ -219,6 +219,8 @@ func panicmemAddr(addr uintptr) {
 
 // Create a new deferred function fn with siz bytes of arguments.
 // The compiler turns a defer statement into a call to this.
+// 注释：译：使用siz字节的参数创建一个新的延迟函数fn。编译器将defer语句转换为对此的调用。
+// 注释：当执行defer语句时执行该函数
 //
 //go:nosplit
 func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
@@ -234,7 +236,7 @@ func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
 	// to somewhere safe. The memmove below does that.
 	// Until the copy completes, we can only call nosplit routines.
 	sp := getcallersp()
-	argp := uintptr(unsafe.Pointer(&fn)) + unsafe.Sizeof(fn)
+	argp := uintptr(unsafe.Pointer(&fn)) + unsafe.Sizeof(fn) // 注释：这里就是"伪FP"地址，则是调用defer的参数"伪FP"
 	callerpc := getcallerpc()
 
 	d := newdefer(siz)
@@ -367,6 +369,7 @@ func testdefersizes() {
 
 // The arguments associated with a deferred call are stored
 // immediately after the _defer header in memory.
+// 注释：译：与延迟调用相关联的自变量立即存储在存储器中的_defer标头之后
 //
 //go:nosplit
 func deferArgs(d *_defer) unsafe.Pointer {
@@ -889,7 +892,7 @@ func reflectcallSave(p *_panic, fn, arg unsafe.Pointer, argsize uint32) {
 }
 
 // The implementation of the predeclared function panic.
-// 注释：执行panic时执行
+// 注释：执行panic时执行(gopanic)
 func gopanic(e interface{}) {
 	gp := getg()
 	if gp.m.curg != gp {
@@ -926,14 +929,16 @@ func gopanic(e interface{}) {
 	p.link = gp._panic                                  // 注释：panic的链表，把新的panic放在链表的头部
 	gp._panic = (*_panic)(noescape(unsafe.Pointer(&p))) // 注释：把panic放到链表的头部
 
-	atomic.Xadd(&runningPanicDefers, 1)
+	atomic.Xadd(&runningPanicDefers, 1) // 注释：全局defer数量加1
 
 	// By calculating getcallerpc/getcallersp here, we avoid scanning the
 	// gopanic frame (stack scanning is slow...)
+	// 注释：译：通过在这里计算getcallerrpc/getcallersp，我们可以避免扫描gopanic帧（堆栈扫描很慢…）
 	addOneOpenDeferFrame(gp, getcallerpc(), unsafe.Pointer(getcallersp()))
 
+	// 注释：开始执行defer链表里的方法
 	for {
-		d := gp._defer
+		d := gp._defer // 注释：拿出一个defer
 		if d == nil {
 			break
 		}
@@ -941,16 +946,19 @@ func gopanic(e interface{}) {
 		// If defer was started by earlier panic or Goexit (and, since we're back here, that triggered a new panic),
 		// take defer off list. An earlier panic will not continue running, but we will make sure below that an
 		// earlier Goexit does continue running.
-		if d.started {
-			if d._panic != nil {
-				d._panic.aborted = true
+		// 注释：译：如果defer是由早期的恐慌或Goexit启动的（由于我们回到这里，这引发了新的恐慌），请将defer从列表中删除。
+		//		早期的恐慌不会继续运行，但我们将在下面确保早期的Goexit确实会继续运行。
+		if d.started { // 注释：如果defer已经开始了
+			if d._panic != nil { // 注释：如果有panic则强制终止
+				d._panic.aborted = true // 注释：强制终止
 			}
-			d._panic = nil
+			d._panic = nil // 注释：清空panic
 			if !d.openDefer {
 				// For open-coded defers, we need to process the
 				// defer again, in case there are any other defers
 				// to call in the frame (not including the defer
 				// call that caused the panic).
+				// 注释：译：对于开放编码的延迟，我们需要再次处理延迟，以防在帧中有任何其他延迟要调用（不包括导致恐慌的延迟调用）。
 				d.fn = nil
 				gp._defer = d.link
 				freedefer(d)
@@ -961,7 +969,7 @@ func gopanic(e interface{}) {
 		// Mark defer as started, but keep on list, so that traceback
 		// can find and update the defer's argument frame if stack growth
 		// or a garbage collection happens before reflectcall starts executing d.fn.
-		d.started = true
+		d.started = true // 注释：标记defer已经开始了
 
 		// Record the panic that is running the defer.
 		// If there is a new panic during the deferred call, that panic
@@ -969,13 +977,14 @@ func gopanic(e interface{}) {
 		d._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
 
 		done := true
+		// 注释：执行defer里的函数
 		if d.openDefer {
 			done = runOpenDeferFrame(gp, d)
 			if done && !d._panic.recovered {
 				addOneOpenDeferFrame(gp, 0, nil)
 			}
 		} else {
-			p.argp = unsafe.Pointer(getargp(0))                                                // 注释：记录当前栈请求参数的位置指针，访问下一个函数准备参数和返回值的位置地址。
+			p.argp = unsafe.Pointer(getargp(0))                                                // 注释：(记录"伪FP"地址)记录当前栈请求参数的位置指针，访问下一个函数准备参数和返回值的位置地址。
 			reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz)) // 注释：这里会调用d.fn函数，就是refer里执行的函数
 		}
 		p.argp = nil // 注释：这里存放的是为d.fn函数（refer执行的函数）的入参地址，refer执行完后就清除掉
@@ -996,14 +1005,15 @@ func gopanic(e interface{}) {
 			gp._defer = d.link
 			freedefer(d)
 		}
-		if p.recovered {
+		if p.recovered { // 注释：如果已经有recover(在recover是在上面defer里执行的)
 			gp._panic = p.link
 			if gp._panic != nil && gp._panic.goexit && gp._panic.aborted {
 				// A normal recover would bypass/abort the Goexit.  Instead,
 				// we return to the processing loop of the Goexit.
+				// 注释：译：正常恢复将绕过/中止Goexit。相反，我们返回到Goexit的处理循环。
 				gp.sigcode0 = uintptr(gp._panic.sp)
 				gp.sigcode1 = uintptr(gp._panic.pc)
-				mcall(recovery)
+				mcall(recovery)                   // 注释：永不返回
 				throw("bypassed recovery failed") // mcall should not return
 			}
 			atomic.Xadd(&runningPanicDefers, -1)
@@ -1079,12 +1089,13 @@ func gopanic(e interface{}) {
 // 注释：getargp返回调用者编写传出函数调用参数的位置。
 // 注释：这里比较有意思，就是把入参拷贝的函数内的变量（第一个入参变量），获取地址并且返回（就是上一个函数栈准备的入参位置的地址）
 // 注释：（这里准备的大小为18字节，8字节是入参，8字节是返回值）
+// 注释：其实这里就是"伪FP"地址
 //
 //go:nosplit
 //go:noinline
 func getargp(x int) uintptr {
 	// x is an argument mainly so that we can return its address. // 注释：x是一个参数，主要是为了返回它的地址。
-	return uintptr(noescape(unsafe.Pointer(&x))) // 注释：返回上一个函数栈实参的栈地址
+	return uintptr(noescape(unsafe.Pointer(&x))) // 注释：(返回"伪FP"地址)返回上一个函数栈实参的栈地址
 }
 
 // The implementation of the predeclared function recover.
@@ -1093,6 +1104,13 @@ func getargp(x int) uintptr {
 //
 // TODO(rsc): Once we commit to CopyStackAlways,
 // this doesn't need to be nosplit.
+// 注释：defer里执行的recover
+// 注释：判定条件：
+// 注释：	1.必须有panic
+// 注释：	2.没有执行退出函数
+// 注释：	3.没有被recover过
+// 注释：	4.recover必须在defer指向的函数里(不能嵌套函数，否则永远返回nil)
+// 注释：该函数就是把panic设置的值返回，并且设置painc节点的标记，标记为recover
 //
 //go:nosplit
 func gorecover(argp uintptr) interface{} {
@@ -1104,7 +1122,10 @@ func gorecover(argp uintptr) interface{} {
 	// If they match, the caller is the one who can recover.
 	gp := getg()
 	p := gp._panic
-	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) {
+	// 注释：recover执行判断条件
+	//		!p.goexit && !p.recovered 没有正常退出，并且没有被recover过
+	// 		p.argp可以理解为伪FP地址,argp是当前函数的伪FP地址，如果不是在同一个函数则地址不同
+	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) { // 注释：recover中argp和p.argp是伪FP,在同一个函数里则相等
 		p.recovered = true
 		return p.arg
 	}
@@ -1137,6 +1158,7 @@ func throw(s string) {
 // runningPanicDefers is non-zero while running deferred functions for panic.
 // runningPanicDefers is incremented and decremented atomically.
 // This is used to try hard to get a panic stack trace out when exiting.
+// 注释：译：运行panic的延迟函数时，runningPanicDefers为非零。 runningPanicDefers以原子方式递增和递减。 这是用来在退出时努力获取恐慌堆栈跟踪的。
 var runningPanicDefers uint32
 
 // panicking is non-zero when crashing the program for an unrecovered panic.
@@ -1150,8 +1172,10 @@ var paniclk mutex
 // Unwind the stack after a deferred function calls recover
 // after a panic. Then arrange to continue running as though
 // the caller of the deferred function returned normally.
+// 注释：译：延迟函数调用recover后，在死机后展开堆栈。然后安排继续运行，就像延迟函数的调用方正常返回一样。
 func recovery(gp *g) {
 	// Info about defer passed in G struct.
+	// 注释：译：在G结构中传递了有关defer的信息。
 	sp := gp.sigcode0
 	pc := gp.sigcode1
 
@@ -1164,11 +1188,12 @@ func recovery(gp *g) {
 	// Make the deferproc for this d return again,
 	// this time returning 1. The calling function will
 	// jump to the standard return epilogue.
+	// 注释：译：再次为这个d返回deferproc，这次返回1。调用函数将跳转到标准的返回尾声。
 	gp.sched.sp = sp
 	gp.sched.pc = pc
 	gp.sched.lr = 0
 	gp.sched.ret = 1
-	gogo(&gp.sched)
+	gogo(&gp.sched) // 注释：从gobuf恢复状态并执行
 }
 
 // fatalthrow implements an unrecoverable runtime throw. It freezes the

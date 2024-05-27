@@ -214,10 +214,10 @@ TEXT	sync∕atomic·LoadInt32(SB), NOSPLIT, $0-12
 	RET
 
 TEXT	sync∕atomic·LoadInt64(SB), NOSPLIT, $0-16
-	GO_ARGS
-	MOVQ	$__tsan_go_atomic64_load(SB), AX
-	CALL	racecallatomic<>(SB)
-	RET
+	GO_ARGS                                     // 注释：定义的宏：#define GO_ARGS	FUNCDATA $FUNCDATA_ArgsPointerMaps, go_args_stackmap(SB)
+	MOVQ	$__tsan_go_atomic64_load(SB), AX    // 注释：数据放到AX寄存器里
+	CALL	racecallatomic<>(SB)                // 注释：【ing】执行汇编函数(函数里会读取AX寄存器里的数据)
+	RET                                         // 注释：函数返回
 
 TEXT	sync∕atomic·LoadUint32(SB), NOSPLIT, $0-12
 	GO_ARGS

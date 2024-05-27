@@ -505,8 +505,8 @@ type g struct {
 	lockedm        muintptr // 注释：g被锁定,只在这个m上运行
 	sig            uint32
 	writebuf       []byte
-	sigcode0       uintptr
-	sigcode1       uintptr
+	sigcode0       uintptr // 注释：用来存储临时值，一般用来存"伪SP"值
+	sigcode1       uintptr // 注释：用来存储临时值，一般用来存PC值
 	sigpc          uintptr
 	gopc           uintptr         // 注释：(go关键词的父级PC)创建当前G的PC(调用者的PC(rip)) 例如：A调用B然后执行go指令，此时gopc是A的PC值 // pc of go statement that created this goroutine
 	ancestors      *[]ancestorInfo // 注释：(调用链信息,用于debug追溯时使用)创建此g的祖先信息g仅在debug.traceback祖先时使用 // ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
@@ -986,8 +986,8 @@ func extendRandom(r []byte, n int) {
 // 注释：延迟调用的结构体
 type _defer struct {
 	siz     int32 // 注释：存放参数和返回值的内存大小 // includes both arguments and results
-	started bool
-	heap    bool // 注释：是否存储在堆上,true代表在堆上，false代表在栈上
+	started bool  // 注释：表示defer已经开始了
+	heap    bool  // 注释：是否存储在堆上,true代表在堆上，false代表在栈上
 	// openDefer indicates that this _defer is for a frame with open-coded
 	// defers. We have only one defer record for the entire frame (which may
 	// currently have 0, 1, or more defers active).
@@ -1025,7 +1025,7 @@ type _defer struct {
 // 注释：字段argp很有意思代表：发生panic的时候回触发refer函数，在为调refer函数准备的参数栈地址（调用下一个函数的参数和返回值，又上一个函数栈准备，这里就是这个站准备的参数的站地址）
 // 注释：当recover的时候会接受到入参argp，然后和存储的panic.argp进行比较，如果比较不通过的时候无法获取recover的数据
 type _panic struct {
-	argp      unsafe.Pointer // 注释：指向defer调用时参数的指针(调用refer前的的参数指针，给refer准备的参数对应的指针) // pointer to arguments of deferred call run during panic; cannot move - known to liblink
+	argp      unsafe.Pointer // 注释：指向defer调用时参数的指针(调用defer前的的参数指针，给defer准备的参数对应的指针) // pointer to arguments of deferred call run during panic; cannot move - known to liblink
 	arg       interface{}    // 注释：panic的参数，打印panic的内容 // argument to panic
 	link      *_panic        // 注释：panic的单向链表  // link to earlier panic
 	pc        uintptr        // 注释：recover的时候,如果绕过painc的时候需要继续之前的pc位置执行 // where to return to in runtime if this panic is bypassed

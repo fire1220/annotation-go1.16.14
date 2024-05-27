@@ -25,17 +25,18 @@ type ifaceWords struct {
 
 // Load returns the value set by the most recent Store.
 // It returns nil if there has been no call to Store for this Value.
+// 注释：获取数据
 func (v *Value) Load() (x interface{}) {
-	vp := (*ifaceWords)(unsafe.Pointer(v))
-	typ := LoadPointer(&vp.typ)
+	vp := (*ifaceWords)(unsafe.Pointer(v)) //注释：指针类型转换
+	typ := LoadPointer(&vp.typ)            // 注释：获取指针的类型
 	if typ == nil || uintptr(typ) == ^uintptr(0) {
 		// First store not yet completed.
 		return nil
 	}
-	data := LoadPointer(&vp.data)
-	xp := (*ifaceWords)(unsafe.Pointer(&x))
-	xp.typ = typ
-	xp.data = data
+	data := LoadPointer(&vp.data)           // 注释：获取指针的数据
+	xp := (*ifaceWords)(unsafe.Pointer(&x)) // 注释：获取返回变量的地址
+	xp.typ = typ                            // 注释：(设置类型)设置返回变量的值
+	xp.data = data                          // 注释：(设置数据)设置返回变量的值
 	return
 }
 

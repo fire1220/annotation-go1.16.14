@@ -134,9 +134,9 @@ notintel:
 
 nocpuinfo: // 注释：没有获取到CPU的ID是执行
 	// if there is an _cgo_init, call it.
-	MOVQ	_cgo_init(SB), AX
-	TESTQ	AX, AX
-	JZ	needtls
+	MOVQ	_cgo_init(SB), AX // 注释：初始化CGO函数
+	TESTQ	AX, AX              // 注释：逻辑与运算，用户判定是否别设置
+	JZ	needtls                 // 注释：（没有定义CGO函数时跳转）如果AX是0，则直接跳转
 	// arg 1: g0, already in DI
 	MOVQ	$setg_gcc<>(SB), SI // arg 2: setg_gcc
 #ifdef GOOS_android
@@ -250,6 +250,8 @@ ok:
 // mainPC is a function value for runtime.main, to be passed to newproc.
 // The reference to runtime.main is made via ABIInternal, since the
 // actual function (not the ABI0 wrapper) is needed by newproc.
+// 注释：译：mainPC是runtime.main的函数值，将传递给newproc。对runtime.main的引用是通过ABInternal进行的，因为newproc需要实际的函数（而不是ABI0包装器）。
+// 注释：对来自汇编的闭包调用使用ABIInteral
 DATA	runtime·mainPC+0(SB)/8,$runtime·main<ABIInternal>(SB) // 注释：runtime·mainPC是runtime.main的函数指针【mainPC=&fn{fn:runtime.main}】
 GLOBL	runtime·mainPC(SB),RODATA,$8
 

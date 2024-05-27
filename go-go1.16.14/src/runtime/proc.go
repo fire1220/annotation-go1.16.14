@@ -3223,8 +3223,9 @@ func injectglist(glist *gList) {
 // 注释：一轮调度程序：找到一个可运行的goroutine并执行它
 // 注释：永不返回
 // 注释：每一轮调度的开始方法
+// 注释：必须切换到g0执行（由调用方保证）
 func schedule() {
-	_g_ := getg() // 注释：获取当前G，（TLS指针数据就是G的指针）
+	_g_ := getg() // 注释：(必须是g0，这里调用方保证了)获取当前G，（TLS指针数据就是G的指针）
 
 	if _g_.m.locks != 0 {
 		throw("schedule: holding locks")

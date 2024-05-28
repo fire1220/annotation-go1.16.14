@@ -2409,6 +2409,7 @@ func mspinning() {
 //		5.新M设置下一个要执行的P，当新M被唤醒时第一个执行的P
 //		6.唤醒线程M（以系统信号的方式，不同系统采用不同的方法实现）
 //		7.当前M解除禁止抢占
+// 注释：那个M线程执行p队列
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	// Disable preemption.
@@ -2581,7 +2582,7 @@ func wakep() {
 	if atomic.Load(&sched.nmspinning) != 0 || !atomic.Cas(&sched.nmspinning, 0, 1) {
 		return
 	}
-	startm(nil, true) // 注释：拿个空闲M线程运行空闲P，并且自旋，开始抢别的G了
+	startm(nil, true) // 注释：[wakep]如果有空闲p队列则那个M线程执行，如果没有空闲M线程则会fork一个新的线程执行
 }
 
 // Stops execution of the current m that is locked to a g until the g is runnable again.
@@ -3224,9 +3225,9 @@ func injectglist(glist *gList) {
 // 注释：永不返回
 // 注释：每一轮调度的开始方法
 // 注释：只有g0才能调用该方法，(上游保证使用g0调用)
-// 注释：每个调度器P上都有个g0(通常是系统线程数)
+// 注释：每个M都有一个特殊的g0 goroutine
 func schedule() {
-	_g_ := getg() // 注释：(这里是每个调度器P的g0)获取当前G，（TLS指针数据就是G的指针）
+	_g_ := getg() // 注释：(这里是M里的g0)获取当前G，（TLS指针数据就是G的指针）
 
 	if _g_.m.locks != 0 {
 		throw("schedule: holding locks")
@@ -4237,8 +4238,10 @@ func newproc(siz int32, fn *funcval) {
 		_p_ := getg().m.p.ptr()  // 注释：获取当前g指向的p地址
 		runqput(_p_, newg, true) // 注释：[newproc]把新建立的g插入本地队列的尾部，若本地队列已满，插入全局队列
 
+		// 注释：如果main.main已启动，则再fork个子线程工作。这点狠重要。
+		// 注释：使用go关键词时就会执行，尝试启动个线程工作。
 		if mainStarted { // 注释：如果是runtime.main函数启动则直接唤醒，runtime.main函数的g.goid是1
-			wakep() // 注释：（启动进程）唤醒P，就是拿个M运行P里的G，如果没有则自旋
+			wakep() // 注释：[newproc]（启动线程）唤醒P，就是拿个M运行P里的G，如果没有则自旋
 		}
 	})
 }

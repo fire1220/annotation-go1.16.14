@@ -139,21 +139,25 @@ const (
 func clone(flags int32, stk, mp, gp, fn unsafe.Pointer) int32
 
 // May run with m.p==nil, so write barriers are not allowed.
+// 注释：译：可以使用m.p==nil运行，因此不允许写入障碍。
+// 注释：创建系统线程，可以理解为fork子线程
 //go:nowritebarrier
 func newosproc(mp *m) {
 	stk := unsafe.Pointer(mp.g0.stack.hi)
 	/*
 	 * note: strace gets confused if we use CLONE_PTRACE here.
 	 */
+	// 注释：译：注意：如果我们在这里使用CLONE_PTRACE，strace会被搞糊涂。
 	if false {
 		print("newosproc stk=", stk, " m=", mp, " g=", mp.g0, " clone=", funcPC(clone), " id=", mp.id, " ostk=", &mp, "\n")
 	}
 
 	// Disable signals during clone, so that the new thread starts
 	// with signals disabled. It will enable them in minit.
+	// 注释：译：在克隆过程中禁用信号，以便新线程在禁用信号的情况下启动。它将在几分钟内使它们成为可能。
 	var oset sigset
 	sigprocmask(_SIG_SETMASK, &sigset_all, &oset)
-	ret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))
+	ret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart))) // 注释：克隆子线程
 	sigprocmask(_SIG_SETMASK, &oset, nil)
 
 	if ret < 0 {

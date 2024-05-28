@@ -2182,6 +2182,7 @@ func newm(fn func(), _p_ *p, id int64) {
 		// purpose). We don't want to clone that into another
 		// thread. Instead, ask a known-good thread to create
 		// the thread for us.
+		// 注释：译：我们位于锁定的M或可能已由C启动的线程上。该线程的内核状态可能很奇怪(用户可能出于此目的锁定了它)。我们不想把它克隆到另一个线程。相反，请求已知线程为我们创建该线程。
 		//
 		// This is disabled on Plan 9. See golang.org/issue/22227.
 		//
@@ -2195,14 +2196,15 @@ func newm(fn func(), _p_ *p, id int64) {
 		newmHandoff.newm.set(mp)
 		if newmHandoff.waiting {
 			newmHandoff.waiting = false
-			notewakeup(&newmHandoff.wake)
+			notewakeup(&newmHandoff.wake) // 注释：[newm]【Linux系统】（唤醒线程M，以系统信号的方式）向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 		}
 		unlock(&newmHandoff.lock)
 		return
 	}
-	newm1(mp)
+	newm1(mp) // 注释：创建系统线程，可以理解为fork子线程
 }
 
+// 注释：创建系统线程，可以理解为fork子线程
 func newm1(mp *m) {
 	if iscgo {
 		var ts cgothreadstart
@@ -2221,7 +2223,7 @@ func newm1(mp *m) {
 		return
 	}
 	execLock.rlock() // Prevent process clone.
-	newosproc(mp)
+	newosproc(mp)    // 注释：创建系统线程，可以理解为fork子线程
 	execLock.runlock()
 }
 

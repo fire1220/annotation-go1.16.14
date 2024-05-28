@@ -4349,9 +4349,9 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	//                    ********************
 	//      caller --->   *       bp         *    <--- (基地址)当前函数的伪SP地址
 	//                    ********************
-	//                    *   return addr    *    <--- 下一个函数的返回位置(通常由LR寄存器存储)
+	//                    *   return addr    *    <--- 下一个函数的返回位置(通常由LR寄存器存储)(这里是g函数的返回位置)
 	//                    ********************
-	//      callee --->   *      fn()        *    <--- 下一个函数的PC
+	//      callee --->   *      fn()        *    <--- 下一个函数的PC，这里就是goexit()函数
 	//                    ********************
 	// 注释：后面会把这个伪PC放到伪SP，然后后面跟上fn的伪PC就相当于：
 	//        go goexit(){

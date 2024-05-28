@@ -2169,6 +2169,7 @@ var newmHandoff struct {
 // May run with m.p==nil, so write barriers are not allowed.
 //
 // id is optional pre-allocated m ID. Omit by passing -1.
+// 注释：新建m并唤醒线程m
 //go:nowritebarrierrec
 func newm(fn func(), _p_ *p, id int64) {
 	mp := allocm(_p_, fn, id)
@@ -2478,7 +2479,7 @@ func startm(_p_ *p, spinning bool) {
 			// The caller incremented nmspinning, so set m.spinning in the new M.
 			fn = mspinning // 注释：把试图发生抢占的标记函数绑定到m结构体的mstartfn上
 		}
-		newm(fn, _p_, id) // 注释：新建m
+		newm(fn, _p_, id) // 注释：[startm]新建m并唤醒线程m，去执行p里的g
 		// Ownership transfer of _p_ committed by start in newm.
 		// 注释：由newm中的start提交的_p_所有权转让。
 		// Preemption is now safe.
@@ -2499,7 +2500,7 @@ func startm(_p_ *p, spinning bool) {
 	// The caller incremented nmspinning, so set m.spinning in the new M.
 	nmp.spinning = spinning // 注释；（我开始要抢别人了）新线程m设置可以试图抢占
 	nmp.nextp.set(_p_)      // 注释：(设置下一个要执行的P)新线程m下一个要执行的p（起始任务函数）(nmp.nextp = _p_)
-	notewakeup(&nmp.park)   // 注释：（唤醒线程M，以系统信号的方式）向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
+	notewakeup(&nmp.park)   // 注释：[startm]唤醒线程m，去执行p里的g（以系统信号的方式）向系统发送信号，通知新线程m唤醒(不同操作做系统走不同的文件)
 	// Ownership transfer of _p_ committed by wakeup. Preemption is now
 	// safe.
 	releasem(mp) // 注释：释放线程m

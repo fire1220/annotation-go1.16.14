@@ -3086,7 +3086,7 @@ stop:
 			netpollBreak()
 		}
 	}
-	stopm()
+	stopm() // 注释：进入休眠
 	goto top
 }
 
@@ -3311,13 +3311,13 @@ top:
 	if gp == nil {
 		// 注释：想尽办法找到可运行的G，找不到就不用返回了(调用 findrunnable找g，找不到的话就将m休眠，等待唤醒)
 		// 注释：获取G；获取顺序是：先从本地P中获取-》全局队列中获取-》网络轮询，已经就绪的网络连接中获取（优化方案）-》去其他线程的本地队列里窃取（偷）
-		gp, inheritTime = findrunnable() // blocks until work is available
+		gp, inheritTime = findrunnable() // 注释：各种找G，如果找不到就自旋 // blocks until work is available
 	}
 
 	// This thread is going to run a goroutine and is not spinning anymore,
 	// so if it was marked as spinning we need to reset it now and potentially
 	// start a new spinning M.
-	// 注释：表示当前工作线程m正在试图从其它工作线程m的本地运行队列偷取g
+	// 注释：译：这个线程将运行Goroutine，并且不再旋转，所以如果它被标记为正在旋转，我们现在需要重置它，并可能开始一个新的旋转M。
 	if _g_.m.spinning {
 		resetspinning()
 	}

@@ -282,6 +282,9 @@ func sysauxv(auxv []uintptr) int {
 
 var sysTHPSizePath = []byte("/sys/kernel/mm/transparent_hugepage/hpage_pmd_size\x00")
 
+// 注释：获取系统中大页（Huge Pages）的大小。大页是操作系统内存管理的一种技术，通过使用较大的页尺寸来减少页表项的数量，从而提高内存访问的效率。
+// 注释：大页的使用可以显著提高某些应用程序的性能，尤其是那些大量使用内存的应用程序。
+// 注释：该函数就是返回Linux系统sysTHPSizePath[0]命令对应的值
 func getHugePageSize() uintptr {
 	var numbuf [20]byte
 	fd := open(&sysTHPSizePath[0], 0 /* O_RDONLY */, 0)
@@ -306,9 +309,10 @@ func getHugePageSize() uintptr {
 	return uintptr(v)
 }
 
+// 注释：系统初始化
 func osinit() {
-	ncpu = getproccount() // 注释：获取cpu的数量
-	physHugePageSize = getHugePageSize()
+	ncpu = getproccount()                // 注释：获取cpu的数量
+	physHugePageSize = getHugePageSize() // 注释：操作系统的大页(Huge Pages)
 	if iscgo {
 		// #42494 glibc and musl reserve some signals for
 		// internal use and require they not be blocked by

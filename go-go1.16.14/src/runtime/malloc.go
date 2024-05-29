@@ -351,7 +351,7 @@ var physPageSize uintptr
 // The purpose of physHugePageShift is to avoid doing divisions in
 // performance critical functions.
 var (
-	physHugePageSize  uintptr
+	physHugePageSize  uintptr // 注释：操作系统的大页(Huge Pages)
 	physHugePageShift uint
 )
 

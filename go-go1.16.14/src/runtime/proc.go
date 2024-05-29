@@ -680,7 +680,7 @@ func schedinit() {
 
 	moduledataverify()
 	stackinit()
-	mallocinit()
+	mallocinit()   // 注释：内存分配初始化
 	fastrandinit() // must run before mcommoninit
 	mcommoninit(_g_.m, -1)
 	cpuinit()       // must run before alginit

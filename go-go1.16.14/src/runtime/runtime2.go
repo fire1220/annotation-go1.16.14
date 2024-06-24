@@ -802,7 +802,7 @@ type schedt struct {
 
 	ngsys uint32 // 注释：译：系统goroutine的数量；以原子方式更新 // number of system goroutines; updated atomically
 
-	pidle      puintptr // idle p's // 注释：由空闲的p结构体对象组成的链表(这里指向的链表的头部)
+	pidle      puintptr // 注释：由空闲的p结构体对象组成的链表(这里指向的链表的头部) // idle p's
 	npidle     uint32   // 注释：空闲的p结构体对象的数量
 	nmspinning uint32   // 注释：自旋的线程m数量（表示runtime中一共有多少个M在自旋状态）(自旋说明当前线程M已经没有需要执行的G，正在打算去其他线程M偷G了) // See "Worker thread parking/unparking" comment in proc.go.
 

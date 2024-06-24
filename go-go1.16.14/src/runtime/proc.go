@@ -5131,6 +5131,11 @@ func (pp *p) destroy() {
 // code, so the GC must not be running if the number of Ps actually changes.
 //
 // Returns list of Ps with local work, they need to be scheduled by the caller.
+// 注释：译：更改处理器数量。必须控制住Schedul.lock，必须阻止世界。
+// 		Gcworkbuf不能被GC或写障碍代码修改，因此如果Ps的数量实际发生变化，GC一定不会运行。
+// 		返回具有本地工作的P的列表，它们需要由调用者调度。
+//
+// 注释：创建p(初始化全局p)
 func procresize(nprocs int32) *p {
 	assertLockHeld(&sched.lock)
 	assertWorldStopped()
@@ -5160,11 +5165,12 @@ func procresize(nprocs int32) *p {
 		if nprocs <= int32(cap(allp)) {
 			allp = allp[:nprocs]
 		} else {
-			nallp := make([]*p, nprocs)
+			nallp := make([]*p, nprocs) // 注释：创建全局p
 			// Copy everything up to allp's cap so we
 			// never lose old allocated Ps.
-			copy(nallp, allp[:cap(allp)])
-			allp = nallp
+			// 注释：译：将所有内容都复制到allp的上限，这样我们就不会丢失旧分配的P。
+			copy(nallp, allp[:cap(allp)]) // 注释：把旧的p列表拷贝到新建立的p列表里
+			allp = nallp                  // 注释：创建全局p
 		}
 
 		if maskWords <= int32(cap(idlepMask)) {
@@ -5218,7 +5224,7 @@ func procresize(nprocs int32) *p {
 		p := allp[0]
 		p.m = 0
 		p.status = _Pidle
-		acquirep(p)
+		acquirep(p) // 注释：绑定m和p
 		if trace.enabled {
 			traceGoStart()
 		}
@@ -6075,7 +6081,7 @@ func pidleput(_p_ *p) {
 // sched.lock must be held.
 //
 // May run during STW, so write barriers are not allowed.
-// 注释：从空闲p里获取p
+// 注释：(获取空闲p)从空闲p里获取p
 //go:nowritebarrierrec
 func pidleget() *p {
 	assertLockHeld(&sched.lock)

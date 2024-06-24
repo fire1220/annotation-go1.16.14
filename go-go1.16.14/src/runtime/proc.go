@@ -112,6 +112,7 @@ var runtimeInitTime int64
 var initSigmask sigset
 
 // The main goroutine.
+// 注释：runtime.main 函数，第一个运行的main函数
 func main() {
 	g := getg()
 
@@ -221,8 +222,8 @@ func main() {
 		// has a main, but it is not executed.
 		return
 	}
-	fn := main_main // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
-	fn()
+	fn := main_main // 注释：该函数则是业务的main函数 // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
+	fn()            // 注释：运行业务代码的main函数
 	if raceenabled {
 		racefini()
 	}

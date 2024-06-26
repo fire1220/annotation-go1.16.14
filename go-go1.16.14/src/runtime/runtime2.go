@@ -639,7 +639,7 @@ type p struct {
 	sysmontick  sysmontick // 注释：系统监控 // last tick observed by sysmon
 	m           muintptr   // 回链到关联的m // back-link to associated m (nil if idle)
 	mcache      *mcache    // 注释：记录申请(分配)内存的虚拟内存span的缓存，由于G同时只能在一个逻辑处理器P上运行，所已这个不需要锁
-	pcache      pageCache
+	pcache      pageCache  // 注释：页的缓存,当到mheap里申请内存时，首先会到P的pageCache里看看是否有页的缓存
 	raceprocctx uintptr
 
 	deferpool    [5][]*_defer // pool of available defer structs of different sizes (see panic.go)

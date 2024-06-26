@@ -15,9 +15,12 @@ const pageCachePages = 8 * unsafe.Sizeof(pageCache{}.cache)
 // allocate from without a lock. More specifically, it represents
 // a pageCachePages*pageSize chunk of memory with 0 or more free
 // pages in it.
+// 注释：页的缓存
+// 注释：到mheap里申请内存时，首先会到P的pageCache里看看是否有页的缓存
+// 注释：cache的每一位对应一个页（每页是8KB），最易最大缓存是64*8KB=512KB
 type pageCache struct {
-	base  uintptr // base address of the chunk
-	cache uint64  // 64-bit bitmap representing free pages (1 means free)
+	base  uintptr // 注释：页的基地址，当该缓存不够时通过基地址寻找可用大小的连续空间 // base address of the chunk
+	cache uint64  // 注释：缓存的位图，每一位代表一个页，1为空闲 // 64-bit bitmap representing free pages (1 means free)
 	scav  uint64  // 64-bit bitmap representing scavenged pages (1 means scavenged)
 }
 

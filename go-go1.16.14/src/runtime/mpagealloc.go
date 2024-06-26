@@ -172,6 +172,7 @@ func blockAlignSummaryRange(level int, lo, hi int) (int, int) {
 	return int(alignDown(uintptr(lo), e)), int(alignUp(uintptr(hi), e))
 }
 
+// 注释：管理:基数树
 type pageAlloc struct {
 	// Radix tree of summaries.
 	//
@@ -194,6 +195,12 @@ type pageAlloc struct {
 	//
 	// We may still get segmentation faults < len since some of that
 	// memory may not be committed yet.
+	// 注释：译：摘要的基数树。
+	// 		每个切片的容量（cap）表示整个内存预留。每个切片的长度（len）反映了分配器对于该级别已知的最大映射堆地址。
+	// 		每个摘要级别的后备存储在初始化时预留，并在增长时可能（或可能不）被提交（在小地址空间中，可能在初始化时提交所有内存）。
+	// 		保持 len <= cap 的目的是在切片的顶部执行边界检查，以便在遇到未知的运行时分段错误时，我们能得到一个更友好的越界错误。
+	// 		要遍历摘要级别，请使用 inUse 来确定哪些范围当前是可用的。否则，可能会尝试访问仅被预留但尚未提交的内存，这可能会导致硬错误。
+	// 		尽管我们仍可能在 < len 的范围内遇到分段错误，因为其中一些内存可能尚未被提交。
 	summary [summaryLevels][]pallocSum
 
 	// chunks is a slice of bitmap chunks.

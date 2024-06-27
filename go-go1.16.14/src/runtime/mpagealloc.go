@@ -923,6 +923,7 @@ const (
 // a bitmap and are thus counts, each of which may have a maximum value of
 // 2^21 - 1, or all three may be equal to 2^21. The latter case is represented
 // by just setting the 64th bit.
+// 注释： 内容是： 21位的end  22位的max   21位的start
 type pallocSum uint64
 
 // packPallocSum takes a start, max, and end value and produces a pallocSum.
@@ -940,7 +941,7 @@ func (p pallocSum) start() uint {
 	if uint64(p)&uint64(1<<63) != 0 {
 		return maxPackedValue
 	}
-	return uint(uint64(p) & (maxPackedValue - 1))
+	return uint(uint64(p) & (maxPackedValue - 1)) // 注释：尾21位
 }
 
 // max extracts the max value from a packed sum.
@@ -948,7 +949,7 @@ func (p pallocSum) max() uint {
 	if uint64(p)&uint64(1<<63) != 0 {
 		return maxPackedValue
 	}
-	return uint((uint64(p) >> logMaxPackedValue) & (maxPackedValue - 1))
+	return uint((uint64(p) >> logMaxPackedValue) & (maxPackedValue - 1)) // 注释：中间22位
 }
 
 // end extracts the end value from a packed sum.
@@ -956,7 +957,7 @@ func (p pallocSum) end() uint {
 	if uint64(p)&uint64(1<<63) != 0 {
 		return maxPackedValue
 	}
-	return uint((uint64(p) >> (2 * logMaxPackedValue)) & (maxPackedValue - 1))
+	return uint((uint64(p) >> (2 * logMaxPackedValue)) & (maxPackedValue - 1)) // 注释：尾部21位
 }
 
 // unpack unpacks all three values from the summary.

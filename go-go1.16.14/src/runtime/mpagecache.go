@@ -64,6 +64,7 @@ func (c *pageCache) alloc(npages uintptr) (uintptr, uintptr) {
 // 注释：申请多页内存
 // 注释：入参：申请内存也页数
 // 注释：返回p里缓存的基地址对应点缓存地址，和已清理的缓存地址
+// 注释：返回pageCache中要分配的内存地址，和已清理的缓存地址
 func (c *pageCache) allocN(npages uintptr) (uintptr, uintptr) {
 	i := findBitRange64(c.cache, uint(npages))
 	if i >= 64 {
@@ -71,9 +72,9 @@ func (c *pageCache) allocN(npages uintptr) (uintptr, uintptr) {
 	}
 	mask := ((uint64(1) << npages) - 1) << i
 	scav := sys.OnesCount64(c.scav & mask)
-	c.cache &^= mask // mark in-use bits
-	c.scav &^= mask  // clear scavenged bits
-	return c.base + uintptr(i*pageSize), uintptr(scav) * pageSize
+	c.cache &^= mask                                              // 注释：设置位图，标记为使用 // mark in-use bits
+	c.scav &^= mask                                               // 注释：清理已清理的位图，标记为未清理 // clear scavenged bits
+	return c.base + uintptr(i*pageSize), uintptr(scav) * pageSize // 注释：返回pageCache中要分配的内存地址，和已清理的缓存地址
 }
 
 // flush empties out unallocated free pages in the given cache

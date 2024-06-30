@@ -1153,6 +1153,7 @@ func (h *mheap) tryAllocMSpan() *mspan {
 	pp := getg().m.p.ptr()
 	// If we don't have a p or the cache is empty, we can't do
 	// anything here.
+	// 注释：如果缓存里没有空间则返回nil，后面会根据nil来装在缓存
 	if pp == nil || pp.mspancache.len == 0 {
 		return nil
 	}
@@ -1178,8 +1179,9 @@ func (h *mheap) allocMSpanLocked() *mspan {
 	pp := getg().m.p.ptr()
 	if pp == nil {
 		// We don't have a p so just do the normal thing.
-		return (*mspan)(h.spanalloc.alloc())
+		return (*mspan)(h.spanalloc.alloc()) // 注释：如果没有p则直接分配内存
 	}
+	// 注释：下面是有p的情况，会缓存内存到p里，拿出缓存最后一个并返回
 	// Refill the cache if necessary.
 	if pp.mspancache.len == 0 {
 		const refillCount = len(pp.mspancache.buf) / 2
@@ -1258,6 +1260,7 @@ func (h *mheap) allocSpan(npages uintptr, typ spanAllocType, spanclass spanClass
 	// The page cache does not support aligned allocations, so we cannot use
 	// it if we need to provide a physical page aligned stack allocation.
 	pp := gp.m.p.ptr() // 注释：获取P
+	// 注释：尝试从p的缓存中获取内存
 	if !needPhysPageAlign && pp != nil && npages < pageCachePages/4 {
 		c := &pp.pcache
 
@@ -1269,40 +1272,45 @@ func (h *mheap) allocSpan(npages uintptr, typ spanAllocType, spanclass spanClass
 		}
 
 		// Try to allocate from the cache.
-		base, scav = c.alloc(npages) // 注释：从p.pcache里获取内存
-		if base != 0 {
-			s = h.tryAllocMSpan()
-			if s != nil {
-				goto HaveSpan
+		base, scav = c.alloc(npages) // 注释：从p.pcache里获取内存,返回基地址偏移的实际内存地址和已经清理的地址
+		if base != 0 {               // 注释：如果有值说明：缓存区里有可用的内存
+			// 注释：如果缓存里没有空间则返回nil，后面会根据nil来装在缓存
+			s = h.tryAllocMSpan() // 注释：尝试在缓存里获取内存(s是最终返回的变量)
+			if s != nil {         // 注释：如果有值说明已经找分配的内存地址(s是最终返回的变量)
+				goto HaveSpan // 注释：已经获取内存地址，前去处理其他操作
 			}
 			// We have a base but no mspan, so we need
 			// to lock the heap.
 		}
 	}
 
+	// 注释：下面是从全局的mheap里获取内存
 	// For one reason or another, we couldn't get the
 	// whole job done without the heap lock.
-	lock(&h.lock)
+	lock(&h.lock) // 注释：从全局mheap里获取内存，需要加锁
 
 	if needPhysPageAlign {
 		// Overallocate by a physical page to allow for later alignment.
 		npages += physPageSize / pageSize
 	}
 
+	// 注释：从全局的mheap里获取基地址的偏移量
+	// 注释：在mheap里的定位要获取的内存对应的地址
 	if base == 0 {
 		// Try to acquire a base address.
-		base, scav = h.pages.alloc(npages)
-		if base == 0 {
-			if !h.grow(npages) {
-				unlock(&h.lock)
+		base, scav = h.pages.alloc(npages) // 注释：尝试从mheap里获取基地址的偏移量，和已经清理的地址
+		if base == 0 {                     // 注释：如果没有获取到，说明需要扩容
+			if !h.grow(npages) { // 注释：扩容mheap内存
+				unlock(&h.lock) // 注释：如果扩容失败，则解锁并返回nil
 				return nil
 			}
-			base, scav = h.pages.alloc(npages)
-			if base == 0 {
+			base, scav = h.pages.alloc(npages) // 注释：扩容完成后重新从mheap里获取基地址的偏移量，和已经清理的地址
+			if base == 0 {                     // 注释：如果依然没有获取到内存则立刻报错
 				throw("grew heap, but no adequate free space found")
 			}
 		}
 	}
+	// 注释：如果是nil说明没有开始获取内存存或者缓存为空，则从mheap里获取内存，并且装到缓存里
 	if s == nil {
 		// We failed to get an mspan earlier, so grab
 		// one now that we have the heap lock.
@@ -1327,6 +1335,8 @@ func (h *mheap) allocSpan(npages uintptr, typ spanAllocType, spanclass spanClass
 
 	unlock(&h.lock)
 
+	// 注释：已经获得要分配的内存地址和已经清理的地址
+	// 注释：此时准备开始分配内存
 HaveSpan:
 	// At this point, both s != nil and base != 0, and the heap
 	// lock is no longer held. Initialize the span.

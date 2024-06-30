@@ -681,14 +681,16 @@ type p struct {
 	sudogbuf   [128]*sudog
 
 	// Cache of mspan objects from the heap.
+	// 注释：p中内存缓存，当去mheap中分配内存时会先到p中看是否有缓存
+	// 注释：p中的span对象缓存
 	mspancache struct {
 		// We need an explicit length here because this field is used
 		// in allocation codepaths where write barriers are not allowed,
 		// and eliminating the write barrier/keeping it eliminated from
 		// slice updates is tricky, moreso than just managing the length
 		// ourselves.
-		len int
-		buf [128]*mspan
+		len int         // 	注释：p中的内存缓存个数（span的个数）
+		buf [128]*mspan // 注释：p中的内存缓存（span的缓存）
 	}
 
 	tracebuf traceBufPtr // 注释：存放栈追踪的栈缓冲区地址

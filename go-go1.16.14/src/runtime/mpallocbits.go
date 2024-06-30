@@ -371,6 +371,7 @@ func (b *pallocBits) pages64(i uint) uint64 {
 // n consecutive 1 bits. If no consecutive set of 1 bits of
 // size n may be found in c, then it returns an integer >= 64.
 // n must be > 0.
+// 注释：在64位的位图中定位连续n个1的位置，如果返回64说明没有找到
 func findBitRange64(c uint64, n uint) uint {
 	// This implementation is based on shrinking the length of
 	// runs of contiguous 1 bits. We remove the top n-1 1 bits

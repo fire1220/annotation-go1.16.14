@@ -252,8 +252,9 @@ func (c *mcache) allocLarge(size uintptr, needzero bool, noscan bool) *mspan {
 	// 注释：译：扣除此跨度分配的贷项，如有必要，进行扫掠。mHeap_Alloc也会扫描npage，所以这只会将债务向下支付到npage页面。
 	deductSweepCredit(npages*_PageSize, npages) // 注释：减低清理积分spanBytes是一个span的大小
 
-	spc := makeSpanClass(0, noscan)          // 注释：(组合跨度类ID)组合span对象ID和是否不扫描表示
-	s := mheap_.alloc(npages, spc, needzero) // 注释：申请内存(到mheap里申请内存，这里是先去p的pagecache里找，如果没有则去mheap里的pagedata里获取)
+	spc := makeSpanClass(0, noscan) // 注释：(组合跨度类ID)组合span对象ID和是否不扫描表示
+	// 注释：申请内存(到mheap里申请内存，这里是先去p的pagecache里找，如果没有则去mheap里的pagedata里获取)
+	s := mheap_.alloc(npages, spc, needzero) // 注释：申请内存
 	if s == nil {
 		throw("out of memory")
 	}

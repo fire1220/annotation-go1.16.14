@@ -21,7 +21,7 @@ const pageCachePages = 8 * unsafe.Sizeof(pageCache{}.cache)
 type pageCache struct {
 	base  uintptr // 注释：页的基地址，当该缓存不够时通过基地址寻找可用大小的连续空间 // base address of the chunk
 	cache uint64  // 注释：缓存的位图，每一位代表一个页，1为空闲 // 64-bit bitmap representing free pages (1 means free)
-	scav  uint64  // 64-bit bitmap representing scavenged pages (1 means scavenged)
+	scav  uint64  // 注释：已经清理的位图(1表示已清除) // 64-bit bitmap representing scavenged pages (1 means scavenged)
 }
 
 // empty returns true if the pageCache has any free pages, and false
@@ -38,18 +38,21 @@ func (c *pageCache) empty() bool {
 //
 // Returns a base address of zero on failure, in which case the
 // amount of scavenged memory should be ignored.
+// 注释：从p.pcache里获取内存，（pageCache结构），不需要加锁
+// 注释：入参：要申请内存的页数量
+// 注释：返回p里缓存的基地址对应点缓存地址，和已清理的缓存地址
 func (c *pageCache) alloc(npages uintptr) (uintptr, uintptr) {
 	if c.cache == 0 {
 		return 0, 0
 	}
-	if npages == 1 {
-		i := uintptr(sys.TrailingZeros64(c.cache))
-		scav := (c.scav >> i) & 1
-		c.cache &^= 1 << i // set bit to mark in-use
-		c.scav &^= 1 << i  // clear bit to mark unscavenged
-		return c.base + i*pageSize, uintptr(scav) * pageSize
+	if npages == 1 { // 注释：如果只申请1页内存
+		i := uintptr(sys.TrailingZeros64(c.cache))           // 注释：获取尾0个数
+		scav := (c.scav >> i) & 1                            // 注释：取出该位置
+		c.cache &^= 1 << i                                   // 注释：标记使用 // set bit to mark in-use
+		c.scav &^= 1 << i                                    // 注释：标记未清理 // clear bit to mark unscavenged
+		return c.base + i*pageSize, uintptr(scav) * pageSize // 注释：返回基地址对应点缓存地址，和已清理的缓存地址
 	}
-	return c.allocN(npages)
+	return c.allocN(npages) // 注释：申请多页内存
 }
 
 // allocN is a helper which attempts to allocate npages worth of pages
@@ -58,6 +61,9 @@ func (c *pageCache) alloc(npages uintptr) (uintptr, uintptr) {
 //
 // Returns a base address and the amount of scavenged memory in the
 // allocated region in bytes.
+// 注释：申请多页内存
+// 注释：入参：申请内存也页数
+// 注释：返回p里缓存的基地址对应点缓存地址，和已清理的缓存地址
 func (c *pageCache) allocN(npages uintptr) (uintptr, uintptr) {
 	i := findBitRange64(c.cache, uint(npages))
 	if i >= 64 {

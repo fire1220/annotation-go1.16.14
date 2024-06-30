@@ -109,6 +109,7 @@ var deBruijn64tab = [64]byte{
 const deBruijn64 = 0x03f79d71b4ca8b09
 
 // TrailingZeros64 returns the number of trailing zero bits in x; the result is 64 for x == 0.
+// 注释：返回尾部是0的个数，例如：101000返回4
 func TrailingZeros64(x uint64) int {
 	if x == 0 {
 		return 64

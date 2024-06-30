@@ -253,7 +253,7 @@ func (c *mcache) allocLarge(size uintptr, needzero bool, noscan bool) *mspan {
 	deductSweepCredit(npages*_PageSize, npages) // 注释：减低清理积分spanBytes是一个span的大小
 
 	spc := makeSpanClass(0, noscan)          // 注释：(组合跨度类ID)组合span对象ID和是否不扫描表示
-	s := mheap_.alloc(npages, spc, needzero) // 注释：申请内存
+	s := mheap_.alloc(npages, spc, needzero) // 注释：申请内存(到mheap里申请内存，这里是先去p的pagecache里找，如果没有则去mheap里的pagedata里获取)
 	if s == nil {
 		throw("out of memory")
 	}

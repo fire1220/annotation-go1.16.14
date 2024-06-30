@@ -396,7 +396,7 @@ func findBitRange64(c uint64, n uint) uint {
 	// Find first remaining 1.
 	// Since we shrunk from the top down, the first 1 is in
 	// its correct original position.
-	return uint(sys.TrailingZeros64(c))
+	return uint(sys.TrailingZeros64(c)) // 注释：返回c的尾0数量
 }
 
 // pallocData encapsulates pallocBits and a bitmap for

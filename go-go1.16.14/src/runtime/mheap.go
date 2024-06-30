@@ -1236,11 +1236,18 @@ func (h *mheap) freeMSpanLocked(s *mspan) {
 // the heap lock and because it must block GC transitions.
 //
 // 注释：【ing】
+// 注释：申请内存，首先到p的pageCache里获取，再去mheap的pageData里获取
+// 注释：步骤：
+// 		1.如果申请小内存，先去p.pcache缓存里找（就是pageCache）（64*8/6）
+// 			a.如果缓存为空则从新装填缓存后获取(装填是从全局的mheap里的获取，所以需要加锁)
+// 		3.
+// 		4.
+// 		5.
 //go:systemstack
 func (h *mheap) allocSpan(npages uintptr, typ spanAllocType, spanclass spanClass) (s *mspan) {
 	// Function-global state.
-	gp := getg()
-	base, scav := uintptr(0), uintptr(0)
+	gp := getg()                         // 注释：获取当前运行的g
+	base, scav := uintptr(0), uintptr(0) // 注释：初始化基地址和已清理的位图
 
 	// On some platforms we need to provide physical page aligned stack
 	// allocations. Where the page size is less than the physical page
@@ -1250,19 +1257,19 @@ func (h *mheap) allocSpan(npages uintptr, typ spanAllocType, spanclass spanClass
 	// If the allocation is small enough, try the page cache!
 	// The page cache does not support aligned allocations, so we cannot use
 	// it if we need to provide a physical page aligned stack allocation.
-	pp := gp.m.p.ptr()
+	pp := gp.m.p.ptr() // 注释：获取P
 	if !needPhysPageAlign && pp != nil && npages < pageCachePages/4 {
 		c := &pp.pcache
 
 		// If the cache is empty, refill it.
-		if c.empty() {
-			lock(&h.lock)
-			*c = h.pages.allocToCache()
-			unlock(&h.lock)
+		if c.empty() { // 注释：如果缓存为空则从新装填(装填是从全局的mheap里的获取，所以需要加锁)
+			lock(&h.lock)               // 注释：加锁
+			*c = h.pages.allocToCache() // 注释：装填缓存（从全局的mheap里的获取装填到p.pcache里）
+			unlock(&h.lock)             // 注释：解锁
 		}
 
 		// Try to allocate from the cache.
-		base, scav = c.alloc(npages)
+		base, scav = c.alloc(npages) // 注释：从p.pcache里获取内存
 		if base != 0 {
 			s = h.tryAllocMSpan()
 			if s != nil {

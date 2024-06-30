@@ -66,8 +66,8 @@ func (c *pageCache) alloc(npages uintptr) (uintptr, uintptr) {
 // 注释：返回p里缓存的基地址对应点缓存地址，和已清理的缓存地址
 // 注释：返回pageCache中要分配的内存地址，和已清理的缓存地址
 func (c *pageCache) allocN(npages uintptr) (uintptr, uintptr) {
-	i := findBitRange64(c.cache, uint(npages))
-	if i >= 64 {
+	i := findBitRange64(c.cache, uint(npages)) // 注释：获取连续的内存（连续npages个1的位置）
+	if i >= 64 {                               // 注释：如果返回64表示没有找到连续的内存
 		return 0, 0
 	}
 	mask := ((uint64(1) << npages) - 1) << i

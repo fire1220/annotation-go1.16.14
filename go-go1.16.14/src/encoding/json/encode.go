@@ -429,7 +429,7 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 	//			2.如果入参是实体，则MarshalJSON的接收器必须是实体
 	//			3.如果入参是指针，则MarshalJSON的接收器是指针或实体都可以
 	//			4.综上总结，最好MarshalJSON的接收器是实体，这样兼容是最好的。
-	// 其实这里感觉可以用 if t.Kind() != reflect.Ptr { t = reflect.PtrTo(t) } 进行转换就可以兼容了。不知道为什么官方没有这样做
+	// 其实这里感觉更改成(增加对指针接收器的兼容): if t.Implements(marshalerType) || reflect.PointerTo(t).Implements(marshalerType) {
 	if t.Implements(marshalerType) {
 		return marshalerEncoder
 	}

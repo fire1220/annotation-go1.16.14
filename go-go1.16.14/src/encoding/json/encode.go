@@ -155,10 +155,11 @@ import (
 // handle them. Passing cyclic structures to Marshal will result in
 // an error.
 //
+// 注释：执行json.Marshal的入口
 func Marshal(v interface{}) ([]byte, error) {
 	e := newEncodeState()
 
-	err := e.marshal(v, encOpts{escapeHTML: true})
+	err := e.marshal(v, encOpts{escapeHTML: true}) // 注释：进入marshal
 	if err != nil {
 		return nil, err
 	}
@@ -372,10 +373,10 @@ type encoderFunc func(e *encodeState, v reflect.Value, opts encOpts)
 var encoderCache sync.Map // map[reflect.Type]encoderFunc
 
 func valueEncoder(v reflect.Value) encoderFunc {
-	if !v.IsValid() {
+	if !v.IsValid() { // 注释：如果是无效的值，则组装成json的时候的值是null
 		return invalidValueEncoder
 	}
-	return typeEncoder(v.Type())
+	return typeEncoder(v.Type()) // 注释：值有效时执行
 }
 
 func typeEncoder(t reflect.Type) encoderFunc {
@@ -401,7 +402,7 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	}
 
 	// Compute the real encoder and replace the indirect func with it.
-	f = newTypeEncoder(t, true)
+	f = newTypeEncoder(t, true) // 注释：执行钩子函数（实现的接口：MarshalJSON方法,并执行）
 	wg.Done()
 	encoderCache.Store(t, f)
 	return f
@@ -422,6 +423,13 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 	if t.Kind() != reflect.Ptr && allowAddr && reflect.PtrTo(t).Implements(marshalerType) {
 		return newCondAddrEncoder(addrMarshalerEncoder, newTypeEncoder(t, false))
 	}
+	// 注释：如果实现了MarshalJSON函数则执行该函数，
+	// 		注意:
+	//			1.这里是用入参来判定是否实现MarshalJSON方法
+	//			2.如果入参是实体，则MarshalJSON的接收器必须是实体
+	//			3.如果入参是指针，则MarshalJSON的接收器是指针或实体都可以
+	//			4.综上总结，最好MarshalJSON的接收器是实体，这样兼容是最好的。
+	// 其实这里感觉可以用 if t.Kind() != reflect.Ptr { t = reflect.PtrTo(t) } 进行转换就可以兼容了。不知道为什么官方没有这样做
 	if t.Implements(marshalerType) {
 		return marshalerEncoder
 	}

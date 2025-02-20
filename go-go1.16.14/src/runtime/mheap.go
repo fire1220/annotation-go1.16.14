@@ -79,7 +79,7 @@ type mheap struct {
 	// store. Accesses during STW might not hold the lock, but
 	// must ensure that allocation cannot happen around the
 	// access (since that may free the backing store).
-	allspans []*mspan // all spans out there
+	allspans []*mspan // 所管理的所有 mspan 包括已经分配的和空闲的 // all spans out there
 
 	_ uint32 // align uint64 fields on 32-bit for atomics
 

@@ -869,10 +869,10 @@ func nextFreeFast(s *mspan) gclinkptr {
 		if result < s.nelems {                  // 注释：空闲位置不能超过总容量
 			freeidx := result + 1 // 注释：记录下一个空闲下标位置
 			if freeidx%64 == 0 && freeidx != s.nelems {
-				return 0
+				return 0 // 缓存大小是64个位置，只能容纳64个，这里表示缓存已经满，并且还没有达到跨度类总容量，则无法确定下一个要提供缓存的位置，所以就不反回内存地址了
 			}
 			s.allocCache >>= uint(theBit + 1)              // 注释：操作时把右侧出现的第一个1的位置到右侧末尾处干掉
-			s.freeindex = freeidx                          // 注释：重置空闲位置(矫正空闲位置偏移量)
+			s.freeindex = freeidx                          // 注释：重置空闲下标(矫正空闲位置偏移量)（旧索引数+之前已分配数+本次分配数）
 			s.allocCount++                                 // 注释：统计分配次数
 			return gclinkptr(result*s.elemsize + s.base()) // 注释：返回空闲指针地址(第几块*对象大小+基地址)
 		}

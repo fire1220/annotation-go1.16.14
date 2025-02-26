@@ -208,7 +208,10 @@ func (s *mspan) nextFreeIndex() uintptr {
 			s.freeindex = snelems // 注释：下标等于总容量
 			return snelems        // 注释：返回总容量
 		}
-		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)(得到一个大于等于8, 小于等于128的值)
+		// 注释：whichByte的值范围：(8 <= whichByte < 128)
+		// 		大于等于8 因为(sfreeindex + 64) &^ (64 - 1)最小值是8
+		//		小于128  因为snelems最大是1024（sizeclasses.go中查看），所以sfreeindex小于1024，,1024/8=128，所以whichByte<128
+		whichByte := sfreeindex / 8 // 注释：获取8的组数(每8位是一组)(得到一个大于等于8, 小于128的值)
 		// Refill s.allocCache with the next 64 alloc bits.
 		// 注释：用接下来的64个分配位重新填充s.allocCache。
 		s.refillAllocCache(whichByte) // 注释：(重新缓存64个空的块到快速缓冲区里)把空闲位置对应的页缓存到mspan.allocCache快速缓存中，whichByte大于等于8小于等于128

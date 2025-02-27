@@ -110,9 +110,9 @@ import (
 const (
 	debugMalloc = false
 
-	maxTinySize   = _TinySize      // 注释：微小对象最大容量16KB
+	maxTinySize   = _TinySize      // 注释：微小对象最大容量16B（字节）
 	tinySizeClass = _TinySizeClass // 注释：微小对象的ClassID
-	maxSmallSize  = _MaxSmallSize  // 注释：小对象最大容量32KB
+	maxSmallSize  = _MaxSmallSize  // 注释：小对象最大容量32KB（千字节）
 
 	pageShift = _PageShift
 	pageSize  = _PageSize // 注释：8KB

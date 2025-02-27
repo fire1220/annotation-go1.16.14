@@ -157,6 +157,7 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // 注释：whichByte前面的已经别分配了，所以需要偏移whichByte位继续拿出64位放到快速缓存里
 // 注释：(重新缓存64个空的块到快速缓冲区里)把空闲位置对应的页缓存到mspan.allocCache快速缓存中
 // 注释：重新缓存64个空的块到快速缓冲区里
+// 注释：这里不保证返回的是否是空闲，可能返回的全部都是已分配的。外层会有for循环判断是否全部分配，如果获取的是全部都已分配的时，会继续下一轮尝试，直到有可用块，或者无空用块
 func (s *mspan) refillAllocCache(whichByte uintptr) {
 	// 注释：从数组指针中，偏移whichByte(是8的倍数)个的位置指针向后拿出8个元素，把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：(返回数组：8个一组的数组指针)bytes = allocBites基地址 + whichByte

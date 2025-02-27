@@ -152,6 +152,7 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // s.allocCache.
 // 注释：译：relfillAllocCache占用8个字节。allocBits从whichByte开始并取反，以便可以使用ctz（计数尾随零）指令。然后，它将这8个字节放入缓存的64位s.allocCache中
 //
+// 注释：重新装填allocCache缓存
 // 注释：接着从allocBits中拿出64个位作为快速缓存块
 // 注释：whichByte前面的已经别分配了，所以需要偏移whichByte位继续拿出64位放到快速缓存里
 // 注释：(重新缓存64个空的块到快速缓冲区里)把空闲位置对应的页缓存到mspan.allocCache快速缓存中

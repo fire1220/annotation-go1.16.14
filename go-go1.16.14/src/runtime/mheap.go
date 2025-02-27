@@ -453,7 +453,9 @@ type mspan struct {
 	// 注释：allocBits是此跨度中对象的位图。如果n>=freeindex并且allocBits[n/8] & (1<<(n%8))为0，则对象n是空闲的；否则，n已经分配对象了。从nelem开始的位是未定义的，永远不应该被引用。
 	//
 	// Object n starts at address n*elemsize + (start << pageShift).
-	// 注释：对象n从地址 n*elemsize + (start << pageShift)。
+	// 注释：对象n从地址 n*elemsize + (start << pageShift)
+	// 注释：有效空闲下标范围是 0 <= freeindex < melems
+	// 注释：当freeindex = melems时表span没有可用块（无空用内存）
 	freeindex uintptr // 注释：空闲对象块的下标位置（下标范围是[0 - nelems]之间(包含nelems)）空闲内存地址是 s.freeindex * s.elemsize + s.base()
 	// TODO: Look up nelems from sizeclass and remove this field if it
 	// helps performance.

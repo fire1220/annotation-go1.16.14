@@ -160,7 +160,7 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 func (s *mspan) refillAllocCache(whichByte uintptr) {
 	// 注释：从数组指针中，偏移whichByte(是8的倍数)个的位置指针向后拿出8个元素，把span位图中对应的页地址取出来（一个span存储多个页，每个页是8KB（字节）），这里把空闲位置对应页地址取出来
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte))) // 注释：(返回数组：8个一组的数组指针)bytes = allocBites基地址 + whichByte
-	// 注释：把空闲位置的对应的页取出来缓存到mspan.allocCache快速缓存中
+	// 注释：把mspan.allocBits中64位放到mspan.allocCache快速缓存中,这里不保证其中的块是否未分配
 	// 注释：把数组[8]uint8组合成一个uint64的值，每8个一组调换顺序
 	aCache := uint64(0)                   // 注释：初始化64位位图
 	aCache |= uint64(bytes[0])            // 注释：第1个8位的位图

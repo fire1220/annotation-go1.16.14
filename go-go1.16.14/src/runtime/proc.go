@@ -4361,11 +4361,8 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	//                    ********************
 	//      callee --->   *      fn()        *    <--- 下一个函数的PC，这里就是goexit()函数
 	//                    ********************
-	// 注释：后面会把这个伪PC放到伪SP，然后后面跟上fn的伪PC就相当于：
-	//        go goexit(){
-	//            fn()
-	//        }()
-	gostartcallfn(&newg.sched, fn)           // 注释：(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
+	// 注释：后面会把这个伪PC放到伪SP，然后后面跟上fn的伪PC就相当于：goexit(fn())
+	gostartcallfn(&newg.sched, fn)           // 注释：相当于 goexit(fn()) 代码；(保存现场)保存pc和ctxt(记录调用链),fn是调用方的方法指针（PC）, 例如A执行go后fn为A的PC值
 	newg.gopc = callerpc                     // 注释：调用者的PC值;例如：A调用B然后执行go指令，此时callerpc是A的PC值，fn.fn是B的PC值，callergp是A对应的G
 	newg.ancestors = saveAncestors(callergp) // 注释：【ing】把当前的G的信息保存到调用链上，用于debug追溯时使用
 	newg.startpc = fn.fn                     // 注释：(go fn()中fn指令对应的pc值)要调用方法的PC

@@ -4353,6 +4353,7 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	newg.sched.g = guintptr(unsafe.Pointer(newg))                                // 注释：(保存现场)存当前的G地址
 	// 注释：这里太巧妙了，内存地址执行指令的顺序是高地址向低地址执行，这里初始化PC是goexit的伪PC加1个内存单位（每种平台内存单位可能不一样），后面会把这个伪PC放到伪SP，然后后面跟上fn的伪PC
 	// 注释：
+	// 在gostartcallfn函数里会把goexit函数句柄放到return addr位置，然后把fn放到pc的位置，这样执行顺序就是先执行fn -> goexit()
 	//                    ********************
 	//      caller --->   *       bp         *    <--- (基地址)当前函数的伪SP地址
 	//                    ********************
